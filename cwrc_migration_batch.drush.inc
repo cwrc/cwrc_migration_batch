@@ -21,10 +21,35 @@ function cwrc_migration_batch_drush_command() {
   $items['cwrc_migration_batch_ingest_entities'] = array(
     'description' => 'Ingest objects from a zip file',
     'examples' => array(
-      'drush -u 1 cwrc_migration_batch_ingest_entities path_to_directory name_of_mods_directory name_of_orlando_directory',
+      'drush -u 1 cwrc_migration_batch_ingest_entities path_to_directory name_of_mods_directory name_of_orlando_directory collection_pid cModel_pid',
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
+
+  $items['cwrc_migration_batch_ingest_events'] = array(
+    'description' => 'Ingest objects from a zip file',
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_ingest_events path_to_directory name_of_mods_directory name_of_orlando_directory',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
+
+  $items['cwrc_migration_batch_ingest_documentation'] = array(
+    'description' => 'Ingest objects from a zip file',
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_ingest_documentation path_to_directory name_of_mods_directory name_of_orlando_directory',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
+
+  $items['cwrc_migration_batch_ingest_bibliography'] = array(
+    'description' => 'Ingest objects from a zip file',
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_ingest_bibliography path_to_directory name_of_mods_directory name_of_orlando_directory',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
+
   return $items;
 }
 
@@ -40,12 +65,46 @@ function cwrc_migration_batch_drush_command() {
  *   name of the orlando directory.
  */
 function drush_cwrc_migration_batch_ingest_entities(
-	$path_to_file
-	, $mods_directory
+    $path_to_file
+    , $mods_directory
     , $orlando_directory
+    , $collection_pid
+    , $cModel_pid
   ) 
 {
   drush_print("CWRC Entities Migration batch");
+
+  // Include modules.
+  $connection = null;
+  migration_init($connection);
+
+  // Display the user.
+  drush_print("User: " . $connection->connection->username);
+
+  /*
+  // Orlando Content Model.  Create the Orlando content model.
+  if ( !islandora_object_load($cModel_pid) ) 
+  {
+    create_cModel($tmp_cModel_pid);
+    drush_print("Orlando content model added - $cModel_pid");
+  }
+  else {
+    drush_print("Orlando contentmodel already exists - $cModel_pid");
+  }
+
+  // Orlando Collection.  Create the Orlando collection object.
+  if ( !islandora_object_load($collection_pid) ) 
+  {
+    create_collection($collection_pid);
+    drush_print("Orlando Collection added - $collection_pid");
+  }
+  else
+  {
+    drush_print("Orlando collection already exists - $collection_pid");
+  }
+  */
+
+
 
 }
 
@@ -60,12 +119,20 @@ function drush_cwrc_migration_batch_ingest_entities(
  *   name of the orlando directory.
  */
 function drush_cwrc_migration_batch_ingest_events (
-	$path_to_file
-	, $mods_directory
+    $path_to_file
+    , $mods_directory
     , $orlando_directory
   ) 
 {
   drush_print("CWRC Events Migration batch");
+
+  // Include modules.
+  $connection = null;
+  migration_init($connection);
+
+  // Display the user.
+  drush_print("User: " . $connection->connection->username);
+
 }
 
 /** 
@@ -79,12 +146,20 @@ function drush_cwrc_migration_batch_ingest_events (
  *   name of the orlando directory.
  */
 function drush_cwrc_migration_batch_ingest_documentation (
-	$path_to_file
-	, $mods_directory
+    $path_to_file
+    , $mods_directory
     , $orlando_directory
   ) 
 {
   drush_print("CWRC Documentation Migration batch");
+
+  // Include modules.
+  $connection = null;
+  migration_init($connection);
+
+  // Display the user.
+  drush_print("User: " . $connection->connection->username);
+
 }
 
 /** 
@@ -98,12 +173,20 @@ function drush_cwrc_migration_batch_ingest_documentation (
  *   name of the orlando directory.
  */
 function drush_cwrc_migration_batch_ingest_bibliography (
-	$path_to_file
-	, $mods_directory
+    $path_to_file
+    , $mods_directory
     , $orlando_directory
   ) 
 {
   drush_print("CWRC bibligraphy Migration batch");
+
+  // Include modules.
+  $connection = null;
+  migration_init($connection);
+
+  // Display the user.
+  drush_print("User: " . $connection->connection->username);
+
 }
 
 /**
@@ -125,7 +208,7 @@ function drush_cwrc_migration_batch_ingest($path_to_file, $mods_directory, $orla
 
   // Include modules.
   $connection = null;
-  init($connection);
+  migration_init($connection);
 
   // Display the user.
   drush_print("User: " . $connection->connection->username);
@@ -144,7 +227,7 @@ function drush_cwrc_migration_batch_ingest($path_to_file, $mods_directory, $orla
   $collection_pid = 'cwrc:orlandoCollection';
   if ( !islandora_object_load($collection_pid)) 
   {
-    create_collection($collection_pid)
+    create_collection($collection_pid);
     drush_print("Orlando Collection added - $collection_pid");
   }
   else
@@ -219,7 +302,7 @@ function drush_cwrc_migration_batch_ingest($path_to_file, $mods_directory, $orla
 
     // Create the Policy datastream.
     create_DS_POLICY(
-      '/xml/cwrc_migration_batch_XACML_Policy_Stream.xml'i
+      '/xml/cwrc_migration_batch_XACML_Policy_Stream.xml'
       , $object
     );
 
@@ -276,12 +359,12 @@ function drush_cwrc_migration_batch_ingest($path_to_file, $mods_directory, $orla
 
 
 /**
- * CWRC migration batch - init 
+ * CWRC migration batch - migration_init 
  *
  * @param string $connection
  *   tuque connection object
  */
-function init (
+function migration_init (
     &$connection
   )
 {
