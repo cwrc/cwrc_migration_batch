@@ -104,8 +104,107 @@ function drush_cwrc_migration_batch_ingest_entities(
   }
   */
 
+  // setup XSL 
+  // Get the path to the content_to_dc.xsl file.
+  $dc_xslt = "entity_to_dc.xsl";
+  $path_to_xsl_file
+      = drupal_get_path('module', 'cwrc_migration_batch') . $dc_xslt
+      ;
+  $xsl_doc = new DOMDocument();
+  $xsl_doc->load($path_to_xsl_file);
+
+  $xslt_proc = new XSLTProcessor();
+  $xslt_proc->importStylesheet($xsl_doc);
 
 
+  // Set source directory for the content to ingest
+  $orlando_directory = $path_to_file . '/' . $orlando_directory . '/';
+
+  // Open the source direcotry and iterate through every file in the 
+  // directory - one file maps to one Fedora 
+  $src_dir_handle = opendir($orlando_directory);
+
+  // Counter for the number of files to migrate.
+  $file_count = 0;
+  while (FALSE !== ($file_name = readdir($src_dir_handle))) 
+  {
+    drush_print($file_name);
+    // If the file is a directory then continue to next file.
+    if (is_dir($file_name)) {
+      continue;
+    }
+
+    // load XML doc
+    $tmp = $orlando_directory . $file_name;
+    // Load ORLANDO xml from a file.
+    $orlando_xml = file_get_contents($file);
+
+    // build the DC content
+    // Convert MODS to DC.
+    // Transform to DC xml.
+    // Apply the stylesheet.
+    $dc_xml = $xslt_proc->transformToXML($orlando_doc);
+
+    // set object title
+    $dc_xml_dom = new DOMDocument();
+    $dc_xml_dom->loadXML($dc_xml);
+    $dc_title_xpath = new DOMXpath($dc_xml_dom);
+    $title = $dc_title_xpath->query('/oai_dc:dc/oai_dc:dc');
+
+
+    // We need to prepare a new object.
+    $object
+      = islandora_prepare_new_object(
+        "cwrc:$object_name"
+        , $title
+        , array()
+        , array($cModel_pid)
+        , array(
+          array(
+            'relationship' => 'isMemberOfCollection'
+            , 'pid' => "$collection_pid"
+          )
+        )
+      );
+
+
+    // create content datastream
+    $orlando_ds = $object->constructDatastream('CWRC-CONTENT', 'M');
+    $orlando_ds->label = 'ORLANDO Record';
+    $orlando_ds->mimeType = 'text/xml';
+    $orlando_ds->setContentFromString($orlando_xml);
+    $object->ingestDatastream($orlando_ds);
+ 
+    
+    // create DC datastream
+    create_DS_DC($dc_xml, $object);
+
+
+    // Create the Policy datastream.
+    create_DS_POLICY(
+      '/xml/cwrc_migration_batch_XACML_Policy_Stream.xml'
+      , $object
+    );
+
+    // Workflow Datastream.
+    // We want to get all of the responsibilitie tags.
+    // For each responsibility create a workflow element.
+    // Create the MODS datastream.
+    create_DS_workflow($orlando_xml, $object);
+
+    // Store the object.
+    try {
+      islandora_add_object($object);
+      $file_count++;
+      drush_print("cwrc:$object_name was added. #{$file_count} file migrated.");
+    }
+    catch (Exception $e) {
+      drush_print("cwrc:$object_name was not added.");
+      drush_print($e->getMessage());
+    }
+  }
+  drush_print('Migration Complete');
+  drush_print('Number of files migrated: ' . $file_count);
 }
 
 /** 
