@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?xml-model href="http://cwrc.ca/schema/workflow.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>
 <cwrc xmlns="cwrc.ca/workflow">
- <workflow date="2013-09-30" userID="cwrc">
+ <workflow date="2013-09-30T09:15:00-06:00" userID="cwrc">
   <activity category="created" status="c" stamp="cwrc:cre">
-   <note>Extracted from serveral CWRC partner project, checked against CWRC schema, merged, and ingested</note>
+   <note>Extracted from serveral CWRC partner projects, checked against CWRC schema, merged, and ingested</note>
   </activity>
  </workflow>
- <workflow date="2013-09-30" userID="cwrc">
+ <workflow date="2013-09-30T09:15:00-06:00" userID="cwrc">
   <activity category="published" status="c" stamp="cwrc:pub">
   </activity>
  </workflow>
