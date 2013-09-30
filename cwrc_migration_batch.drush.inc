@@ -21,7 +21,7 @@ function cwrc_migration_batch_drush_command() {
   $items['cwrc_migration_batch_ingest_entities'] = array(
     'description' => 'Ingest objects from a zip file',
     'examples' => array(
-      'drush -u 1 cwrc_migration_batch_ingest_entities path_to_directory name_of_mods_directory name_of_orlando_directory collection_pid cModel_pid',
+      'drush -u 1 cwrc_migration_batch_ingest_entities path_to_directory name_of_default_workflow_file_ name_of_orlando_directory collection_pid cModel_pid',
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
@@ -66,7 +66,7 @@ function cwrc_migration_batch_drush_command() {
  */
 function drush_cwrc_migration_batch_ingest_entities(
     $path_to_file
-    , $mods_directory
+    , $workflow_file
     , $orlando_directory
     , $collection_pid
     , $cModel_pid
@@ -116,6 +116,13 @@ function drush_cwrc_migration_batch_ingest_entities(
   $xslt_proc = new XSLTProcessor();
   $xslt_proc->importStylesheet($xsl_doc);
 
+  // setup the default workflow
+  // get the contents of the default workflow for an entity
+  $path_to_workflow_file
+      = drupal_get_path('module', 'cwrc_migration_batch') . $workflow_file
+      ;
+  $workflow_xml = file_get_contents($workflow_file);
+
 
   // Set source directory for the content to ingest
   $orlando_directory = $path_to_file . '/' . $orlando_directory . '/';
@@ -139,23 +146,19 @@ function drush_cwrc_migration_batch_ingest_entities(
     // Load ORLANDO xml from a file.
     $orlando_xml = file_get_contents($file);
 
-    // build the DC content
-    // Convert MODS to DC.
-    // Transform to DC xml.
-    // Apply the stylesheet.
-    $dc_xml = $xslt_proc->transformToXML($orlando_doc);
-
-    // set object title
+        // set object title
     $dc_xml_dom = new DOMDocument();
     $dc_xml_dom->loadXML($dc_xml);
     $dc_title_xpath = new DOMXpath($dc_xml_dom);
     $title = $dc_title_xpath->query('/oai_dc:dc/oai_dc:dc');
 
+    // generate an id for the object
+    $pid = $connection->repository->getnextIdentifier("cwrc", TRUE);
 
     // We need to prepare a new object.
     $object
       = islandora_prepare_new_object(
-        "cwrc:$object_name"
+        $pid 
         , $title
         , array()
         , array($cModel_pid)
@@ -166,6 +169,14 @@ function drush_cwrc_migration_batch_ingest_entities(
           )
         )
       );
+    
+    // build the DC content
+    // Convert MODS to DC.
+    // Transform to DC xml.
+    // Apply the stylesheet.
+    $xslt_proc->setParameter( "", "PID_PARAM", $pid );
+    $dc_xml = $xslt_proc->transformToXML($orlando_doc);
+
 
 
     // create content datastream
@@ -190,7 +201,7 @@ function drush_cwrc_migration_batch_ingest_entities(
     // We want to get all of the responsibilitie tags.
     // For each responsibility create a workflow element.
     // Create the MODS datastream.
-    create_DS_workflow($orlando_xml, $object);
+    create_DS_workflow($workflow_xml, $object);
 
     // Store the object.
     try {

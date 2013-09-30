@@ -15,6 +15,26 @@ function create_DS_workflow(
     , $object
   )
 {
+    // Create the WORKFLOW datastream
+    $workflow_ds = $object->constructDatastream('WORKFLOW', 'M');
+    $workflow_ds->label = 'WORKFLOW Record';
+    $workflow_ds->mimeType = 'text/xml';
+    $workflow_ds->setContentFromString($xml);
+    $object->ingestDatastream($workflow_ds);
+}
+
+
+/**
+* Create workflow datastream in the given object
+*
+* @param string $xml
+* @param $object
+*/
+function create_DS_workflow_from_Source (
+    $xml
+    , $object
+  )
+{
     // Workflow datastream
     // Load $orlando_xml
     $orlando_xml_doc = new DomDocument();
@@ -32,12 +52,7 @@ function create_DS_workflow(
     $crwc_doc->appendChild($cwrc_element);
     $cwrc_xml = $crwc_doc->saveXML($crwc_doc);
 
-    // Create the WORKFLOW datastream
-    $workflow_ds = $object->constructDatastream('WORKFLOW', 'M');
-    $workflow_ds->label = 'WORKFLOW Record';
-    $workflow_ds->mimeType = 'text/xml';
-    $workflow_ds->setContentFromString($cwrc_xml);
-    $object->ingestDatastream($workflow_ds);
+    create_DS_workflow($workflow_xml, $object);
 
 }
 

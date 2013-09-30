@@ -87,12 +87,25 @@ function create_DS_DC (
     $dc_xml = $xslt_proc->transformToXML($xml_doc);
 
     // Create the DC datastream.
+    create_DC_DC($dc_xml, $object);
+}
+
+
+/**
+* Create DC datastream in the givin object
+*
+* @param string $xml_doc
+* @param $object
+*/
+function create_DS_DC (
+    // Create the DC datastream.
     $dc_ds = $object->constructDatastream('DC', 'M');
     $dc_ds->label = 'DC Record';
     $dc_ds->mimeType = 'text/xml';
     $dc_ds->setContentFromString($dc_xml);
     $object->ingestDatastream($dc_ds);
 }
+
 
 
 /**
