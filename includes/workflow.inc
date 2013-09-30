@@ -1,13 +1,15 @@
+/** 
+* MRB -- Fri 27-Sep-2013
+* Modified the PHP code to reflect changes in the workflow schema (the workflow schema
+* is located at http://cwrc.ca/schema/workflow.rng); also added to the comments
+*/
 
 /**
 * Create workflow datastream in the given object
 *
 * @param string $xml
 * @param $object
-*
-* MRB: Fri 27-Sep-2013: modified the code to reflect changes in the workflow schema
 */
-
 function create_DS_workflow(
     $xml
     , $object
