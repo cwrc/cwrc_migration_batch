@@ -1,33 +1,36 @@
 
 /**
-* Create wordflow datastream in the givin object
+* Create workflow datastream in the given object
 *
 * @param string $xml
 * @param $object
+*
+* MRB: Fri 27-Sep-2013: modified the code to reflect changes in the workflow schema
 */
+
 function create_DS_workflow(
     $xml
     , $object
   )
 {
-    // Workflow Datastream.
-    // Load $orlando_xml.
+    // Workflow datastream
+    // Load $orlando_xml
     $orlando_xml_doc = new DomDocument();
     $orlando_xml_doc->loadXML($xml);
 
-    // We want to get all of the responsibilitie tags.
+    // We want to get all of the responsibility tags
     $responsibility_tags = $orlando_xml_doc->getElementsByTagName('RESPONSIBILITY');
 
     $crwc_doc  = new DomDocument();
     $cwrc_element = $crwc_doc->createElement('cwrc');
-    // For each responsibility create a workflow element.
+    // For each responsibility create a workflow element
     foreach ($responsibility_tags as $responsibility) {
       $cwrc_element->appendChild(create_workflow_element($crwc_doc, $responsibility));
     }
     $crwc_doc->appendChild($cwrc_element);
     $cwrc_xml = $crwc_doc->saveXML($crwc_doc);
 
-    // Create the MODS datastream.
+    // Create the WORKFLOW datastream
     $workflow_ds = $object->constructDatastream('WORKFLOW', 'M');
     $workflow_ds->label = 'WORKFLOW Record';
     $workflow_ds->mimeType = 'text/xml';
@@ -37,7 +40,7 @@ function create_DS_workflow(
 }
 
 /**
- * Create_workflow_element.
+ * Create the workflow element
  *
  * @param DomDocument $doc
  *   The cwrc document
@@ -47,45 +50,43 @@ function create_DS_workflow(
  */
 function create_workflow_element($doc, $responsibility) {
 
-  // Create the workflow element/
+  // Create the workflow element
   $workflow_element = $doc->createElement('workflow');
 
-  // Human Tag.
-  $human_element = $doc->createElement('human');
+  // Set the userID attribute
   $user_id = $responsibility->getAttributeNode('RESP')->value;
-  // Set the user Id.
-  $human_element->setAttribute('userID', $user_id);
+  $workflow_element->setAttribute('userID', $user_id);
 
+  // Set the date attribute
   $date_tag = $responsibility->getElementsByTagName('DATE');
   $date = $date_tag->item(0)->getAttribute('VALUE');
-  // Set the user Id.
-  $human_element->setAttribute('date', $date);
+  $workflow_element->setAttribute('date', $date);
 
-  // Activity Tag.
+  // Create the activity element
   $activity_element = $doc->createElement('activity');
+
+  // Set the category attribute
   $activity_category = get_activity_category($responsibility->getAttribute('WORKSTATUS'));
-  // Set the category.
   $activity_element->setAttribute('category', $activity_category);
 
-  // Set the status.
+  // Set the status attribute
   $status = strtolower($responsibility->getAttribute('WORKVALUE'));
   $activity_element->setAttribute('status', $status);
 
-  // Set the stamp.
+  // Set the stamp attribute
   $stamp = get_stamp($responsibility->getAttribute('WORKSTATUS'));
   $activity_element->setAttribute('stamp', $stamp);
 
-  // Notes Tag.
-  $notes_element = $doc->createElement('note');
+  // Create the note element
+  $note_element = $doc->createElement('note');
   $item_tag = $responsibility->getElementsByTagName('ITEM');
   if ($item_tag->length > 0) {
-    $notes_element->nodeValue = htmlspecialchars($item_tag->item(0)->nodeValue);
+    $note_element->nodeValue = htmlspecialchars($item_tag->item(0)->nodeValue);
   }
 
-  // Build the human element.
-  $human_element->appendChild($activity_element);
-  $human_element->appendChild($notes_element);
-  $workflow_element->appendChild($human_element);
+  // Build the workflow element tree
+  $activity_element->appendChild($note_element);
+  $workflow_element->appendChild($activity_element);
 
   return $workflow_element;
 
@@ -93,7 +94,7 @@ function create_workflow_element($doc, $responsibility) {
 
 
 /**
- * Get activity category.
+ * Get the activity category attribute value
  *
  * @param string $workstatus
  *   The workstatus of the responsibility
@@ -118,9 +119,9 @@ function get_activity_category($workstatus) {
 
 
 /**
- * Create activity category map.
+ * Create an activity category map
  *
- * Create a map for the responsibility workstatus to crwc activity category.
+ * Create a map for the responsibility workstatus to crwc activity category
  */
 function create_activity_category_map() {
 
@@ -145,7 +146,7 @@ function create_activity_category_map() {
 }
 
 /**
- * Get stamp.
+ * Get the stamp attribute value
  *
  * @param string $workstatus
  *   The workstatus of the responsibility
@@ -170,9 +171,9 @@ function get_stamp($workstatus) {
 
 
 /**
- * Create stamp map.
+ * Create a stamp map
  *
- * Create a map for the responsibility workstatus to crwc stamp.
+ * Create a map for the responsibility workstatus to crwc stamp
  */
 function create_stamp_map() {
 
