@@ -12,6 +12,7 @@
   * JCA
   * Mon 30-Sep-2013
   * given a CWRC entity - person, organization, or title - output a DC format datastream
+  * designed to work with 1 entity per file
   -->
 
   <xsl:output encoding="UTF-8" method="xml" indent="yes" omit-xml-declaration="no" />
@@ -26,7 +27,7 @@
   <!--
   * build DC
   -->
-  <xsl:template match="/cwrc/entity | /mods:modsCollection/mods:mods">
+  <xsl:template match="/cwrc/entity | /mods:modsCollection/mods:mods | /mods:mods">
     <oai_dc:dc xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd" >
       <dc:title>
         <xsl:call-template name="GET_DC_TITLE" />
@@ -42,22 +43,7 @@
   * select the appropriate DC title template
   -->
   <xsl:template name="GET_DC_TITLE">
-
-    <xsl:choose>
-      <xsl:when test="entity/person">
-        <xsl:call-template name="GET_DC_TITLE-ENTITY_PERSON" />
-      </xsl:when>
-      <xsl:when test="entity/organization">
-        <xsl:call-template name="GET_DC_TITLE-ENTITY_ORGANIZATION" />
-      </xsl:when>
-      <xsl:when test="mods:mods">
-        <xsl:call-template name="GET_DC_TITLE-ENTITY_TITLE" />
-      </xsl:when>
-      <xsl:otherwise> 
-        <xsl:text>zzzz ERROR unknown Type</xsl:text>
-      </xsl:otherwise >
-    </xsl:choose>
-
+   <xsl:apply-templates select="person | organization | mods:titleInfo" mode="entity_dc_title" />
   </xsl:template>
 
 
@@ -67,7 +53,7 @@
   * over the identity/preferredForm/namePart[@partType="forename"] concatenated with the identity/preferredForm/namePart[@partType="surname"]
   * over the identity/preferredForm/namePart
   -->
-  <xsl:template name="GET_DC_TITLE-ENTITY_PERSON">
+  <xsl:template match="person" mode="entity_dc_title">
 
     <xsl:choose>
       <!-- displayLabel -->
@@ -102,7 +88,7 @@
   * privelege identity/displayLabel over the identity/preferredForm/namePart
   * Note: all organization entities appear to use the <namePart> element for the organization name, with no organization entities using the <displayLabel> element
   -->
-  <xsl:template name="GET_DC_TITLE-ENTITY_ORGANIZATION">
+ <xsl:template  match="organization" mode="entity_dc_title">
 
     <xsl:choose>
       <!-- displayLabel -->
@@ -123,8 +109,8 @@
   <!--
   * build the DC title - Title entity
   -->
-  <xsl:template name="GET_DC_TITLE-ENTITY_TITLE">
-    <xsl:value-of select="mods:titleInfo/mods:title"/>
+ <xsl:template match="mods:titleInfo" mode="entity_dc_title">
+    <xsl:value-of select="mods:title"/>
   </xsl:template>
 
 </xsl:stylesheet>
