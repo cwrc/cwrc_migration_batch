@@ -110,7 +110,17 @@
   * build the DC title - Title entity
   -->
  <xsl:template match="mods:titleInfo" mode="entity_dc_title">
-    <xsl:value-of select="mods:title"/>
+    <xsl:choose>
+      <xsl:when test="mods:title[not(@type)]">
+        <xsl:value-of select="mods:title[not(@type)]"/>
+      </xsl:when>
+      <xsl:when test="mods:title[not(@type) and @usage='primary'] ">
+        <xsl:value-of select="mods:title[not(@type) and @usage='primary']"/>
+      </xsl:when>
+      <xsl:otherwise> 
+        <xsl:text>zzzz ERROR unknown label</xsl:text>
+      </xsl:otherwise >
+    </xsl:choose>
   </xsl:template>
 
 </xsl:stylesheet>
