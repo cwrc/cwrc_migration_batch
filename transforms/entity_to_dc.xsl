@@ -111,11 +111,11 @@
   -->
  <xsl:template match="mods:titleInfo" mode="entity_dc_title">
     <xsl:choose>
-      <xsl:when test="mods:title[not(@type)]">
-        <xsl:value-of select="mods:title[not(@type)]"/>
+     <xsl:when test="not(@type) and mods:title">
+        <xsl:value-of select="mods:title"/>
       </xsl:when>
-      <xsl:when test="mods:title[not(@type) and @usage='primary'] ">
-        <xsl:value-of select="mods:title[not(@type) and @usage='primary']"/>
+      <xsl:when test="not(@type) and @usage='primary' ">
+        <xsl:value-of select="mods:title"/>
       </xsl:when>
       <xsl:otherwise> 
         <xsl:text>zzzz ERROR unknown label</xsl:text>
