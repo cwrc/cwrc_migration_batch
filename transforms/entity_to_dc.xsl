@@ -108,14 +108,19 @@
 
   <!--
   * build the DC title - Title entity
+  * All information for title will come from the following XPath in each MODS record: /mods/titleInfo/title
+  * 
   -->
  <xsl:template match="mods:titleInfo" mode="entity_dc_title">
     <xsl:choose>
-     <xsl:when test="not(@type) and mods:title">
+      <xsl:when test="not(@type) and mods:title">
         <xsl:value-of select="mods:title"/>
       </xsl:when>
-      <xsl:when test="not(@type) and @usage='primary' ">
+      <xsl:when test="not(@type) and @usage='primary' and mods:title ">
         <xsl:value-of select="mods:title"/>
+      </xsl:when>
+     <xsl:when test="@type='alternative' or @type='abbreviated' or @type='translated' or @type='uniform'">
+        <!-- multiple titles, don't use type='alternative' -->
       </xsl:when>
       <xsl:otherwise> 
         <xsl:text>zzzz ERROR unknown label</xsl:text>
