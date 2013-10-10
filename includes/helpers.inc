@@ -1,3 +1,6 @@
+<?php
+
+
 /**
 * Create content model
 *
@@ -6,7 +9,7 @@
 *
 */
 
-function create_collection($pid) {
+function create_collection($pid, $connection) {
   // Orlando Collection.  Create the Orlando collection object.
     $orlando_collection = $connection->repository->constructObject($pid);
     $orlando_collection->owner = 'fedoraAdmin';
@@ -30,7 +33,7 @@ function create_collection($pid) {
 *   PID of the cModel
 *
 */
-function create_cModel($pid) {
+function create_cModel($pid, $connection) {
     $orlando_content_model = $connection->repository->constructObject($pid);
     $orlando_content_model->owner = 'fedoraAdmin';
     $orlando_content_model->label = 'Orlando Content Model';
@@ -65,7 +68,7 @@ function create_DS_MODS (
 *   XSLT to convert from the xml_doc to DC
 * @param $object
 */
-
+/*
 function create_DS_DC (
     $xml_doc
     , $dc_xslt
@@ -87,9 +90,9 @@ function create_DS_DC (
     $dc_xml = $xslt_proc->transformToXML($xml_doc);
 
     // Create the DC datastream.
-    create_DC_DC($dc_xml, $object);
+    create_DC_DS($dc_xml, $object);
 }
-
+*/
 
 /**
 * Create DC datastream in the givin object
@@ -98,6 +101,10 @@ function create_DS_DC (
 * @param $object
 */
 function create_DS_DC (
+    $dc_xml
+    , &$object
+  )
+{
     // Create the DC datastream.
     $dc_ds = $object->constructDatastream('DC', 'M');
     $dc_ds->label = 'DC Record';
@@ -131,4 +138,49 @@ function create_DS_POLICY (
     $policy_ds->writeBackToFedora();
 }
 
+/**
+ * get dc.title from dc
+ *
+ */
+function get_dcTitle_from_dc (
+    $dc_xml
+  )
+{
+   // set object title
+    $dc_xml_dom = new DOMDocument();
+    $dc_xml_dom->loadXML($dc_xml);
+    $dc_title_xpath = new DOMXpath($dc_xml_dom);
+    //$tmp = $dc_title_xpath->query('/oai_dc:dc/dc:title');
+    //$tmp = $dc_title_xpath->query('/srw_dc:dcCollection/srw_dc:dc/dc:title');
+    $tmp = $dc_title_xpath->query('//dc:title');
+
+    $title = $tmp->item(0)->nodeValue;
+
+    return $title;
+
+}
+
+
+
+/**
+ * CWRC setup
+ *
+ **/
+function dc_xslt_setup (
+    $dc_xslt
+    , &$xslt_proc
+    )
+{
+  // setup XSL
+  // Get the path to the content_to_dc.xsl file.
+  $path_to_xsl_file
+      = drupal_get_path('module', 'cwrc_migration_batch') . $dc_xslt
+      ;
+  $xsl_doc = new DOMDocument();
+  $xsl_doc->load($path_to_xsl_file);
+
+  $xslt_proc = new XSLTProcessor();
+  $xslt_proc->importStylesheet($xsl_doc);
+
+}
 

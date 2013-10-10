@@ -1,3 +1,6 @@
+<?php
+
+
 /** 
 * MRB -- Fri 27-Sep-2013
 * Modified the PHP code to reflect changes in the workflow schema (the workflow schema
@@ -39,7 +42,6 @@ function create_DS_workflow_from_Source (
     // Load $orlando_xml
     $orlando_xml_doc = new DomDocument();
     $orlando_xml_doc->loadXML($xml);
-
     // We want to get all of the responsibility tags
     $responsibility_tags = $orlando_xml_doc->getElementsByTagName('RESPONSIBILITY');
 
@@ -52,7 +54,7 @@ function create_DS_workflow_from_Source (
     $crwc_doc->appendChild($cwrc_element);
     $cwrc_xml = $crwc_doc->saveXML($crwc_doc);
 
-    create_DS_workflow($workflow_xml, $object);
+    create_DS_workflow($cwrc_xml, $object);
 
 }
 

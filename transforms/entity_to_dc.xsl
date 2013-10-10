@@ -5,7 +5,7 @@
   xmlns:dc="http://purl.org/dc/elements/1.1/"
   xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/"
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
-  version="2.0"
+  version="1.0"
   >
 
   <!--
@@ -27,7 +27,7 @@
   <!--
   * build DC
   -->
-  <xsl:template match="/cwrc/entity | /mods:modsCollection/mods:mods | /mods:mods">
+  <xsl:template match="/cwrc/entity | /entity | /mods:modsCollection/mods:mods | /mods:mods">
     <oai_dc:dc xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd" >
       <dc:title>
         <xsl:call-template name="GET_DC_TITLE" />

@@ -21,7 +21,7 @@ function cwrc_migration_batch_drush_command() {
   $items['cwrc_migration_batch_ingest_entities'] = array(
     'description' => 'Ingest objects from a zip file',
     'examples' => array(
-      'drush -u 1 cwrc_migration_batch_ingest_entities path_to_directory name_of_default_workflow_file_ name_of_orlando_directory collection_pid cModel_pid',
+      'drush -u 1 cwrc_migration_batch_ingest_entities path_to_directory name_of_default_workflow_file_ name_of_entity_directory collection_pid cModel_pid',
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
@@ -61,13 +61,10 @@ function cwrc_migration_batch_drush_command() {
  *   path to directory where migrated files are located.
  * @param string $mods_directory
  *   name of the mods directory.
- * @param string $orlando_directory
- *   name of the orlando directory.
  */
 function drush_cwrc_migration_batch_ingest_entities(
     $path_to_file
     , $workflow_file
-    , $orlando_directory
     , $collection_pid
     , $cModel_pid
   ) 
@@ -81,79 +78,69 @@ function drush_cwrc_migration_batch_ingest_entities(
   // Display the user.
   drush_print("User: " . $connection->connection->username);
 
-  /*
-  // Orlando Content Model.  Create the Orlando content model.
-  if ( !islandora_object_load($cModel_pid) ) 
-  {
-    create_cModel($tmp_cModel_pid);
-    drush_print("Orlando content model added - $cModel_pid");
-  }
-  else {
-    drush_print("Orlando contentmodel already exists - $cModel_pid");
-  }
-
-  // Orlando Collection.  Create the Orlando collection object.
-  if ( !islandora_object_load($collection_pid) ) 
-  {
-    create_collection($collection_pid);
-    drush_print("Orlando Collection added - $collection_pid");
-  }
-  else
-  {
-    drush_print("Orlando collection already exists - $collection_pid");
-  }
-  */
+  // Content Model.  Create the content model.
+  // Collection.  Create the collection object.
+  rels_setup ( $connection, $cModel_pid, $collection_pid);
 
   // setup XSL 
   // Get the path to the content_to_dc.xsl file.
-  $dc_xslt = "entity_to_dc.xsl";
-  $path_to_xsl_file
-      = drupal_get_path('module', 'cwrc_migration_batch') . $dc_xslt
-      ;
-  $xsl_doc = new DOMDocument();
-  $xsl_doc->load($path_to_xsl_file);
-
-  $xslt_proc = new XSLTProcessor();
-  $xslt_proc->importStylesheet($xsl_doc);
+  $dc_xslt = "/transforms/entity_to_dc.xsl";
+  dc_xslt_setup($dc_xslt, $xslt_proc);
 
   // setup the default workflow
   // get the contents of the default workflow for an entity
   $path_to_workflow_file
       = drupal_get_path('module', 'cwrc_migration_batch') . $workflow_file
       ;
-  $workflow_xml = file_get_contents($workflow_file);
+  $workflow_xml = file_get_contents($path_to_workflow_file);
 
 
   // Set source directory for the content to ingest
-  $orlando_directory = $path_to_file . '/' . $orlando_directory . '/';
+  $cwrc_directory = $path_to_file;
 
   // Open the source direcotry and iterate through every file in the 
   // directory - one file maps to one Fedora 
-  $src_dir_handle = opendir($orlando_directory);
+  $src_dir_handle = opendir($cwrc_directory);
 
   // Counter for the number of files to migrate.
   $file_count = 0;
+  $file_error_count = 0;
   while (FALSE !== ($file_name = readdir($src_dir_handle))) 
   {
+    $pid = null;
+
     drush_print($file_name);
     // If the file is a directory then continue to next file.
     if (is_dir($file_name)) {
       continue;
     }
 
-    // load XML doc
-    $tmp = $orlando_directory . $file_name;
-    // Load ORLANDO xml from a file.
-    $orlando_xml = file_get_contents($file);
-
-        // set object title
-    $dc_xml_dom = new DOMDocument();
-    $dc_xml_dom->loadXML($dc_xml);
-    $dc_title_xpath = new DOMXpath($dc_xml_dom);
-    $title = $dc_title_xpath->query('/oai_dc:dc/oai_dc:dc');
-
     // generate an id for the object
     $pid = $connection->repository->getnextIdentifier("cwrc", TRUE);
+
+    // load XML doc
+    // Load cwrc xml from a file.
+    $tmp = $cwrc_directory . $file_name;
+    $cwrc_xml = file_get_contents($tmp);
+
+    $cwrc_dom = new DOMDocument();
+    $cwrc_dom->load($tmp);
+
+    
+    // build the DC content
+    // Convert entity to DC.
+    // Transform to DC xml.
+    // Apply the stylesheet.
+    $xslt_proc->setParameter( "", "PID_PARAM", $pid );
+    $dc_xml = $xslt_proc->transformToXML($cwrc_dom);
+
+    print ("zzz " . $dc_xml);
+
+    // set object title
+    $title = get_dcTitle_from_dc($dc_xml);
+
+    print("dc:title extracted - \"$title\" \n");
+
 
     // We need to prepare a new object.
     $object
@@ -169,33 +156,18 @@ function drush_cwrc_migration_batch_ingest_entities(
           )
         )
       );
-    
-    // build the DC content
-    // Convert MODS to DC.
-    // Transform to DC xml.
-    // Apply the stylesheet.
-    $xslt_proc->setParameter( "", "PID_PARAM", $pid );
-    $dc_xml = $xslt_proc->transformToXML($orlando_doc);
-
 
 
     // create content datastream
-    $orlando_ds = $object->constructDatastream('CWRC-CONTENT', 'M');
-    $orlando_ds->label = 'ORLANDO Record';
-    $orlando_ds->mimeType = 'text/xml';
-    $orlando_ds->setContentFromString($orlando_xml);
-    $object->ingestDatastream($orlando_ds);
+    $cwrc_ds = $object->constructDatastream('CWRC-CONTENT', 'M');
+    $cwrc_ds->label = 'CWRC Record';
+    $cwrc_ds->mimeType = 'text/xml';
+    $cwrc_ds->setContentFromString($cwrc_xml);
+    $object->ingestDatastream($cwrc_ds);
  
     
     // create DC datastream
     create_DS_DC($dc_xml, $object);
-
-
-    // Create the Policy datastream.
-    create_DS_POLICY(
-      '/xml/cwrc_migration_batch_XACML_Policy_Stream.xml'
-      , $object
-    );
 
     // Workflow Datastream.
     // We want to get all of the responsibilitie tags.
@@ -203,92 +175,65 @@ function drush_cwrc_migration_batch_ingest_entities(
     // Create the MODS datastream.
     create_DS_workflow($workflow_xml, $object);
 
+    // Create the Policy datastream.
+//    if ( $policy != null && $policy!="NONE" ) 
+//    {
+//      create_DS_POLICY(
+//        $policy 
+//        , $object
+//      );
+//    }
+
     // Store the object.
     try {
       islandora_add_object($object);
       $file_count++;
-      drush_print("cwrc:$object_name was added. #{$file_count} file migrated.");
+      drush_print("pid=$pid title=\"$title\" was added. #{$file_count} file migrated.");
     }
     catch (Exception $e) {
-      drush_print("cwrc:$object_name was not added.");
+      drush_print("pid=$pid title=\"$title\" was not added.");
+      $file_error_count++;
       drush_print($e->getMessage());
     }
+
   }
   drush_print('Migration Complete');
   drush_print('Number of files migrated: ' . $file_count);
-}
-
-/** 
- * CWRC migration batch - events Orlando
- *
- * @param string $path_to_file
- *   path to directory where migrated files are located.
- * @param string $mods_directory
- *   name of the mods directory.
- * @param string $orlando_directory
- *   name of the orlando directory.
- */
-function drush_cwrc_migration_batch_ingest_events (
-    $path_to_file
-    , $mods_directory
-    , $orlando_directory
-  ) 
-{
-  drush_print("CWRC Events Migration batch");
-
-  // Include modules.
-  $connection = null;
-  migration_init($connection);
-
-  // Display the user.
-  drush_print("User: " . $connection->connection->username);
-
-}
-
-/** 
- * CWRC migration batch - documentation Orlando
- *
- * @param string $path_to_file
- *   path to directory where migrated files are located.
- * @param string $mods_directory
- *   name of the mods directory.
- * @param string $orlando_directory
- *   name of the orlando directory.
- */
-function drush_cwrc_migration_batch_ingest_documentation (
-    $path_to_file
-    , $mods_directory
-    , $orlando_directory
-  ) 
-{
-  drush_print("CWRC Documentation Migration batch");
-
-  // Include modules.
-  $connection = null;
-  migration_init($connection);
-
-  // Display the user.
-  drush_print("User: " . $connection->connection->username);
+  drush_print('Number of errors: ' . $file_error_count);
 
 }
 
 /** 
  * CWRC migration batch - bibliography Orlando
+ * assumes Orlando bibl have been converted into MODS
+ * workflow is pulled from the legacy Orlando format stored in subdir
  *
  * @param string $path_to_file
  *   path to directory where migrated files are located.
- * @param string $mods_directory
- *   name of the mods directory.
- * @param string $orlando_directory
- *   name of the orlando directory.
+ * @param string $mods_subdir
+ *   sub directory where the MODS records reside
+ * @param string $legacy_subdir
+ *   sub directory where the legacy orlando records reside
+ * @param string $collection_pid
+ *   pid of the collection to add the object to 
+ * @param string $cModel_pid
+ *   pid of the cModel the object belongs to 
+ * @param string $dc_xslt
+ *   location of the DC XSLT transform 
+ * @param string $policy
+ *   location of the Fedora XACML policy 
  */
 function drush_cwrc_migration_batch_ingest_bibliography (
     $path_to_file
-    , $mods_directory
-    , $orlando_directory
+    , $mods_subdir
+    , $legacy_subdir 
+    , $collection_pid
+    , $cModel_pid
+    , $dc_xslt
+    , $policy 
   ) 
 {
-  drush_print("CWRC bibligraphy Migration batch");
+  drush_print("CWRC Bibliography Migration batch");
 
   // Include modules.
   $connection = null;
@@ -297,7 +242,300 @@ function drush_cwrc_migration_batch_ingest_bibliography (
   // Display the user.
   drush_print("User: " . $connection->connection->username);
 
+  // Content Model.  Create the content model.
+  // Collection.  Create the collection object.
+  rels_setup ( $connection, $cModel_pid, $collection_pid);
+
+  // setup XSL 
+  // Get the path to the content_to_dc.xsl file.
+  dc_xslt_setup($dc_xslt, $xslt_proc);
+
+  // Set source directory for the legacy Orlando content
+  $legacy_dir = $path_to_file . "/" . $legacy_subdir . "/"; 
+
+  // Set source directory for the content to ingest
+  $cwrc_directory = $path_to_file . "/" . $mods_subdir . "/";
+
+  // Open the source direcotry and iterate through every file in the 
+  // directory - one file maps to one Fedora 
+  $src_dir_handle = opendir($legacy_dir);
+
+  // Counter for the number of files to migrate.
+  $file_count = 0;
+  $file_error_count = 0;
+  while (FALSE !== ($file_name = readdir($src_dir_handle))) 
+  {
+    $pid = null;
+
+    drush_print($file_name);
+    // If the file is a directory then continue to next file.
+    if (is_dir($file_name)) {
+      continue;
+    }
+
+    // generate an id for the object
+    $pid = $connection->repository->getnextIdentifier("cwrc", TRUE);
+
+    // load XML doc
+    // Load cwrc xml from a file.
+    $tmp = $cwrc_directory . $file_name;
+    $cwrc_xml = file_get_contents($tmp);
+
+    $cwrc_dom = new DOMDocument();
+    $cwrc_dom->load($tmp);
+
+    // load legacy XML doc
+    // Load cwrc xml from a file.
+    $tmp = $legacy_dir . $file_name;
+    $legacy_xml = file_get_contents($tmp);
+
+    
+    // build the DC content
+    // Convert entity to DC.
+    // Transform to DC xml.
+    // Apply the stylesheet.
+    $xslt_proc->setParameter( "", "PID_PARAM", $pid );
+    $dc_xml = $xslt_proc->transformToXML($cwrc_dom);
+
+    print ("zzz " . $dc_xml);
+
+    // set object title
+    $title = get_dcTitle_from_dc($dc_xml);
+
+    print("dc:title extracted - \"$title\" \n");
+
+
+    // We need to prepare a new object.
+    $object
+      = islandora_prepare_new_object(
+        $pid 
+        , $title
+        , array()
+        , array($cModel_pid)
+        , array(
+          array(
+            'relationship' => 'isMemberOfCollection'
+            , 'pid' => "$collection_pid"
+          )
+        )
+      );
+
+
+    // create content datastream
+    $cwrc_ds = $object->constructDatastream('CWRC-CONTENT', 'M');
+    $cwrc_ds->label = 'CWRC Record';
+    $cwrc_ds->mimeType = 'text/xml';
+    $cwrc_ds->setContentFromString($cwrc_xml);
+    $object->ingestDatastream($cwrc_ds);
+ 
+    
+    // create DC datastream
+    create_DS_DC($dc_xml, $object);
+
+    // Workflow Datastream.
+    // We want to get all of the responsibilitie tags.
+    // For each responsibility create a workflow element.
+    // Create the MODS datastream.
+    create_DS_workflow_from_Source($legacy_xml, $object);
+
+    // Create the Policy datastream.
+    if ( $policy != null && $policy!="NONE" ) 
+    {
+      create_DS_POLICY(
+        $policy 
+        , $object
+      );
+    }
+
+    // Store the object.
+    try {
+      islandora_add_object($object);
+      $file_count++;
+      drush_print("pid=$pid title=\"$title\" was added. #{$file_count} file migrated.");
+    }
+    catch (Exception $e) {
+      $file_error_count++;
+      drush_print("pid=$pid title=\"$title\" was not added.");
+      drush_print($e->getMessage());
+    }
+
+  }
+  drush_print('Migration Complete');
+  drush_print('Number of files migrated: ' . $file_count);
+  drush_print('Number of errors: ' . $file_error_count);
+
+
 }
+
+
+/** 
+ * CWRC migration batch - bibliography Orlando
+ * assumes Orlando bibl have been converted into MODS
+ * workflow is pulled from the legacy Orlando format stored in subdir
+ *
+ * @param string $path_to_file
+ *   path to directory where migrated files are located.
+ * @param string $mods_subdir
+ *   sub directory where the MODS records reside
+ * @param string $legacy_subdir
+ *   sub directory where the legacy orlando records reside
+ * @param string $collection_pid
+ *   pid of the collection to add the object to 
+ * @param string $cModel_pid
+ *   pid of the cModel the object belongs to 
+ * @param string $dc_xslt
+ *   location of the DC XSLT transform 
+ * @param string $policy
+ *   location of the Fedora XACML policy 
+ */
+function drush_cwrc_migration_batch_ingest_events (
+    $path_to_file
+    , $mods_subdir
+    , $legacy_subdir 
+    , $collection_pid
+    , $cModel_pid
+    , $dc_xslt
+    , $policy 
+  ) 
+{
+  drush_print("CWRC Event Migration batch");
+
+  // Include modules.
+  $connection = null;
+  migration_init($connection);
+
+  // Display the user.
+  drush_print("User: " . $connection->connection->username);
+
+  // Content Model.  Create the content model.
+  // Collection.  Create the collection object.
+  rels_setup ( $connection, $cModel_pid, $collection_pid);
+
+  // setup XSL 
+  // Get the path to the content_to_dc.xsl file.
+  dc_xslt_setup($dc_xslt, $xslt_proc);
+
+  // Set source directory for the legacy Orlando content
+  $legacy_dir = $path_to_file . "/" . $legacy_subdir . "/"; 
+
+  // Set source directory for the content to ingest
+  $mods_dir = $path_to_file . "/" . $mods_subdir . "/";
+
+  // Open the source direcotry and iterate through every file in the 
+  // directory - one file maps to one Fedora 
+  $src_dir_handle = opendir($legacy_dir);
+
+  // Counter for the number of files to migrate.
+  $file_count = 0;
+  $file_error_count = 0;
+  while (FALSE !== ($file_name = readdir($src_dir_handle))) 
+  {
+    $pid = null;
+
+    drush_print($file_name);
+    // If the file is a directory then continue to next file.
+    if (is_dir($file_name)) {
+      continue;
+    }
+
+    // generate an id for the object
+    $pid = $connection->repository->getnextIdentifier("cwrc", TRUE);
+
+    // load MODS doc
+    // Load MODS xml from a file.
+    $tmp = $mods_dir. $file_name;
+    $mods_xml = file_get_contents($tmp);
+
+    $mods_dom = new DOMDocument();
+    $mods_dom->load($tmp);
+
+    // load legacy XML doc
+    // Load cwrc xml from a file.
+    $tmp = $legacy_dir . $file_name;
+    $legacy_xml = file_get_contents($tmp);
+
+    
+    // build the DC content
+    // Convert MODS to DC.
+    // Transform to DC xml.
+    // Apply the stylesheet.
+    $xslt_proc->setParameter( "", "PID_PARAM", $pid );
+    $dc_xml = $xslt_proc->transformToXML($mods_dom);
+
+    print ("zzz " . $dc_xml);
+
+    // set object title
+    $title = get_dcTitle_from_dc($dc_xml);
+
+    print("dc:title extracted - \"$title\" \n");
+
+
+    // We need to prepare a new object.
+    $object
+      = islandora_prepare_new_object(
+        $pid 
+        , $title
+        , array()
+        , array($cModel_pid)
+        , array(
+          array(
+            'relationship' => 'isMemberOfCollection'
+            , 'pid' => "$collection_pid"
+          )
+        )
+      );
+
+
+    // create content datastream
+    $cwrc_ds = $object->constructDatastream('CWRC-CONTENT', 'M');
+    $cwrc_ds->label = 'CWRC Record';
+    $cwrc_ds->mimeType = 'text/xml';
+    $cwrc_ds->setContentFromString($legacy_xml);
+    $object->ingestDatastream($cwrc_ds);
+ 
+    
+    // create DC datastream
+    create_DS_DC($dc_xml, $object);
+
+    // create DC datastream
+    create_DS_MODS($mods_xml, $object);
+
+    // Workflow Datastream.
+    // We want to get all of the responsibilitie tags.
+    // For each responsibility create a workflow element.
+    // Create the MODS datastream.
+    create_DS_workflow_from_Source($legacy_xml, $object);
+
+    // Create the Policy datastream.
+    if ( $policy != null && $policy!="NONE" ) 
+    {
+      create_DS_POLICY(
+        $policy 
+        , $object
+      );
+    }
+
+    // Store the object.
+    try {
+      islandora_add_object($object);
+      $file_count++;
+      drush_print("pid=$pid title=\"$title\" was added. #{$file_count} file migrated.");
+    }
+    catch (Exception $e) {
+      $file_error_count++;
+      drush_print("pid=$pid title=\"$title\" was not added.");
+      drush_print($e->getMessage());
+    }
+
+  }
+  drush_print('Migration Complete');
+  drush_print('Number of files migrated: ' . $file_count);
+  drush_print('Number of errors: ' . $file_error_count);
+
+}
+
+
+
 
 /**
  * CWRC migration batch.
@@ -352,6 +590,7 @@ function drush_cwrc_migration_batch_ingest($path_to_file, $mods_directory, $orla
   // Open the mods directory.
   $mods = opendir($mods_directory);
   // Counter for the number of files to migrate.
+  $file_error_count = 0;
   $file_count = 0;
   while (FALSE !== ($file_name = readdir($mods))) {
     drush_print($file_name);
@@ -460,11 +699,13 @@ function drush_cwrc_migration_batch_ingest($path_to_file, $mods_directory, $orla
     }
     catch (Exception $e) {
       drush_print("cwrc:$object_name was not added.");
+      $file_error_count++;
       drush_print($e->getMessage());
     }
   }
   drush_print('Migration Complete');
   drush_print('Number of files migrated: ' . $file_count);
+  drush_print('Number of errors: ' . $file_error_count);
 }
 
 
@@ -488,7 +729,37 @@ function migration_init (
 
   // Get the tuque connection.
   $connection = islandora_get_tuque_connection();
-
 }
 
+/**
+ * CWRC setup
+ *
+ **/
+function rels_setup (
+    $connection 
+    , $cModel_pid
+    , $collection_pid
+    )
+{
+  // Content Model.  Create the content model.
+  if ( !islandora_object_load($cModel_pid) )
+  {
+    create_cModel($cModel_pid, $connection);
+    drush_print("content model added - $cModel_pid");
+  }
+  else {
+    drush_print("content model already exists - $cModel_pid");
+  }
+
+  // Collection.  Create the collection object.
+  if ( !islandora_object_load($collection_pid) )
+  {
+    create_collection($collection_pid, $connection);
+    drush_print("Collection added - $collection_pid");
+  }
+  else
+  {
+    drush_print("collection already exists - $collection_pid");
+  }
+}
 
