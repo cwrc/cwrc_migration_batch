@@ -150,6 +150,8 @@ function get_dcTitle_from_dc (
     $dc_xml_dom = new DOMDocument();
     $dc_xml_dom->loadXML($dc_xml);
     $dc_title_xpath = new DOMXpath($dc_xml_dom);
+    $dc_title_xpath->registerNamespace("oai_dc", "http://www.openarchives.org/OAI/2.0/oai_dc/");
+    $dc_title_xpath->registerNamespace("dc", "http://purl.org/dc/elements/1.1/");
     //$tmp = $dc_title_xpath->query('/oai_dc:dc/dc:title');
     //$tmp = $dc_title_xpath->query('/srw_dc:dcCollection/srw_dc:dc/dc:title');
     $tmp = $dc_title_xpath->query('//dc:title');
