@@ -127,12 +127,12 @@ function drush_cwrc_migration_batch_ingest_entities(
     $xslt_proc->setParameter( "", "PID_PARAM", $pid );
     $dc_xml = $xslt_proc->transformToXML($cwrc_dom);
 
-    print ("zzz " . $dc_xml);
+    //print ("zzz " . $dc_xml);
 
     // set object title
     $title = get_dcTitle_from_dc($dc_xml);
 
-    print("dc:title extracted - \"$title\" \n");
+    //print("dc:title extracted - \"$title\" \n");
 
 
     // We need to prepare a new object.
@@ -290,12 +290,12 @@ function drush_cwrc_migration_batch_ingest_bibliography (
     $xslt_proc->setParameter( "", "PID_PARAM", $pid );
     $dc_xml = $xslt_proc->transformToXML($cwrc_dom);
 
-    print ("zzz " . $dc_xml);
+    //print ("zzz " . $dc_xml);
 
     // set object title
     $title = get_dcTitle_from_dc($dc_xml);
 
-    print("dc:title extracted - \"$title\" \n");
+    //print("dc:title extracted - \"$title\" \n");
 
 
     // We need to prepare a new object.
@@ -455,12 +455,12 @@ function drush_cwrc_migration_batch_ingest_events_documentation (
     $xslt_proc->setParameter( "", "PID_PARAM", $pid );
     $dc_xml = $xslt_proc->transformToXML($mods_dom);
 
-    print ("zzz " . $dc_xml);
+    //print ("zzz " . $dc_xml);
 
     // set object title
     $title = get_dcTitle_from_dc($dc_xml);
 
-    print("dc:title extracted - \"$title\" \n");
+    //print("dc:title extracted - \"$title\" \n");
 
 
     // We need to prepare a new object.
@@ -654,12 +654,12 @@ function drush_cwrc_migration_batch_ingest_biography_writing (
     $xslt_proc->setParameter( "", "PID_PARAM", $pid );
     $dc_xml = $xslt_proc->transformToXML($mods_dom);
 
-    print ("zzz " . $dc_xml);
+    //print ("zzz " . $dc_xml);
 
     // set object title
     $title = get_dcTitle_from_dc($dc_xml);
 
-    print("dc:title extracted - \"$title\" \n");
+    //print("dc:title extracted - \"$title\" \n");
 
 
     // We need to prepare a new object.
