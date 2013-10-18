@@ -10,6 +10,9 @@
   <!--
   * given an Orlando event - output a DC format datastream
   * designed to work with 1 event per file
+  *
+  * 2013-10-18 - not used - Orlando events have MODS and used to create DC title
+  * as opposed to CWRC-Content
   -->
 
   <xsl:output encoding="UTF-8" method="xml" indent="yes" omit-xml-declaration="no" />
