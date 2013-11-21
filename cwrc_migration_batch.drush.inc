@@ -11,34 +11,34 @@
 function cwrc_migration_batch_drush_command() {
   $items = array();
   $items['cwrc_migration_batch_ingest_biography_writing'] = array(
-    'description' => 'Ingest objects from a zip file',
+    'description' => 'Ingest objects CWRC',
     'examples' => array(
-      'drush -u 1 cwrc_migration_batch_ingest_biography_writing path_to_directory name_of_mods_directory name_of_orlando_directory',
+      'drush -u 1 cwrc_migration_batch_ingest_biography_writing path_to_directory name_of_mods_directory name_of_orlando_directory collection_pid cModel_pid mods_to_dc_xsl default_XACML_policy_stream',
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
   $items['cwrc_migration_batch_ingest_entities'] = array(
-    'description' => 'Ingest objects from a zip file',
+    'description' => 'Ingest objects CWRC',
     'examples' => array(
-      'drush -u 1 cwrc_migration_batch_ingest_entities path_to_directory name_of_default_workflow_file_ name_of_entity_directory collection_pid cModel_pid',
+      'drush -u 1 cwrc_migration_batch_ingest_entities path_to_directory name_of_default_workflow_file collection_pid cModel_pid content_datascream_dsid content_datascream_label',
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
   $items['cwrc_migration_batch_ingest_events_documentation'] = array(
-    'description' => 'Ingest objects from a zip file',
+    'description' => 'Ingest objects CWRC',
     'examples' => array(
-      'drush -u 1 cwrc_migration_batch_ingest_events path_to_directory name_of_mods_directory name_of_orlando_directory',
+      'drush -u 1 cwrc_migration_batch_ingest_events_documentation path_to_directory name_of_mods_directory name_of_orlando_directory collection_pid cModel_pid mods_to_dc_xsl default_XACML_policy_stream',
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
 
   $items['cwrc_migration_batch_ingest_bibliography'] = array(
-    'description' => 'Ingest objects from a zip file',
+    'description' => 'Ingest objects CWRC',
     'examples' => array(
-      'drush -u 1 cwrc_migration_batch_ingest_bibliography path_to_directory name_of_mods_directory name_of_orlando_directory',
+      'drush -u 1 cwrc_migration_batch_ingest_bibliography path_to_directory name_of_mods_directory name_of_orlando_directory collection_pid cModel_pid mods_to_dc_xsl default_XACML_policy_stream',
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
@@ -52,14 +52,22 @@ function cwrc_migration_batch_drush_command() {
  *
  * @param string $path_to_file
  *   path to directory where migrated files are located.
- * @param string $mods_directory
- *   name of the mods directory.
+ * @param string $collection_pid
+ *   pid of the collection to add the object to 
+ * @param string $cModel_pid
+ *   pid of the cModel the object belongs to 
+ * @param string $content_datastream_dsid
+ *   id of the content datastream (dsid)
+ * @param string $content_datastream_label
+ *   label of the content datastream
  */
 function drush_cwrc_migration_batch_ingest_entities(
     $path_to_file
     , $workflow_file
     , $collection_pid
     , $cModel_pid
+    , $content_datastream_dsid
+    , $content_datastream_label
   ) 
 {
   drush_print("CWRC Entities Migration batch");
@@ -152,8 +160,8 @@ function drush_cwrc_migration_batch_ingest_entities(
 
 
     // create content datastream
-    $cwrc_ds = $object->constructDatastream('CWRC-CONTENT', 'M');
-    $cwrc_ds->label = 'CWRC Record';
+    $cwrc_ds = $object->constructDatastream($content_datastream_dsid, 'M');
+    $cwrc_ds->label = $content_datastream_label;
     $cwrc_ds->mimeType = 'text/xml';
     $cwrc_ds->setContentFromString($cwrc_xml);
     $object->ingestDatastream($cwrc_ds);
@@ -533,6 +541,8 @@ function drush_cwrc_migration_batch_ingest_events_documentation (
  * CWRC migration batch - biography / writing  Orlando
  * assumes Orlando bibl have been converted into MODS
  * workflow is pulled from the legacy Orlando format stored in subdir
+ * the separate biography and writing docs for a person are
+ * linked via RELS-EXT
  *
  * @param string $path_to_file
  *   path to directory where migrated files are located.
