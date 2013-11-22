@@ -58,23 +58,23 @@
     <xsl:choose>
       <!-- displayLabel -->
       <xsl:when test="identity/displayLabel">
-        <xsl:value-of select="identity/displayLabel" />
+        <xsl:value-of select="normalize-space(identity/displayLabel)" />
       </xsl:when>
       <!-- surname and forename -->
       <xsl:when test="identity/preferredForm/namePart/@surname or identity/preferredForm/namePart/@forename">
         <xsl:if test="identity/preferredForm/namePart/@surname">
-          <xsl:value-of select="identity/preferredForm/namePart[partType='surname']" />
+          <xsl:value-of select="normalize-space(identity/preferredForm/namePart[partType='surname'])" />
         </xsl:if>
         <xsl:if test="identity/preferredForm/namePart/@surname and identity/preferredForm/namePart/@forename">
           <xsl:text> </xsl:text>
         </xsl:if>
         <xsl:if test="identity/preferredForm/namePart/@forename">
-          <xsl:value-of select="identity/preferredForm/namePart[type='forename']" />
+          <xsl:value-of select="normalize-space(identity/preferredForm/namePart[type='forename'])" />
         </xsl:if>
       </xsl:when>
       <!-- namePart -->
       <xsl:when test="identity/preferredForm/namePart">
-          <xsl:value-of select="identity/preferredForm/namePart" />
+          <xsl:value-of select="normalize-space(identity/preferredForm/namePart)" />
       </xsl:when>
       <xsl:otherwise> 
         <xsl:text>zzzz ERROR unknown label</xsl:text>
@@ -93,11 +93,11 @@
     <xsl:choose>
       <!-- displayLabel -->
       <xsl:when test="identity/displayLabel">
-        <xsl:value-of select="identity/displayLabel" />
+        <xsl:value-of select="normalize-space(identity/displayLabel)" />
       </xsl:when>
       <!-- namePart -->
       <xsl:when test="identity/preferredForm/namePart">
-          <xsl:value-of select="identity/preferredForm/namePart" />
+          <xsl:value-of select="normalize-space(identity/preferredForm/namePart)" />
       </xsl:when>
       <xsl:otherwise> 
         <xsl:text>zzzz ERROR unknown label</xsl:text>
@@ -114,10 +114,10 @@
  <xsl:template match="mods:titleInfo" mode="entity_dc_title">
     <xsl:choose>
       <xsl:when test="not(@type) and mods:title">
-        <xsl:value-of select="mods:title"/>
+        <xsl:value-of select="normalize-space(mods:title)"/>
       </xsl:when>
       <xsl:when test="not(@type) and @usage='primary' and mods:title ">
-        <xsl:value-of select="mods:title"/>
+        <xsl:value-of select="normalize-space(mods:title)"/>
       </xsl:when>
      <xsl:when test="@type='alternative' or @type='abbreviated' or @type='translated' or @type='uniform'">
         <!-- multiple titles, don't use type='alternative' -->

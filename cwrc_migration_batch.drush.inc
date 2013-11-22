@@ -110,6 +110,11 @@ function drush_cwrc_migration_batch_ingest_entities(
   {
     $pid = null;
 
+    //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
+    // no effect when PHP is running in safe mode
+    // http://php.net/manual/en/function.set-time-limit.php
+    set_time_limit(5);
+
     drush_print($file_name);
     // If the file is a directory then continue to next file.
     if (is_dir($file_name)) {
@@ -267,6 +272,11 @@ function drush_cwrc_migration_batch_ingest_bibliography (
   while (FALSE !== ($file_name = readdir($src_dir_handle))) 
   {
     $pid = null;
+
+    //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
+    // no effect when PHP is running in safe mode
+    // http://php.net/manual/en/function.set-time-limit.php
+    set_time_limit(5);
 
     drush_print($file_name);
     // If the file is a directory then continue to next file.
@@ -432,6 +442,11 @@ function drush_cwrc_migration_batch_ingest_events_documentation (
   while (FALSE !== ($file_name = readdir($src_dir_handle))) 
   {
     $pid = null;
+
+    //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
+    // no effect when PHP is running in safe mode
+    // http://php.net/manual/en/function.set-time-limit.php
+    set_time_limit(5);
 
     drush_print($file_name);
     // If the file is a directory then continue to next file.
@@ -602,6 +617,11 @@ function drush_cwrc_migration_batch_ingest_biography_writing (
   while (FALSE !== ($file_name = readdir($src_dir_handle))) 
   {
     $pid = null;
+
+    //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
+    // no effect when PHP is running in safe mode
+    // http://php.net/manual/en/function.set-time-limit.php
+    set_time_limit(5);
 
     drush_print($file_name);
     // If the file is a directory then continue to next file.
