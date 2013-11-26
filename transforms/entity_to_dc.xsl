@@ -54,22 +54,26 @@
   * over the identity/preferredForm/namePart
   -->
   <xsl:template match="person" mode="entity_dc_title">
-
+    <!-- does a surname exist -->
+    <xsl:variable name="is_surname_present" select="identity/preferredForm/namePart/@partType='surname'" />
+    <!-- does a forename exist -->
+    <xsl:variable name="is_forename_present" select="identity/preferredForm/namePart/@partType='forename'" />
+            
     <xsl:choose>
       <!-- displayLabel -->
       <xsl:when test="identity/displayLabel">
         <xsl:value-of select="normalize-space(identity/displayLabel)" />
       </xsl:when>
       <!-- surname and forename -->
-      <xsl:when test="identity/preferredForm/namePart/@surname or identity/preferredForm/namePart/@forename">
-        <xsl:if test="identity/preferredForm/namePart/@surname">
-          <xsl:value-of select="normalize-space(identity/preferredForm/namePart[partType='surname'])" />
+      <xsl:when test="$is_surname_present or $is_forename_present">
+        <xsl:if test="$is_forename_present">
+          <xsl:value-of select="normalize-space(identity/preferredForm/namePart[@partType='surname']/text())" />
         </xsl:if>
-        <xsl:if test="identity/preferredForm/namePart/@surname and identity/preferredForm/namePart/@forename">
+        <xsl:if test="$is_forename_present and $is_surname_present">
           <xsl:text> </xsl:text>
         </xsl:if>
-        <xsl:if test="identity/preferredForm/namePart/@forename">
-          <xsl:value-of select="normalize-space(identity/preferredForm/namePart[type='forename'])" />
+        <xsl:if test="$is_surname_present">
+          <xsl:value-of select="normalize-space(identity/preferredForm/namePart[@partType='forename']/text())" />
         </xsl:if>
       </xsl:when>
       <!-- namePart -->
@@ -77,7 +81,7 @@
           <xsl:value-of select="normalize-space(identity/preferredForm/namePart)" />
       </xsl:when>
       <xsl:otherwise> 
-        <xsl:text>zzzz ERROR unknown label</xsl:text>
+          <xsl:text>zzzz ERROR unknown label</xsl:text>
       </xsl:otherwise >
     </xsl:choose>
   </xsl:template>
