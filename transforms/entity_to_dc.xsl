@@ -67,13 +67,13 @@
       <!-- surname and forename -->
       <xsl:when test="$is_surname_present or $is_forename_present">
         <xsl:if test="$is_forename_present">
-          <xsl:value-of select="normalize-space(identity/preferredForm/namePart[@partType='surname']/text())" />
+          <xsl:value-of select="normalize-space(identity/preferredForm/namePart[@partType='forename']/text())" />
         </xsl:if>
         <xsl:if test="$is_forename_present and $is_surname_present">
           <xsl:text> </xsl:text>
         </xsl:if>
         <xsl:if test="$is_surname_present">
-          <xsl:value-of select="normalize-space(identity/preferredForm/namePart[@partType='forename']/text())" />
+          <xsl:value-of select="normalize-space(identity/preferredForm/namePart[@partType='surname']/text())" />
         </xsl:if>
       </xsl:when>
       <!-- namePart -->
