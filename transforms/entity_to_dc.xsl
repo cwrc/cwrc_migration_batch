@@ -127,7 +127,7 @@
         <!-- multiple titles, don't use type='alternative' -->
       </xsl:when>
       <xsl:otherwise> 
-        <xsl:text>zzzz ERROR unknown label</xsl:text>
+        <xsl:text>zzzz ERROR unknown label jca</xsl:text>
       </xsl:otherwise >
     </xsl:choose>
   </xsl:template>
