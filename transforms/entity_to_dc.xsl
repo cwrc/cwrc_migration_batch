@@ -13,6 +13,8 @@
   * Mon 30-Sep-2013
   * given a CWRC entity - person, organization, or title - output a DC format datastream
   * designed to work with 1 entity per file
+  *
+  *
   -->
 
   <xsl:output encoding="UTF-8" method="xml" indent="yes" omit-xml-declaration="no" />
@@ -43,7 +45,7 @@
   * select the appropriate DC title template
   -->
   <xsl:template name="GET_DC_TITLE">
-   <xsl:apply-templates select="person | organization | mods:titleInfo" mode="entity_dc_title" />
+   <xsl:apply-templates select="person | organization | mods:titleInfo | place" mode="entity_dc_title" />
   </xsl:template>
 
 
@@ -82,7 +84,7 @@
       </xsl:when>
       <xsl:otherwise> 
           <xsl:text>zzzz ERROR unknown label</xsl:text>
-      </xsl:otherwise >
+      </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
 
@@ -105,7 +107,7 @@
       </xsl:when>
       <xsl:otherwise> 
         <xsl:text>zzzz ERROR unknown label</xsl:text>
-      </xsl:otherwise >
+      </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
 
@@ -127,9 +129,32 @@
         <!-- multiple titles, don't use type='alternative' -->
       </xsl:when>
       <xsl:otherwise> 
-        <xsl:text>zzzz ERROR unknown label jca</xsl:text>
-      </xsl:otherwise >
+        <xsl:text>zzzz ERROR unknown label</xsl:text>
+      </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
+
+
+  <!--
+  * build the DC title - Place entity
+  * Note: all place entities appear to use the <namePart> element for the place name, with no place entities using the <displayLabel> element
+  * 
+  -->
+  <xsl:template  match="place" mode="entity_dc_title">
+    <xsl:choose>
+      <!-- displayLabel -->
+      <xsl:when test="identity/displayLabel">
+        <xsl:value-of select="normalize-space(identity/displayLabel)" />
+      </xsl:when>
+      <!-- namePart -->
+      <xsl:when test="identity/preferredForm/namePart">
+          <xsl:value-of select="normalize-space(identity/preferredForm/namePart)" />
+      </xsl:when>
+      <xsl:otherwise> 
+        <xsl:text>zzzz ERROR unknown label</xsl:text>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
 
 </xsl:stylesheet>
