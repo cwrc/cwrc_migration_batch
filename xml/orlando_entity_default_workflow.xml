@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?xml-model href="http://cwrc.ca/schema/workflow.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>
-<cwrc xmlns="cwrc.ca/workflow">
- <workflow date="2013-09-30T09:15:00-06:00" userID="cwrc">
+<cwrc>
+ <workflow date="2013-09-30" userID="cwrc">
   <activity category="created" status="c" stamp="cwrc:cre">
    <note>Ingested from Orlando Project</note>
   </activity>
  </workflow>
- <workflow date="2013-09-30T09:15:00-06:00" userID="cwrc">
+ <workflow date="2013-09-30" userID="cwrc">
   <activity category="checked" status="c" stamp="cwrc:ckd">
    <note>Approved as part of the Orlando authority list</note>
   </activity>
  </workflow>
- <workflow date="2013-09-30T09:15:00-06:00" userID="cwrc">
+ <workflow date="2013-09-30" userID="cwrc">
   <activity category="published" status="c" stamp="cwrc:pub">
   </activity>
  </workflow>
