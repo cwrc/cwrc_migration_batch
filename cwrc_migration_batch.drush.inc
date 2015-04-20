@@ -21,7 +21,7 @@ function cwrc_migration_batch_drush_command() {
   $items['cwrc_migration_batch_ingest_entities'] = array(
     'description' => 'Ingest objects CWRC',
     'examples' => array(
-      'drush -u 1 cwrc_migration_batch_ingest_entities path_to_directory name_of_default_workflow_file collection_pid cModel_pid content_datascream_dsid content_datascream_label',
+      'drush -u 1 cwrc_migration_batch_ingest_entities path_to_directory name_of_default_workflow_file collection_pid cModel_pid content_datascream_dsid content_datascream_label entity_to_dc_xslt_path',
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
@@ -60,6 +60,8 @@ function cwrc_migration_batch_drush_command() {
  *   id of the content datastream (dsid)
  * @param string $content_datastream_label
  *   label of the content datastream
+ * @param string $entity_to_dc_xslt_path
+ *   path to the cwrc_entities to DC XSLT file
  */
 function drush_cwrc_migration_batch_ingest_entities(
     $path_to_file
@@ -68,8 +70,11 @@ function drush_cwrc_migration_batch_ingest_entities(
     , $cModel_pid
     , $content_datastream_dsid
     , $content_datastream_label
+    , $entity_to_dc_xslt_path
   ) 
 {
+
+  
   drush_print("CWRC Entities Migration batch");
 
   // Include modules.
@@ -85,7 +90,9 @@ function drush_cwrc_migration_batch_ingest_entities(
 
   // setup XSL 
   // Get the path to the content_to_dc.xsl file.
-  $dc_xslt = "/transforms/entity_to_dc.xsl";
+  //$dc_xslt = "/transforms/entity_to_dc.xsl";
+  // ../cwrc-entities/xslt/entity_to_dc.xml
+  $dc_xslt = $entity_to_dc_xslt_path;
   dc_xslt_setup($dc_xslt, $xslt_proc);
 
   // setup the default workflow
@@ -783,6 +790,12 @@ function migration_init (
     &$connection
   )
 {
+  
+  // https://groups.google.com/forum/#!topic/islandora-dev/1KyBnj7DjCQ
+  global $user;
+  drush_print($user->name);
+
+
   // Include modules.
   module_load_include('inc', 'islandora', 'includes/utilities');
   module_load_include('inc', 'cwrc_migration_batch', 'includes/workflow');
@@ -793,6 +806,8 @@ function migration_init (
 
   // Get the tuque connection.
   $connection = islandora_get_tuque_connection();
+  $connection->connection->username = $user->name;
+  $connection->connection->password = $user->pass;
 }
 
 /**

@@ -30,4 +30,8 @@ Download the CWRC Migration Batch module to sites/all/modules/
 drush -u 1 cwrc_migration_batch_ingest path_to_directory name_of_mods_directory name_of_orlando_directory
 
 
+USAGE
+-----
+
+use the entity_to_DC.xslt from the cwrc_entities module
 
