@@ -175,9 +175,9 @@ function dc_xslt_setup (
 {
   // setup XSL
   // Get the path to the content_to_dc.xsl file.
-  $path_to_xsl_file
-      = drupal_get_path('module', 'cwrc_migration_batch') . $dc_xslt
-      ;
+  //$path_to_xsl_file
+  //    = drupal_get_path('module', 'cwrc_migration_batch') . $dc_xslt
+  //    ;
   $xsl_doc = new DOMDocument();
   $xsl_doc->load($path_to_xsl_file);
 

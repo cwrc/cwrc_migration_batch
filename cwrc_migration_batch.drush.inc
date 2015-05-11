@@ -92,7 +92,9 @@ function drush_cwrc_migration_batch_ingest_entities(
   // Get the path to the content_to_dc.xsl file.
   //$dc_xslt = "/transforms/entity_to_dc.xsl";
   // ../cwrc-entities/xslt/entity_to_dc.xml
-  $dc_xslt = $entity_to_dc_xslt_path;
+  $dc_xslt
+      = drupal_get_path('module', 'cwrc_entities') . '/' . $entity_to_dc_xslt_path;
+
   dc_xslt_setup($dc_xslt, $xslt_proc);
 
   // setup the default workflow
@@ -261,6 +263,8 @@ function drush_cwrc_migration_batch_ingest_bibliography (
 
   // setup XSL 
   // Get the path to the content_to_dc.xsl file.
+  $dc_xslt
+      = drupal_get_path('module', 'cwrc_migration_batch') . '/' . $dc_xslt;
   dc_xslt_setup($dc_xslt, $xslt_proc);
 
   // Set source directory for the legacy Orlando content
@@ -431,6 +435,8 @@ function drush_cwrc_migration_batch_ingest_events_documentation (
 
   // setup XSL 
   // Get the path to the content_to_dc.xsl file.
+  $dc_xslt
+      = drupal_get_path('module', 'cwrc_migration_batch') . '/' . $dc_xslt;
   dc_xslt_setup($dc_xslt, $xslt_proc);
 
   // Set source directory for the legacy Orlando content
@@ -606,6 +612,8 @@ function drush_cwrc_migration_batch_ingest_biography_writing (
 
   // setup XSL 
   // Get the path to the content_to_dc.xsl file.
+  $dc_xslt
+      = drupal_get_path('module', 'cwrc_migration_batch') . '/' . $dc_xslt;
   dc_xslt_setup($dc_xslt, $xslt_proc);
 
   // Set source directory for the legacy Orlando content
