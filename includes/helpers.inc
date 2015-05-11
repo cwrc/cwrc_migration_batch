@@ -167,6 +167,8 @@ function get_dcTitle_from_dc (
 /**
  * CWRC setup
  *
+ * dc_xslt assumes drupal_get_path 
+ *   drupal_get_path('module', 'cwrc_migration_batch') . $dc_xslt
  **/
 function dc_xslt_setup (
     $dc_xslt
@@ -175,11 +177,8 @@ function dc_xslt_setup (
 {
   // setup XSL
   // Get the path to the content_to_dc.xsl file.
-  //$path_to_xsl_file
-  //    = drupal_get_path('module', 'cwrc_migration_batch') . $dc_xslt
-  //    ;
   $xsl_doc = new DOMDocument();
-  $xsl_doc->load($path_to_xsl_file);
+  $xsl_doc->load($dc_xslt);
 
   $xslt_proc = new XSLTProcessor();
   $xslt_proc->importStylesheet($xsl_doc);

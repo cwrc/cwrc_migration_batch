@@ -93,8 +93,8 @@ function drush_cwrc_migration_batch_ingest_entities(
   //$dc_xslt = "/transforms/entity_to_dc.xsl";
   // ../cwrc-entities/xslt/entity_to_dc.xml
   $dc_xslt
-      = drupal_get_path('module', 'cwrc_entities') . '/' . $entity_to_dc_xslt_path;
-
+    = drupal_get_path('module', 'cwrc_entities') . '/' . $entity_to_dc_xslt_path;
+  drush_print("XSLT DC: " . $dc_xslt);
   dc_xslt_setup($dc_xslt, $xslt_proc);
 
   // setup the default workflow
@@ -102,6 +102,7 @@ function drush_cwrc_migration_batch_ingest_entities(
   $path_to_workflow_file
       = drupal_get_path('module', 'cwrc_migration_batch') . $workflow_file
       ;
+  drush_print("XSLT Workflow: " . $path_to_workflow_file);
   $workflow_xml = file_get_contents($path_to_workflow_file);
 
 
