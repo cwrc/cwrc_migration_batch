@@ -43,6 +43,16 @@ function cwrc_migration_batch_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
+
+  $items['cwrc_migration_batch_export_book'] = array(
+    'description' => 'Export book objects objects CWRC',
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_export_book path_to_list_of_book_PIDs destination_path',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
+
+
   return $items;
 }
 
@@ -850,4 +860,82 @@ function rels_setup (
     drush_print("collection already exists - $collection_pid");
   }
 }
+
+
+/**
+ * CWRC export batch - book objects
+ *
+ * $path_to_list_of_book_PIDs
+ *  path to the list of book PIDs to export
+ * $destination_path
+ *  path to save the results
+ */
+function drush_cwrc_migration_batch_export_book (
+  $path_to_list_of_book_PIDs
+  , $destination_path
+  )
+{
+  drush_print("CWRC Export Book Batch");
+
+  // Include modules.
+  module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
+
+  $connection = null;
+  migration_init($connection);
+
+  // Display the user.
+  drush_print("User: " . $connection->connection->username);
+
+  // open the input file for reading
+  $handle_read = fopen("$path_to_list_of_book_PIDs", "r");
+
+  $handle_write = null;
+
+  // Counter for the number of files to migrate.
+  $file_count = 0;
+  $file_error_count = 0;
+  $line = null;
+  $tmp = null;
+  while ($handle_read && ($line = fgets($handle_read)) !== false)
+  {
+    $pid = trim($line);
+
+    //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
+    // no effect when PHP is running in safe mode
+    // http://php.net/manual/en/function.set-time-limit.php
+    set_time_limit(5);
+
+    drush_print("[".$pid."]");
+
+
+    // export the object.
+    try {
+      $book_object = islandora_object_load($pid);
+      $current_pages = islandora_paged_content_get_pages($book_object);
+      $handle_write = fopen($destination_path . "/" . $book_object->label."-".$pid, 'w+');
+      $file_count++;
+      foreach ($current_pages as $page)
+      {
+        $tmp = null;
+        $tmp = islandora_object_load($page['pid']);
+        fwrite($handle_write, $tmp['OCR']->content);
+        drush_print("page={$page['page']} | label={$page['label']} | pid={$page['pid']} was added. #{$file_count} file exported.");
+      }
+      fclose($handle_write);
+      drush_print("Book pid=$pid was exported. #{$file_count} file exported.");
+    }
+    catch (Exception $e) {
+      $file_error_count++;
+      drush_print("pid=$pid was not added.");
+      drush_print($e->getMessage());
+    }
+
+  }
+  drush_print('Migration Complete');
+  drush_print('Number of files exported: ' . $file_count);
+  drush_print('Number of errors: ' . $file_error_count);
+
+}
+
+
 
