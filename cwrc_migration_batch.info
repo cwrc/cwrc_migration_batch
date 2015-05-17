@@ -3,4 +3,5 @@ description = CWRC migration batch drush script
 package = Islandora
 version = 7.x-dev
 core = 7.x
-dependencies[] = islandora cwrc_entities
+dependencies[] = islandora 
+dependencies[] = cwrc_entities
