@@ -52,6 +52,15 @@ function cwrc_migration_batch_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
+  $items['cwrc_migration_batch_reindex_list'] = array(
+    'description' => 'Solr index objects',
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_reindex_list path_to_list_of_book_PIDs',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
+
+
 
   return $items;
 }
@@ -937,5 +946,69 @@ function drush_cwrc_migration_batch_export_book (
 
 }
 
+
+/**
+ * CWRC reindex list of objects (by PID)
+ *
+ * $path_to_list_of_book_PIDs
+ *  path to the list of book PIDs to export
+ */
+function drush_cwrc_migration_batch_reindex_list(
+  $path_to_list_of_book_PIDs
+  )
+{
+  drush_print("CWRC reindex list ");
+
+  // Include modules.
+
+  $connection = null;
+  migration_init($connection);
+
+  // Display the user.
+  drush_print("User: " . $connection->connection->username);
+
+  // open the input file for reading
+  $handle_read = fopen("$path_to_list_of_book_PIDs", "r");
+
+  $handle_write = null;
+
+  // Counter for the number of files to migrate.
+  $file_count = 0;
+  $file_error_count = 0;
+  $line = null;
+  $tmp = null;
+  while ($handle_read && ($line = fgets($handle_read)) !== false)
+  {
+    $pid = trim($line);
+
+    //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
+    // no effect when PHP is running in safe mode
+    // http://php.net/manual/en/function.set-time-limit.php
+    set_time_limit(5);
+
+    drush_print("[".$pid."]");
+
+
+    // export the object.
+    try {
+      $obj = islandora_object_load($pid);
+      $file_count++;
+      drush_print("Book pid=$pid was exported. #{$file_count} file exported.");
+      drush_print($obj['WORKFLOW']->content);
+      $obj['WORKFLOW']->setContentFromString($obj['WORKFLOW']->content);
+    }
+    catch (Exception $e) {
+      $file_error_count++;
+      drush_print("pid=$pid was not added.");
+      drush_print($e->getMessage());
+    }
+
+    usleep(5000);
+  }
+  drush_print('Migration Complete');
+  drush_print('Number of files: ' . $file_count);
+  drush_print('Number of errors: ' . $file_error_count);
+
+}
 
 
