@@ -45,7 +45,8 @@ function create_DS_workflow_from_Source (
     // We want to get all of the responsibility tags
     $responsibility_tags = $orlando_xml_doc->getElementsByTagName('RESPONSIBILITY');
 
-    $crwc_doc  = new DomDocument();
+    $crwc_doc  = new DomDocument("1.0", "UTF-8");
+    $cwrc_pi = $cwrc_doc->createProcessingInstruction('xml-model', 'type="application/xml" href="http://cwrc.ca/schemas/workflow.rng" schematypens="http://relaxng.org/ns/structure/1.0"');
     $cwrc_element = $crwc_doc->createElement('cwrc');
     // For each responsibility create a workflow element
     foreach ($responsibility_tags as $responsibility) {
