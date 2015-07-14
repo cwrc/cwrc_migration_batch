@@ -664,20 +664,6 @@ function drush_cwrc_migration_batch_ingest_biography_writing (
       continue;
     }
 
-    // Strip out the .xml from the file name and store in the variable.
-    preg_match('/[a-z0-9-_]*/', $file_name, $object_name);
-    // Strip out file name to get type -b(biography) or -w (writable).
-    preg_match('/-[a-z]+/', $file_name, $object_type);
-
-    $object_name = $object_name[0];
-    $object_type = $object_type[0];
-
-    // If the object already exists then continue to next file.
-    if (islandora_object_load("cwrc:$object_name")) {
-      drush_print("object $object_name is already in fedora");
-      continue;
-    }
-
     // generate an id for the object
     $pid = $connection->repository->getnextIdentifier("cwrc", TRUE);
 
