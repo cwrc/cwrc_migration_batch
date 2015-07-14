@@ -730,8 +730,8 @@ function drush_cwrc_migration_batch_ingest_biography_writing (
 
 
     // create content datastream
-    $cwrc_ds = $object->constructDatastream('CWRC-CONTENT', 'M');
-    $cwrc_ds->label = 'CWRC Record';
+    $cwrc_ds = $object->constructDatastream('CWRC', 'M');
+    $cwrc_ds->label = $file_name;
     $cwrc_ds->mimeType = 'text/xml';
     $cwrc_ds->setContentFromString($legacy_xml);
     $object->ingestDatastream($cwrc_ds);
