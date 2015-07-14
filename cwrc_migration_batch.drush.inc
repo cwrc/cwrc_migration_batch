@@ -740,7 +740,7 @@ function drush_cwrc_migration_batch_ingest_biography_writing (
     // create DC datastream
     create_DS_DC($dc_xml, $object);
 
-    // create DC datastream
+    // create MODS datastream
     create_DS_MODS($mods_xml, $object);
 
     // Workflow Datastream.

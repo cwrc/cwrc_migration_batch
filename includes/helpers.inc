@@ -107,7 +107,7 @@ function create_DS_DC (
 {
     // Create the DC datastream.
     $dc_ds = $object->constructDatastream('DC', 'M');
-    $dc_ds->label = 'DC Record';
+    $dc_ds->label = 'Dublin Core Record';
     $dc_ds->mimeType = 'text/xml';
     $dc_ds->setContentFromString($dc_xml);
     $object->ingestDatastream($dc_ds);
