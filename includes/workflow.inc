@@ -45,15 +45,15 @@ function create_DS_workflow_from_Source (
     // We want to get all of the responsibility tags
     $responsibility_tags = $orlando_xml_doc->getElementsByTagName('RESPONSIBILITY');
 
-    $crwc_doc  = new DomDocument("1.0", "UTF-8");
+    $cwrc_doc  = new DomDocument("1.0", "UTF-8");
     $cwrc_pi = $cwrc_doc->createProcessingInstruction('xml-model', 'type="application/xml" href="http://cwrc.ca/schemas/workflow.rng" schematypens="http://relaxng.org/ns/structure/1.0"');
-    $cwrc_element = $crwc_doc->createElement('cwrc');
+    $cwrc_element = $cwrc_doc->createElement('cwrc');
     // For each responsibility create a workflow element
     foreach ($responsibility_tags as $responsibility) {
-      $cwrc_element->appendChild(create_workflow_element($crwc_doc, $responsibility));
+      $cwrc_element->appendChild(create_workflow_element($cwrc_doc, $responsibility));
     }
-    $crwc_doc->appendChild($cwrc_element);
-    $cwrc_xml = $crwc_doc->saveXML($crwc_doc);
+    $cwrc_doc->appendChild($cwrc_element);
+    $cwrc_xml = $cwrc_doc->saveXML($cwrc_doc);
 
     create_DS_workflow($cwrc_xml, $object);
 
@@ -141,7 +141,7 @@ function get_activity_category($workstatus) {
 /**
  * Create an activity category map
  *
- * Create a map for the responsibility workstatus to crwc activity category
+ * Create a map for the responsibility workstatus to cwrc activity category
  */
 function create_activity_category_map() {
 
@@ -193,7 +193,7 @@ function get_stamp($workstatus) {
 /**
  * Create a stamp map
  *
- * Create a map for the responsibility workstatus to crwc stamp
+ * Create a map for the responsibility workstatus to cwrc stamp
  */
 function create_stamp_map() {
 
