@@ -80,6 +80,10 @@ function create_workflow_element($doc, $responsibility) {
   // Set the date attribute
   $date_tag = $responsibility->getElementsByTagName('DATE');
   $date = $date_tag->item(0)->getAttribute('VALUE');
+  if (!isset($date) or $date == "")
+  {
+    $date = date("Y-m-d",strtotime($date_tag->item(0)->nodeValue));
+  }
   $workflow_element->setAttribute('date', $date);
 
   // Create the activity element

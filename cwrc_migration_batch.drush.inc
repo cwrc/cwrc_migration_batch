@@ -537,7 +537,7 @@ function drush_cwrc_migration_batch_ingest_events_documentation (
 
     // create content datastream
     $cwrc_ds = $object->constructDatastream('CWRC-CONTENT', 'M');
-    $cwrc_ds->label = 'CWRC Record';
+    $cwrc_ds->label = 'CWRC Event ' . $pid;
     $cwrc_ds->mimeType = 'text/xml';
     $cwrc_ds->setContentFromString($legacy_xml);
     $object->ingestDatastream($cwrc_ds);
