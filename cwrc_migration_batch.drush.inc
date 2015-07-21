@@ -38,7 +38,7 @@ function cwrc_migration_batch_drush_command() {
   $items['cwrc_migration_batch_ingest_bibliography'] = array(
     'description' => 'Ingest objects CWRC',
     'examples' => array(
-      'drush -u 1 cwrc_migration_batch_ingest_bibliography path_to_directory name_of_mods_directory name_of_orlando_directory collection_pid cModel_pid mods_to_dc_xsl default_XACML_policy_stream',
+      'drush -u 1 cwrc_migration_batch_ingest_bibliography path_to_directory name_of_mods_directory name_of_legacy_directory collection_pid cModel_pid mods_to_dc_xsl default_XACML_policy_stream',
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
@@ -364,8 +364,9 @@ function drush_cwrc_migration_batch_ingest_bibliography (
 
 
     // create content datastream
-    $cwrc_ds = $object->constructDatastream('CWRC-CONTENT', 'M');
-    $cwrc_ds->label = 'CWRC Record';
+    //$cwrc_ds = $object->constructDatastream('CWRC-CONTENT', 'M');
+    $cwrc_ds = $object->constructDatastream('MODS', 'M');
+    $cwrc_ds->label = $file_name;
     $cwrc_ds->mimeType = 'text/xml';
     $cwrc_ds->setContentFromString($cwrc_xml);
     $object->ingestDatastream($cwrc_ds);
