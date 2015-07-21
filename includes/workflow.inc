@@ -47,6 +47,7 @@ function create_DS_workflow_from_Source (
 
     $cwrc_doc  = new DomDocument("1.0", "UTF-8");
     $cwrc_pi = $cwrc_doc->createProcessingInstruction('xml-model', 'type="application/xml" href="http://cwrc.ca/schemas/workflow.rng" schematypens="http://relaxng.org/ns/structure/1.0"');
+    $cwrc_doc->appendChild($cwrc_pi);
     $cwrc_element = $cwrc_doc->createElement('cwrc');
     // For each responsibility create a workflow element
     foreach ($responsibility_tags as $responsibility) {
