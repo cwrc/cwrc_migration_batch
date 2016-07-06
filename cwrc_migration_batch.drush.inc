@@ -26,6 +26,16 @@ function cwrc_migration_batch_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
+
+  $items['cwrc_migration_batch_ingest_cwrc_documents'] = array(
+    'description' => 'Ingest objects - CWRC Documents',
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_ingest_cwrc_documents path_to_directory name_of_default_workflow_file collection_pid cModel_pid content_datascream_dsid content_datascream_label content_to_mods_xslt_path mods_to_dc_xslt_path',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
+
+
   $items['cwrc_migration_batch_ingest_events_documentation'] = array(
     'description' => 'Ingest objects CWRC',
     'examples' => array(
@@ -791,6 +801,203 @@ function drush_cwrc_migration_batch_ingest_biography_writing (
   drush_print('Migration Complete');
   drush_print('Number of files migrated: ' . $file_count);
   drush_print('Number of errors: ' . $file_error_count);
+
+}
+
+/** 
+ * CWRC migration batch - CWRC documents compatible with CWRC-Writer 
+ *
+ * @param string $path_to_file
+ *   path to directory where migrated files are located.
+ * @param string $collection_pid
+ *   pid of the collection to add the object to 
+ * @param string $cModel_pid
+ *   pid of the cModel the object belongs to 
+ * @param string $content_datastream_dsid
+ *   id of the content datastream (dsid)
+ * @param string $content_datastream_label
+ *   label of the content datastream
+ * @param string $entity_to_dc_xslt_path
+ *   path to the cwrc_entities to DC XSLT file
+ * @param string $schema_pid
+ *   PID of the Object to reference for schema and css information 
+ */
+function drush_cwrc_migration_batch_ingest_cwrc_documents(
+    $path_to_file
+    , $workflow_file
+    , $collection_pid
+    , $cModel_pid
+    , $content_datastream_dsid
+    , $content_datastream_label
+    , $content_to_mods_xslt_path
+    , $mods_to_dc_xslt_path
+    , $schema_pid
+  ) 
+{
+
+  
+  drush_print("CWRC documents compatible with CWRC-Writer Migration batch");
+
+  // Include modules.
+  $connection = null;
+  migration_init($connection);
+
+  // Display the user.
+  drush_print("User: " . $connection->connection->username);
+
+  // Content Model.  Create the content model.
+  // Collection.  Create the collection object.
+  rels_setup ( $connection, $cModel_pid, $collection_pid);
+
+  // setup XSL 
+  // Get the path to the mods_to_dc.xsl file.
+  $dc_xslt
+    = drupal_get_path('module', 'cwrc_migration_batch') . $mods_to_dc_xslt_path;
+  drush_print("XSLT DC: " . $dc_xslt);
+  dc_xslt_setup($dc_xslt, $xslt_dc_proc);
+
+  // Get the path to the mods_to_dc.xsl file.
+  $mods_xslt
+    = drupal_get_path('module', 'cwrc_migration_batch') . $content_to_mods_xslt_path;
+  drush_print("XSLT MODS: " . $mods_xslt);
+  dc_xslt_setup($mods_xslt, $xslt_mods_proc);
+
+  // setup the default workflow
+  // get the contents of the default workflow for an entity
+  $path_to_workflow_file
+      = drupal_get_path('module', 'cwrc_migration_batch') . $workflow_file
+      ;
+  drush_print("Workflow: " . $path_to_workflow_file);
+  $workflow_xml = file_get_contents($path_to_workflow_file);
+
+
+  // Set source directory for the content to ingest
+  $cwrc_directory = $path_to_file;
+
+  // Open the source direcotry and iterate through every file in the 
+  // directory - one file maps to one Fedora 
+  $src_dir_handle = opendir($cwrc_directory);
+
+  // Counter for the number of files to migrate.
+  $file_count = 0;
+  $file_error_count = 0;
+  while (FALSE !== ($file_name = readdir($src_dir_handle))) 
+  {
+    $pid = null;
+
+    //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
+    // no effect when PHP is running in safe mode
+    // http://php.net/manual/en/function.set-time-limit.php
+    set_time_limit(5);
+
+    drush_print($file_name);
+    // If the file is a directory then continue to next file.
+    if (is_dir($file_name)) {
+      continue;
+    }
+
+    // generate an id for the object
+    $pid = $connection->repository->getnextIdentifier("cwrc", TRUE);
+
+    // load XML doc
+    // Load cwrc xml from a file.
+    $tmp = $cwrc_directory . $file_name;
+    $cwrc_xml = file_get_contents($tmp);
+
+    $cwrc_dom = new DOMDocument();
+    $cwrc_dom->load($tmp);
+
+    // build the MODS 
+    // Convert content to MODS.
+    // Transform to MODS xml.
+    // Apply the stylesheet.
+    $xslt_mods_proc->setParameter( "", "PID_PARAM", $pid );
+    $mods_xml = $xslt_dc_proc->transformToXML($cwrc_dom);
+
+    //print ("zzz " . $mods_xml);
+ 
+    // build the DC content
+    // Convert MODS to DC.
+    // Transform to DC xml.
+    // Apply the stylesheet.
+    $xslt_dc_proc->setParameter( "", "PID_PARAM", $pid );
+    $dc_xml = $xslt_dc_proc->transformToXML($mods_xml);
+
+    //print ("zzz " . $dc_xml);
+
+    // set object title
+    $title = get_dcTitle_from_dc($dc_xml);
+
+    //print("dc:title extracted - \"$title\" \n");
+
+
+    // We need to prepare a new object.
+    $object
+      = islandora_prepare_new_object(
+        $pid 
+        , $title
+        , array()
+        , array($cModel_pid)
+        , array(
+          array(
+            'relationship' => 'isMemberOfCollection'
+            , 'pid' => "$collection_pid"
+          )
+        )
+      );
+
+
+    // create content datastream
+    $cwrc_ds = $object->constructDatastream($content_datastream_dsid, 'M');
+    $cwrc_ds->label = $content_datastream_label;
+    $cwrc_ds->mimeType = 'text/xml';
+    $cwrc_ds->setContentFromString($cwrc_xml);
+    $object->ingestDatastream($cwrc_ds);
+ 
+    
+    // create DC datastream
+    create_DS_DC($dc_xml, $object);
+
+    // create DC datastream
+    create_DS_MODS($mods_xml, $object);
+
+    // Workflow Datastream.
+    // We want to get all of the responsibilitie tags.
+    // For each responsibility create a workflow element.
+    // Create the MODS datastream.
+    create_DS_workflow($workflow_xml, $object);
+
+    // create relationships
+    $object->relationships->add(FEDORA_RELS_EXT_URI, 'hasSchema', $schema_pid);
+
+    // Create the Policy datastream.
+//    if ( $policy != null && $policy!="NONE" ) 
+//    {
+//      create_DS_POLICY(
+//        $policy 
+//        , $object
+//      );
+//    }
+
+    // Store the object.
+    try {
+      islandora_add_object($object);
+      $file_count++;
+      drush_print("pid=$pid title=\"$title\" was added. #{$file_count} file migrated.");
+    }
+    catch (Exception $e) {
+      drush_print("pid=$pid title=\"$title\" was not added.");
+      $file_error_count++;
+      drush_print($e->getMessage());
+    }
+
+  }
+  drush_print('Migration Complete');
+  drush_print('Number of files migrated: ' . $file_count);
+  drush_print('Number of errors: ' . $file_error_count);
+  // unsure how to properly set policy - come combo of POLICY and RELS-EXT 
+  // datastreams 
+  drush_print("\n Next Steps: set permissions on the Collection and objects");
 
 }
 
