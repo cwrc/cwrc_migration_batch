@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://cwrc.ca/schemas/workflow.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<cwrc>
+    <workflow date="2016-07-06" userID="adminUP">
+        <activity category="published" status="c"> </activity>
+    </workflow>
+</cwrc>
+
+

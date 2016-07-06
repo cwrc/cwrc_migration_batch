@@ -852,20 +852,20 @@ function drush_cwrc_migration_batch_ingest_cwrc_documents(
   // setup XSL 
   // Get the path to the mods_to_dc.xsl file.
   $dc_xslt
-    = drupal_get_path('module', 'cwrc_migration_batch') . $mods_to_dc_xslt_path;
+    = drupal_get_path('module', 'cwrc_migration_batch') .'/'. $mods_to_dc_xslt_path;
   drush_print("XSLT DC: " . $dc_xslt);
   dc_xslt_setup($dc_xslt, $xslt_dc_proc);
 
   // Get the path to the mods_to_dc.xsl file.
   $mods_xslt
-    = drupal_get_path('module', 'cwrc_migration_batch') . $content_to_mods_xslt_path;
+    = drupal_get_path('module', 'cwrc_migration_batch') .'/'. $content_to_mods_xslt_path;
   drush_print("XSLT MODS: " . $mods_xslt);
   dc_xslt_setup($mods_xslt, $xslt_mods_proc);
 
   // setup the default workflow
   // get the contents of the default workflow for an entity
   $path_to_workflow_file
-      = drupal_get_path('module', 'cwrc_migration_batch') . $workflow_file
+      = drupal_get_path('module', 'cwrc_migration_batch') .'/'. $workflow_file
       ;
   drush_print("Workflow: " . $path_to_workflow_file);
   $workflow_xml = file_get_contents($path_to_workflow_file);
@@ -884,6 +884,7 @@ function drush_cwrc_migration_batch_ingest_cwrc_documents(
   while (FALSE !== ($file_name = readdir($src_dir_handle))) 
   {
     $pid = null;
+    $content_datastream_label = $file_name;
 
     //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
     // no effect when PHP is running in safe mode
@@ -903,25 +904,32 @@ function drush_cwrc_migration_batch_ingest_cwrc_documents(
     // Load cwrc xml from a file.
     $tmp = $cwrc_directory . $file_name;
     $cwrc_xml = file_get_contents($tmp);
+    
+    //print ("zzz " . $cwrc_xml . "zzzzzzzzzzzzzz\n");
 
     $cwrc_dom = new DOMDocument();
-    $cwrc_dom->load($tmp);
+    $cwrc_dom->loadXML($cwrc_xml);
+
+    //print_r ("zzz " . $cwrc_dom . "zzzzzzzzzzzzzz\n");
 
     // build the MODS 
     // Convert content to MODS.
     // Transform to MODS xml.
     // Apply the stylesheet.
     $xslt_mods_proc->setParameter( "", "PID_PARAM", $pid );
-    $mods_xml = $xslt_dc_proc->transformToXML($cwrc_dom);
+    $mods_xml = $xslt_mods_proc->transformToXML($cwrc_dom);
 
-    //print ("zzz " . $mods_xml);
+    //print ("zzz " . $mods_xml . "zzzzzzzzzzzzzz\n");
+
+    $mods_dom = new DOMDocument();
+    $mods_dom->loadXML($mods_xml);
  
     // build the DC content
     // Convert MODS to DC.
     // Transform to DC xml.
     // Apply the stylesheet.
     $xslt_dc_proc->setParameter( "", "PID_PARAM", $pid );
-    $dc_xml = $xslt_dc_proc->transformToXML($mods_xml);
+    $dc_xml = $xslt_dc_proc->transformToXML($mods_dom);
 
     //print ("zzz " . $dc_xml);
 
@@ -968,7 +976,7 @@ function drush_cwrc_migration_batch_ingest_cwrc_documents(
     create_DS_workflow($workflow_xml, $object);
 
     // create relationships
-    $object->relationships->add(FEDORA_RELS_EXT_URI, 'hasSchema', $schema_pid);
+    $object->relationships->add(CWRC_RELS_EXT_URI, 'hasSchema', $schema_pid);
 
     // Create the Policy datastream.
 //    if ( $policy != null && $policy!="NONE" ) 
