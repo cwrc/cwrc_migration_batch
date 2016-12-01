@@ -1245,7 +1245,7 @@ function drush_cwrc_migration_batch_reindex_list(
  * linked via RELS-EXT (MODS entity reference)
  *
  */
-function drush_cwrc_migration_batch_ingest_biography_writing () 
+function drush_cwrc_migration_batch_ingest_orlando_biography_writing () 
 {
   drush_print("CWRC Biography / Writing Migration batch version 2.0");
 
@@ -1384,7 +1384,7 @@ function drush_cwrc_migration_batch_ingest_biography_writing ()
     // determine collection based on workflow
     $collection_pid = $collection_pid_non_pub_c;
     $xpathObj = new DOMXpath($content_xml); 
-    $pubCRes = $xpathObj->($xpathStr);
+    $pubCRes = $xpathObj->$xpathStr;
     if (!is_null($pubCRes))
     {
       $collection_pid = $collection_pid_pub_c;
@@ -1392,15 +1392,15 @@ function drush_cwrc_migration_batch_ingest_biography_writing ()
 
     //determine the schema for the object
     $schema_obj = null;
-    $tmpSchema
-    if ($tmpSchema==)
-    {
-      $schema_obj = islandora_object_load($bioSchemaObject);
-    }
-    else if 
-    {
-      $schema_obj = islandora_object_load($writingSchemaObject);
-    }
+    //$tmpSchema
+    //if ($tmpSchema==)
+    //{
+      //$schema_obj = islandora_object_load($bioSchemaObject);
+    //}
+    //else if 
+    //{
+      //$schema_obj = islandora_object_load($writingSchemaObject);
+    //}
 
     // We need to prepare a new object.
     $object
