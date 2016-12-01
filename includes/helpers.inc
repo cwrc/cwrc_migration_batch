@@ -185,3 +185,17 @@ function dc_xslt_setup (
 
 }
 
+/**
+ * XSLT setup
+ *
+ * xslt_file path to the XSLT file to load
+ *   
+ **/
+function xslt_setup (
+    $xslt_file
+    , &$xslt_proc
+    )
+{
+  dc_xslt_setup($xslt_file, $xslt_proc);
+}
+

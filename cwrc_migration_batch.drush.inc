@@ -10,6 +10,7 @@
  */
 function cwrc_migration_batch_drush_command() {
   $items = array();
+
   $items['cwrc_migration_batch_ingest_biography_writing'] = array(
     'description' => 'Ingest objects CWRC',
     'examples' => array(
@@ -70,10 +71,94 @@ function cwrc_migration_batch_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
+  $items['cwrc_migration_batch_ingest_orlando_biography_writing'] = array(
+    'description' => 'Ingest Orlando Biography/Writing objects CWRC',
+    'options' => array(
+      'legacy_dir' => 'path to directory of legacy source material',
+      'xslt_bio_writ_to_v2' => 'convert legacy bio/writ docs to version 2 9converta dates, utf-8)',
+      'xslt_bio_writ_to_mods' => 'path to XSLT to convert biography/writing to mods',
+      'xslt_mods_to_dc' => 'path to XSLT to convert mods to DC',
+      'collection_pid_pub_c' => 'add object to the given collection if PUC-C workflow',
+      'collection_pid_non_pub_c' => 'add object to the given collection if no PUB-C workflow',
+      'cModel' => 'cModel assigments',
+      'schemObject' => 'cModel assigments',
+      'XACML_policy' => 'path to the default XACML policy',
+      'namespace' => 'pid namespace',
+    ),
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_ingest_orlando_biography_writing path_to_directory name_of_mods_directory name_of_orlando_directory collection_pid cModel_pid mods_to_dc_xsl default_XACML_policy_stream',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
 
+ 
 
   return $items;
 }
+
+/**
+ * CWRC migration batch - migration_init 
+ *
+ * @param string $connection
+ *   tuque connection object
+ */
+function migration_init (
+    &$connection
+  )
+{
+  
+  // https://groups.google.com/forum/#!topic/islandora-dev/1KyBnj7DjCQ
+  global $user;
+  drush_print($user->name);
+
+
+  // Include modules.
+  module_load_include('inc', 'islandora', 'includes/utilities');
+  module_load_include('inc', 'cwrc_migration_batch', 'includes/workflow');
+  module_load_include('inc', 'cwrc_migration_batch', 'includes/helpers');
+
+  ini_set('max_execution_time', 3000);
+
+
+  // Get the tuque connection.
+  $connection = islandora_get_tuque_connection();
+  $connection->connection->username = $user->name;
+  $connection->connection->password = $user->pass;
+}
+
+/**
+ * CWRC setup
+ *
+ **/
+function rels_setup (
+    $connection 
+    , $cModel_pid
+    , $collection_pid
+    )
+{
+  // Content Model.  Create the content model.
+  if ( !islandora_object_load($cModel_pid) )
+  {
+    create_cModel($cModel_pid, $connection);
+    drush_print("content model added - $cModel_pid");
+  }
+  else {
+    drush_print("content model already exists - $cModel_pid");
+  }
+
+  // Collection.  Create the collection object.
+  if ( !islandora_object_load($collection_pid) )
+  {
+    create_collection($collection_pid, $connection);
+    drush_print("Collection added - $collection_pid");
+  }
+  else
+  {
+    drush_print("collection already exists - $collection_pid");
+  }
+}
+
+
 
 
 /** 
@@ -1009,70 +1094,6 @@ function drush_cwrc_migration_batch_ingest_cwrc_documents(
 
 }
 
-
-/**
- * CWRC migration batch - migration_init 
- *
- * @param string $connection
- *   tuque connection object
- */
-function migration_init (
-    &$connection
-  )
-{
-  
-  // https://groups.google.com/forum/#!topic/islandora-dev/1KyBnj7DjCQ
-  global $user;
-  drush_print($user->name);
-
-
-  // Include modules.
-  module_load_include('inc', 'islandora', 'includes/utilities');
-  module_load_include('inc', 'cwrc_migration_batch', 'includes/workflow');
-  module_load_include('inc', 'cwrc_migration_batch', 'includes/helpers');
-
-  ini_set('max_execution_time', 300);
-
-
-  // Get the tuque connection.
-  $connection = islandora_get_tuque_connection();
-  $connection->connection->username = $user->name;
-  $connection->connection->password = $user->pass;
-}
-
-/**
- * CWRC setup
- *
- **/
-function rels_setup (
-    $connection 
-    , $cModel_pid
-    , $collection_pid
-    )
-{
-  // Content Model.  Create the content model.
-  if ( !islandora_object_load($cModel_pid) )
-  {
-    create_cModel($cModel_pid, $connection);
-    drush_print("content model added - $cModel_pid");
-  }
-  else {
-    drush_print("content model already exists - $cModel_pid");
-  }
-
-  // Collection.  Create the collection object.
-  if ( !islandora_object_load($collection_pid) )
-  {
-    create_collection($collection_pid, $connection);
-    drush_print("Collection added - $collection_pid");
-  }
-  else
-  {
-    drush_print("collection already exists - $collection_pid");
-  }
-}
-
-
 /**
  * CWRC export batch - book objects
  *
@@ -1212,5 +1233,253 @@ function drush_cwrc_migration_batch_reindex_list(
   drush_print('Number of errors: ' . $file_error_count);
 
 }
+
+
+
+
+/** 
+ * CWRC migration batch - biography / writing  Orlando version 2 - 2016-11-29
+ * assumes MODS and DC generated on the fly 
+ * workflow is pulled from the legacy Orlando format stored in subdir
+ * the separate biography and writing docs for a person are
+ * linked via RELS-EXT (MODS entity reference)
+ *
+ */
+function drush_cwrc_migration_batch_ingest_biography_writing () 
+{
+  drush_print("CWRC Biography / Writing Migration batch version 2.0");
+
+  // path to the input document files 
+  $legacy_dir = drush_get_option('legacy_dir','/tmp/orlando/bio_writ');
+
+  // 
+  $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
+  $xslt_bio_writ_to_v2 = drush_get_option(
+    'xslt_bio_writ_to_v2'
+    , $ext_home . 'xslt/orlando_legacy_to_v2_bio_writing.xsl'
+  );
+  $xslt_bio_writ_to_mods = drush_get_option(
+    'xslt_bio_writ_to_mods'
+    , $ext_home . 'xslt/orlando_bio_writing_TO_mods.xsl'
+  );
+  $xslt_mods_to_dc = drush_get_option(
+    'xslt_mods_to_dc'
+    , libraries_get_path('islandora_cwrc_xslt_library') . '/xslt/mods_to_dc.xsl'
+  );
+  
+  $collection_pid_pub_c = drush_get_option(
+    'collection_pid_pub_c'
+    , 'cwrc:fc271c04-7fd1-46b4-9462-339dbe917c46'
+  );
+  $collection_pid_non_pub_c = drush_get_option(
+    'collection_pid_non_pub_c'
+    , 'cwrc:bf8ba2b7-dbed-440b-9000-88860be1bcc9'
+  );
+  $cModel = drush_get_option(
+    'cModel' , 'cwrc:documentCModel'
+  );
+  $bioSchemaObject = drush_get_option(
+    'bioSchemaObject', 'cwrc:biographySchema'
+  );
+  $writingSchemaObject = drush_get_option(
+    'writingSchemaObject','cwrc:writingSchema'
+  );
+  $XACML_policy = drush_get_option(
+    'XACML_policy', $ext_home . 'xml/orlando_xacml_policy_default.xml'
+  );
+  $namespace = drush_get_option(
+    'namespace', 'orlando'
+  );
+
+
+  // Include modules.
+  $connection = null;
+  migration_init($connection);
+
+  // Display the user.
+  drush_print("User: " . $connection->connection->username);
+
+  
+  // setup XSL 
+  xslt_setup($xslt_bio_writ_to_v2, $bio_writ_to_v2_xslt_proc);
+  xslt_setup($xslt_bio_writ_to_mods, $bio_writ_to_mods_xslt_proc);
+  xslt_setup($xslt_mods_to_dc, $mods_to_dc_xslt_proc);
+
+
+  // xpath to determine if PUB-C Orlando document
+  $xpathStr = "/(BIOGRAPHY|WRITING)/ORLANDOHEADER/REVISIONDESC/RESPONSIBILITY[@WORKSTATUS='REV' and @WORKVALUE='C']";
+
+  // Set source directory for the legacy Orlando content
+  // Open the source direcotry and iterate through every file in the 
+  // directory - one file maps to one Fedora 
+  $src_dir_handle = opendir($legacy_dir);
+
+  // Counter for the number of files to migrate.
+  $file_count = 0;
+  $file_error_count = 0;
+  while (FALSE !== ($file_name = readdir($src_dir_handle))) 
+  {
+    $pid = null;
+
+    //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
+    // no effect when PHP is running in safe mode
+    // http://php.net/manual/en/function.set-time-limit.php
+    set_time_limit(5);
+
+    drush_print($file_name);
+    // If the file is a directory then continue to next file.
+    if (is_dir($file_name)) {
+      continue;
+    }
+
+    // generate an id for the object
+    $pid = $connection->repository->getnextIdentifier($namespace, TRUE);
+
+    // Strip out the .xml from the file name and store in the variable.
+    preg_match('/[a-z0-9-_]*/', $file_name, $object_name);
+    // Strip out file name to get type -b(biography) or -w (writable).
+    preg_match('/-[a-z]?/', $file_name, $object_type);
+
+    $object_name = $object_name[0];
+    $object_type = $object_type[0];
+
+    //$pid = "cwrc:$object_name";
+
+    // If the object already exists then continue to next file.
+    if (islandora_object_load($pid)) {
+      drush_print("object $object_name is already in fedora");
+      continue;
+    }
+
+    // Load xml from a file.
+    $content_dom = new DOMDocument();
+    $content_dom->load($filename);
+
+    // build the version 2.0 of the biography / writing document
+    $content_xml = $bio_writ_to_v2_xslt_proc->transformToXML($content_dom);
+    
+    // Build MODS XML.
+    $content_dom = null;
+    $content_dom = new DOMDocument();
+    $content_dom->loadXML($content_xml);
+    $mods_xml = $bio_writ_to_mods_xslt_proc->transformToXML($content_dom);
+
+    $mods_dom = new DOMDocument();
+    $mods_dom->load($mods_xml);
+
+    // build the DC content
+    // Convert MODS to DC.
+    // Transform to DC xml.
+    // Apply the stylesheet.
+    $xslt_proc->setParameter( "", "PID_PARAM", $pid );
+    $dc_xml = $xslt_proc->transformToXML($mods_dom);
+
+    //print ("zzz " . $dc_xml);
+
+    // set object title
+    $title = get_dcTitle_from_dc($dc_xml);
+
+    //print("dc:title extracted - \"$title\" \n");
+
+    // determine collection based on workflow
+    $collection_pid = $collection_pid_non_pub_c;
+    $xpathObj = new DOMXpath($content_xml); 
+    $pubCRes = $xpathObj->($xpathStr);
+    if (!is_null($pubCRes))
+    {
+      $collection_pid = $collection_pid_pub_c;
+    } 
+
+    //determine the schema for the object
+    $schema_obj = null;
+    $tmpSchema
+    if ($tmpSchema==)
+    {
+      $schema_obj = islandora_object_load($bioSchemaObject);
+    }
+    else if 
+    {
+      $schema_obj = islandora_object_load($writingSchemaObject);
+    }
+
+    // We need to prepare a new object.
+    $object
+      = islandora_prepare_new_object(
+        $pid 
+        , $title
+        , array()
+        , array($cModel_pid)
+        , array(
+          array(
+            'relationship' => 'isMemberOfCollection'
+            , 'pid' => "$collection_pid"
+          )
+        )
+      );
+
+
+    // create content datastream
+    $cwrc_ds = $object->constructDatastream('CWRC', 'M');
+    $cwrc_ds->label = $file_name;
+    $cwrc_ds->mimeType = 'text/xml';
+    $cwrc_ds->setContentFromString($content_xml);
+    $object->ingestDatastream($cwrc_ds);
+ 
+    
+    // create DC datastream
+    create_DS_DC($dc_xml, $object);
+
+    // create MODS datastream
+    create_DS_MODS($mods_xml, $object);
+
+    // Workflow Datastream.
+    // We want to get all of the responsibilitie tags.
+    // For each responsibility create a workflow element.
+    // Create the MODS datastream.
+    create_DS_workflow_from_Source($content_xml, $object);
+
+    // Create the Policy datastream.
+    if ( $policy != null && $policy!="NONE" ) 
+    {
+      create_DS_POLICY($policy, $object);
+    }
+
+    islandora_cwrc_writer_set_document_schema($object, $schema_obj);
+
+    // Store the object.
+    try {
+      islandora_add_object($object);
+      $file_count++;
+      drush_print("pid=$pid title=\"$title\" was added. #{$file_count} file migrated.");
+
+      // add a workflow stamp indicating that the object was ingested
+      $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+      $workflow->addWorkflowStep(
+        $object->id, 
+        new WorkflowItem(
+          WorkflowConst::ACTIVITY,
+          array(
+            "category" => "machine_processed",
+            'stamp' => 'orlando:SUB',
+            'status' => 'C',
+            "note" => "Initial ingest into the CWRC repository.",
+            )
+          )
+        );
+
+    }
+    catch (Exception $e) {
+      $file_error_count++;
+      drush_print("pid=$pid title=\"$title\" was not added.");
+      drush_print($e->getMessage());
+    }
+
+  }
+  drush_print('Migration Complete');
+  drush_print('Number of files migrated: ' . $file_count);
+  drush_print('Number of errors: ' . $file_error_count);
+
+}
+
 
 
