@@ -1307,7 +1307,9 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
 
 
   // xpath to determine if PUB-C Orlando document
-  $xpathStr = "/(BIOGRAPHY|WRITING)/ORLANDOHEADER/REVISIONDESC/RESPONSIBILITY[@WORKSTATUS='REV' and @WORKVALUE='C']";
+  $xpathStrPub = "/(BIOGRAPHY|WRITING)/ORLANDOHEADER/REVISIONDESC/RESPONSIBILITY[@WORKSTATUS='REV' and @WORKVALUE='C']";
+  $xpathStrBio = "/BIOGRAPHY";
+  $xpathStrWriting = "/WRITING";
 
   // Set source directory for the legacy Orlando content
   // Open the source direcotry and iterate through every file in the 
@@ -1384,7 +1386,7 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
     // determine collection based on workflow
     $collection_pid = $collection_pid_non_pub_c;
     $xpathObj = new DOMXpath($content_xml); 
-    $pubCRes = $xpathObj->$xpathStr;
+    $pubCRes = $xpathObj->query($xpathStrPub);
     if (!is_null($pubCRes))
     {
       $collection_pid = $collection_pid_pub_c;
@@ -1392,15 +1394,16 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
 
     //determine the schema for the object
     $schema_obj = null;
-    //$tmpSchema
-    //if ($tmpSchema==)
-    //{
-      //$schema_obj = islandora_object_load($bioSchemaObject);
-    //}
-    //else if 
-    //{
-      //$schema_obj = islandora_object_load($writingSchemaObject);
-    //}
+    $tmpBioSchema = $xpathObj->query($xpathStrBio);
+    if (!is_null($tmpBioSchema))
+    {
+      $schema_obj = islandora_object_load($bioSchemaObject);
+    }
+    $tmpWritingSchema = $xpathObj->query($xpathStrWriting);
+    if (!is_null($tmpWritingSchema))
+    {
+      $schema_obj = islandora_object_load($writingSchemaObject);
+    }
 
     // We need to prepare a new object.
     $object
