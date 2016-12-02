@@ -245,6 +245,8 @@ function drush_cwrc_migration_batch_ingest_entities(
       continue;
     }
 
+    $content_datastream_label = preg_replace('/\(.sgm)$/','.xml', $file_name); 
+
     // generate an id for the object
     $pid = $connection->repository->getnextIdentifier("cwrc", TRUE);
 
@@ -270,7 +272,6 @@ function drush_cwrc_migration_batch_ingest_entities(
     $title = get_dcTitle_from_dc($dc_xml);
 
     //print("dc:title extracted - \"$title\" \n");
-
 
     // We need to prepare a new object.
     $object
