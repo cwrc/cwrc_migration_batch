@@ -245,8 +245,6 @@ function drush_cwrc_migration_batch_ingest_entities(
       continue;
     }
 
-    $content_datastream_label = preg_replace('/\(.sgm)$/','.xml', $file_name); 
-
     // generate an id for the object
     $pid = $connection->repository->getnextIdentifier("cwrc", TRUE);
 
@@ -1257,11 +1255,11 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
   $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
   $xslt_bio_writ_to_v2 = drush_get_option(
     'xslt_bio_writ_to_v2'
-    , $ext_home . 'xslt/orlando_legacy_to_v2_bio_writing.xsl'
+    , $ext_home . 'transforms/orlando_legacy_to_v2_bio_writing.xsl'
   );
   $xslt_bio_writ_to_mods = drush_get_option(
     'xslt_bio_writ_to_mods'
-    , $ext_home . 'xslt/orlando_bio_writing_TO_mods.xsl'
+    , $ext_home . 'transforms/orlando_bio_writing_TO_mods.xsl'
   );
   $xslt_mods_to_dc = drush_get_option(
     'xslt_mods_to_dc'
@@ -1285,8 +1283,8 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
   $writingSchemaObject = drush_get_option(
     'writingSchemaObject','cwrc:writingSchema'
   );
-  $XACML_policy = drush_get_option(
-    'XACML_policy', $ext_home . 'xml/orlando_xacml_policy_default.xml'
+  $policy = drush_get_option(
+    'XACML_policy', $ext_home . 'xml/orlando_default_XACML_Policy_Stream.xml'
   );
   $namespace = drush_get_option(
     'namespace', 'orlando'
@@ -1302,19 +1300,32 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
 
   
   // setup XSL 
-  xslt_setup($xslt_bio_writ_to_v2, $bio_writ_to_v2_xslt_proc);
-  xslt_setup($xslt_bio_writ_to_mods, $bio_writ_to_mods_xslt_proc);
-  xslt_setup($xslt_mods_to_dc, $mods_to_dc_xslt_proc);
+  // http://www.saxonica.com/saxon-c/index.xml#debug
+  //xslt_setup($xslt_bio_writ_to_v2, $bio_writ_to_v2_xslt_proc);
+  //xslt_setup($xslt_bio_writ_to_mods, $bio_writ_to_mods_xslt_proc);
+  //xslt_setup($xslt_mods_to_dc, $mods_to_dc_xslt_proc);
+  
+  $saxonProc = new Saxon\SaxonProcessor();
+  drush_print("XSLT Version: " . $saxonProc->version());
+  
+  $bio_writ_to_v2_xslt_proc = $saxonProc->newXsltProcessor();
+  $bio_writ_to_mods_xslt_proc = $saxonProc->newXsltProcessor();
+  $mods_to_dc_xslt_proc = $saxonProc->newXsltProcessor();
+
+  $bio_writ_to_v2_xslt_proc->compileFromFile($xslt_bio_writ_to_v2);
+  $bio_writ_to_mods_xslt_proc->compileFromFile($xslt_bio_writ_to_mods);
+  $mods_to_dc_xslt_proc->compileFromFile($xslt_mods_to_dc);
 
 
   // xpath to determine if PUB-C Orlando document
-  $xpathStrPub = "/(BIOGRAPHY|WRITING)/ORLANDOHEADER/REVISIONDESC/RESPONSIBILITY[@WORKSTATUS='REV' and @WORKVALUE='C']";
+  $xpathStrPub = "/*/ORLANDOHEADER/REVISIONDESC/RESPONSIBILITY[@WORKSTATUS='REV' and @WORKVALUE='C']";
   $xpathStrBio = "/BIOGRAPHY";
   $xpathStrWriting = "/WRITING";
 
   // Set source directory for the legacy Orlando content
   // Open the source direcotry and iterate through every file in the 
   // directory - one file maps to one Fedora 
+  drush_print("Input: " . $legacy_dir);
   $src_dir_handle = opendir($legacy_dir);
 
   // Counter for the number of files to migrate.
@@ -1339,13 +1350,11 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
     $pid = $connection->repository->getnextIdentifier($namespace, TRUE);
 
     // Strip out the .xml from the file name and store in the variable.
-    preg_match('/[a-z0-9-_]*/', $file_name, $object_name);
+    //preg_match('/[a-z0-9-_]*/', $file_name, $object_name);
     // Strip out file name to get type -b(biography) or -w (writable).
-    preg_match('/-[a-z]?/', $file_name, $object_type);
-
-    $object_name = $object_name[0];
-    $object_type = $object_type[0];
-
+    //preg_match('/-[a-z]?/', $file_name, $object_type);
+    //$object_name = $object_name[0];
+    //$object_type = $object_type[0];
     //$pid = "cwrc:$object_name";
 
     // If the object already exists then continue to next file.
@@ -1353,31 +1362,55 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
       drush_print("object $object_name is already in fedora");
       continue;
     }
+    
+    $content_datastream_label = preg_replace('/(\.sgm)$/','.xml', $file_name); 
+
 
     // Load xml from a file.
-    $content_dom = new DOMDocument();
-    $content_dom->load($filename);
+    $legacy_content = file_get_contents($legacy_dir.$file_name);
+    //drush_print($legacy_content);
+
+    libxml_disable_entity_loader(false);
+    //$content_dom = new DOMDocument();
+    //$content_dom->load($legacy_dir.$file_name);
+    //$content_dom->loadXML($legacy_content);
 
     // build the version 2.0 of the biography / writing document
-    $content_xml = $bio_writ_to_v2_xslt_proc->transformToXML($content_dom);
+    $bio_writ_to_v2_xslt_proc->setSourceFromXdmValue(
+      $saxonProc->parseXmlFromString($legacy_content)
+    );
+    //$bio_writ_to_v2_xslt_proc->setSourceFromXdmValue($content_dom);
+    $v2_content = $bio_writ_to_v2_xslt_proc->transformToString();
     
     // Build MODS XML.
-    $content_dom = null;
-    $content_dom = new DOMDocument();
-    $content_dom->loadXML($content_xml);
-    $mods_xml = $bio_writ_to_mods_xslt_proc->transformToXML($content_dom);
+    //$content_dom = null;
+    //$content_dom = new DOMDocument();
+    //$content_dom->loadXML($v2_content);
+    //$mods_xml = $bio_writ_to_mods_xslt_proc->transformToString($content_dom);
+    $bio_writ_to_mods_xslt_proc->setParameter("PID_PARAM", $saxonProc->createAtomicValue($pid) );
+    $bio_writ_to_mods_xslt_proc->setParameter("param_original_filename", $saxonProc->createAtomicValue($file_name) );
+    $bio_writ_to_mods_xslt_proc->setSourceFromXdmValue(
+      $saxonProc->parseXmlFromString($v2_content)
+    );
+    $mods_xml = $bio_writ_to_mods_xslt_proc->transformToString();
 
-    $mods_dom = new DOMDocument();
-    $mods_dom->load($mods_xml);
+    print ("zzzzzzzzzzzzzzzzzzzz " . $mods_xml);
+
+    //$mods_dom = new DOMDocument();
+    //$mods_dom->load($mods_xml);
 
     // build the DC content
     // Convert MODS to DC.
     // Transform to DC xml.
     // Apply the stylesheet.
-    $xslt_proc->setParameter( "", "PID_PARAM", $pid );
-    $dc_xml = $xslt_proc->transformToXML($mods_dom);
+    //$mods_to_dc_xslt_proc->setParameter( "", "PID_PARAM", $pid );
+    //$dc_xml = $mods_to_dc_xslt_proc->transformToString($mods_dom);
+    $mods_to_dc_xslt_proc->setSourceFromXdmValue(
+      $saxonProc->parseXmlFromString($mods_xml)
+    );
+    $dc_xml = $mods_to_dc_xslt_proc->transformToString();
 
-    //print ("zzz " . $dc_xml);
+    print ("zzzzzzzzzzzzzzzzzzzz " . $dc_xml);
 
     // set object title
     $title = get_dcTitle_from_dc($dc_xml);
@@ -1385,9 +1418,11 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
     //print("dc:title extracted - \"$title\" \n");
 
     // determine collection based on workflow
-    $collection_pid = $collection_pid_non_pub_c;
-    $xpathObj = new DOMXpath($content_xml); 
+    $content_dom = new DOMDocument();
+    $content_dom->load($legacy_content);
+    $xpathObj = new DOMXpath($content_dom); 
     $pubCRes = $xpathObj->query($xpathStrPub);
+    $collection_pid = $collection_pid_non_pub_c;
     if (!is_null($pubCRes))
     {
       $collection_pid = $collection_pid_pub_c;
@@ -1406,6 +1441,8 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
       $schema_obj = islandora_object_load($writingSchemaObject);
     }
 
+
+/*
     // We need to prepare a new object.
     $object
       = islandora_prepare_new_object(
@@ -1423,10 +1460,11 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
 
 
     // create content datastream
+    // with the legacy content
     $cwrc_ds = $object->constructDatastream('CWRC', 'M');
     $cwrc_ds->label = $file_name;
     $cwrc_ds->mimeType = 'text/xml';
-    $cwrc_ds->setContentFromString($content_xml);
+    $cwrc_ds->setContentFromString($legacy_content);
     $object->ingestDatastream($cwrc_ds);
  
     
@@ -1471,12 +1509,33 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
           )
         );
 
+      // update content datastream with version 2.0 of the content
+      // UTF-8 and ISO 8601 dates
+      $object['CWRC']->setContentFromString($v2_content);
+
+      // add a workflow stamp indicating that the object was ingested
+      $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+      $workflow->addWorkflowStep(
+        $object->id, 
+        new WorkflowItem(
+          WorkflowConst::ACTIVITY,
+          array(
+            "category" => "machine_processed",
+            'stamp' => 'orlando:SUB',
+            'status' => 'C',
+            "note" => "Conversion to version 2.0 of the Orlando format (UTF-8 and ISO 8601 dates).",
+            )
+          )
+        );
+
     }
     catch (Exception $e) {
       $file_error_count++;
       drush_print("pid=$pid title=\"$title\" was not added.");
       drush_print($e->getMessage());
     }
+
+*/
 
   }
   drush_print('Migration Complete');
