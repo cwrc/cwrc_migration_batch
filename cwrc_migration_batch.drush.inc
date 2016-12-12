@@ -1254,7 +1254,7 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
   module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
 
 
-  drush_print("CWRC Biography / Writing Migration batch version 2.0");
+  drush_print("Orlando Biography / Writing / Event migration batch version 2.0");
 
   // path to the input document files 
   $legacy_dir = drush_get_option('legacy_dir','/tmp/orlando/bio_writ');
