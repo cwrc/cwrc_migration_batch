@@ -1262,7 +1262,7 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
   // 
   $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
   $xslt_to_v2 = drush_get_option(
-    'orlando_to_v2'
+    'xslt_to_v2'
     , $ext_home . 'transforms/orlando_legacy_to_v2_bio_writing.xsl'
   );
   $xslt_to_mods = drush_get_option(
@@ -1324,8 +1324,8 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
 
   // xpath to determine if PUB-C Orlando document
   $xpathStrPub = "/*/ORLANDOHEADER/REVISIONDESC/RESPONSIBILITY[@WORKSTATUS='REV' and @WORKVALUE='C']";
-  $xpathStrBio = "/BIOGRAPHY";
-  $xpathStrWriting = "/WRITING";
+  //$xpathStrBio = "/BIOGRAPHY";
+  //$xpathStrWriting = "/WRITING";
 
   // Set source directory for the legacy Orlando content
   // Open the source direcotry and iterate through every file in the 
@@ -1425,9 +1425,10 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
 
     // determine collection based on workflow
     $content_dom = new DOMDocument();
-    $content_dom->load($legacy_content);
+    $content_dom->loadXML($content_v2_xml);
     $xpathObj = new DOMXpath($content_dom); 
     $pubCRes = $xpathObj->query($xpathStrPub);
+    var_dump($xpathObj);
     $collection_pid = $collection_pid_non_pub_c;
     if (!is_null($pubCRes))
     {
