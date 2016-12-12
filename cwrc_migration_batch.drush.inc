@@ -72,16 +72,16 @@ function cwrc_migration_batch_drush_command() {
   );
 
   $items['cwrc_migration_batch_ingest_orlando_biography_writing'] = array(
-    'description' => 'Ingest Orlando Biography/Writing objects CWRC',
+    'description' => 'Ingest Orlando Biography/Writing/event objects CWRC',
     'options' => array(
       'legacy_dir' => 'path to directory of legacy source material',
-      'xslt_bio_writ_to_v2' => 'convert legacy bio/writ docs to version 2 9converta dates, utf-8)',
-      'xslt_bio_writ_to_mods' => 'path to XSLT to convert biography/writing to mods',
+      'xslt_to_v2' => 'convert legacy bio/writ docs to version 2 9converta dates, utf-8)',
+      'xslt_to_mods' => 'path to XSLT to convert biography/writing/event to mods',
       'xslt_mods_to_dc' => 'path to XSLT to convert mods to DC',
       'collection_pid_pub_c' => 'add object to the given collection if PUC-C workflow',
       'collection_pid_non_pub_c' => 'add object to the given collection if no PUB-C workflow',
       'cModel_pid' => 'cModel pid assigments',
-      'schemObject' => 'schema object pid assigments',
+      'schema_object' => 'schema object pid assigments',
       'XACML_policy' => 'path to the default XACML policy',
       'namespace' => 'pid namespace',
     ),
@@ -1261,12 +1261,12 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
 
   // 
   $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
-  $xslt_bio_writ_to_v2 = drush_get_option(
-    'xslt_bio_writ_to_v2'
+  $xslt_to_v2 = drush_get_option(
+    'orlando_to_v2'
     , $ext_home . 'transforms/orlando_legacy_to_v2_bio_writing.xsl'
   );
-  $xslt_bio_writ_to_mods = drush_get_option(
-    'xslt_bio_writ_to_mods'
+  $xslt_to_mods = drush_get_option(
+    'xslt_to_mods'
     , $ext_home . 'transforms/orlando_bio_writing_TO_mods.xsl'
   );
   $xslt_mods_to_dc = drush_get_option(
@@ -1285,11 +1285,8 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
   $cModel_pid = drush_get_option(
     'cModel_pid' , 'cwrc:documentCModel'
   );
-  $bioSchemaObject = drush_get_option(
-    'bioSchemaObject', 'cwrc:biographySchema'
-  );
-  $writingSchemaObject = drush_get_option(
-    'writingSchemaObject','cwrc:writingSchema'
+  $schemaObject = drush_get_option(
+    'schema_object', 'cwrc:biographySchema'
   );
   $policy = drush_get_option(
     'XACML_policy', $ext_home . 'xml/orlando_default_XACML_Policy_Stream.xml'
@@ -1316,12 +1313,12 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
   $saxonProc = new Saxon\SaxonProcessor();
   drush_print("XSLT Version: " . $saxonProc->version());
   
-  $bio_writ_to_v2_xslt_proc = $saxonProc->newXsltProcessor();
-  $bio_writ_to_mods_xslt_proc = $saxonProc->newXsltProcessor();
+  $to_v2_xslt_proc = $saxonProc->newXsltProcessor();
+  $to_mods_xslt_proc = $saxonProc->newXsltProcessor();
   $mods_to_dc_xslt_proc = $saxonProc->newXsltProcessor();
 
-  $bio_writ_to_v2_xslt_proc->compileFromFile($xslt_bio_writ_to_v2);
-  $bio_writ_to_mods_xslt_proc->compileFromFile($xslt_bio_writ_to_mods);
+  $to_v2_xslt_proc->compileFromFile($xslt_to_v2);
+  $to_mods_xslt_proc->compileFromFile($xslt_to_mods);
   $mods_to_dc_xslt_proc->compileFromFile($xslt_mods_to_dc);
 
 
@@ -1384,22 +1381,24 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
     //$content_dom->loadXML($legacy_content);
 
     // build the version 2.0 of the biography / writing document
-    $bio_writ_to_v2_xslt_proc->setSourceFromXdmValue(
+    $to_v2_xslt_proc->setSourceFromXdmValue(
       $saxonProc->parseXmlFromString($legacy_content)
     );
     //$bio_writ_to_v2_xslt_proc->setSourceFromXdmValue($content_dom);
-    $content_v2_xml = $bio_writ_to_v2_xslt_proc->transformToString();
+    $content_v2_xml = $to_v2_xslt_proc->transformToString();
     
     // Build MODS XML.
     //$content_dom = null;
     //$content_dom = new DOMDocument();
     //$content_dom->loadXML($v2_content);
     //$mods_xml = $bio_writ_to_mods_xslt_proc->transformToString($content_dom);
-    $bio_writ_to_mods_xslt_proc->setParameter("param_original_filename", $saxonProc->createAtomicValue($file_name) );
-    $bio_writ_to_mods_xslt_proc->setSourceFromXdmValue(
+    $to_mods_xslt_proc->setParameter(
+      "param_original_filename", $saxonProc->createAtomicValue($file_name) 
+      );
+    $to_mods_xslt_proc->setSourceFromXdmValue(
       $saxonProc->parseXmlFromString($content_v2_xml)
-    );
-    $mods_xml = $bio_writ_to_mods_xslt_proc->transformToString();
+      );
+    $mods_xml = $to_mods_xslt_proc->transformToString();
 
     //print ("zzzzzzzzzzzzzzzzzzzz " . $mods_xml);
 
@@ -1436,17 +1435,18 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
     } 
 
     //determine the schema for the object
-    $schema_obj = null;
-    $tmpBioSchema = $xpathObj->query($xpathStrBio);
-    if (!is_null($tmpBioSchema))
-    {
-      $schema_obj = islandora_object_load($bioSchemaObject);
-    }
-    $tmpWritingSchema = $xpathObj->query($xpathStrWriting);
-    if (!is_null($tmpWritingSchema))
-    {
-      $schema_obj = islandora_object_load($writingSchemaObject);
-    }
+    //$schema_obj = null;
+    //$tmpBioSchema = $xpathObj->query($xpathStrBio);
+    //if (!is_null($tmpBioSchema))
+    //{
+      //$schema_obj = islandora_object_load($bioSchemaObject);
+    //}
+    //$tmpWritingSchema = $xpathObj->query($xpathStrWriting);
+    //if (!is_null($tmpWritingSchema))
+    //{
+      //$schema_obj = islandora_object_load($writingSchemaObject);
+    //}
+    $schema_obj = islandora_object_load($schemaObject);
 
 
     // prepare a new Fedora object.
