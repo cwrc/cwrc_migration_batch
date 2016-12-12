@@ -1386,7 +1386,12 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
     );
     //$bio_writ_to_v2_xslt_proc->setSourceFromXdmValue($content_dom);
     $content_v2_xml = $to_v2_xslt_proc->transformToString();
-    
+    $content_v2_xml = str_replace(
+        '<!DOCTYPE ORLANDO [ <!ENTITY % character_entities SYSTEM "http://cwrc.ca/schemas/character_entities.dtd"> %character_entities; ]>\n' 
+        , ""
+        , $content_v2_xml
+      );
+   print($content_v2_xml); 
     // Build MODS XML.
     //$content_dom = null;
     //$content_dom = new DOMDocument();

@@ -29,7 +29,7 @@
     <xsl:output method="xml" encoding="UTF-8" indent="yes" omit-xml-declaration="no"/>
 
     <xsl:template match="/">
-            <xsl:apply-templates select="FREESTANDING_EVENT"/>
+            <xsl:apply-templates />
     </xsl:template>
 
     <!-- Begin main FREESTANDING_EVENT template -->
