@@ -1323,7 +1323,7 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
 
 
   // xpath to determine if PUB-C Orlando document
-  $xpathStrPub = "/*/ORLANDOHEADER/REVISIONDESC/RESPONSIBILITY[@WORKSTATUS='REV' and @WORKVALUE='C']";
+  $xpathStrPub = "/*/ORLANDOHEADER/REVISIONDESC/RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C']";
   //$xpathStrBio = "/BIOGRAPHY";
   //$xpathStrWriting = "/WRITING";
 
@@ -1375,7 +1375,7 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
     $legacy_content = file_get_contents($legacy_dir.$file_name);
     //drush_print($legacy_content);
 
-    libxml_disable_entity_loader(false);
+    //libxml_disable_entity_loader(false);
     //$content_dom = new DOMDocument();
     //$content_dom->load($legacy_dir.$file_name);
     //$content_dom->loadXML($legacy_content);
@@ -1391,7 +1391,7 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
         , ""
         , $content_v2_xml
       );
-   print($content_v2_xml); 
+
     // Build MODS XML.
     //$content_dom = null;
     //$content_dom = new DOMDocument();
@@ -1433,11 +1433,11 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
     $content_dom->loadXML($content_v2_xml);
     $xpathObj = new DOMXpath($content_dom); 
     $pubCRes = $xpathObj->query($xpathStrPub);
-    var_dump($xpathObj);
     $collection_pid = $collection_pid_non_pub_c;
-    if (!is_null($pubCRes))
+    if (!is_null($pubCRes) and $pubCRes->length>0)
     {
       $collection_pid = $collection_pid_pub_c;
+      drush_print("pub-c");
     } 
 
     //determine the schema for the object

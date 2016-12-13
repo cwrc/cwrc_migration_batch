@@ -67,7 +67,7 @@
 
                 <REVISIONDESC>
                     <!-- Apply RESPONSIBILITIES template -->
-                    <xsl:apply-templates select="RESPONSIBILITIES"/>
+                    <xsl:apply-templates select="RESPONSIBILITIES/RESPONSIBILITY"/>
                 </REVISIONDESC>
 
             </ORLANDOHEADER>
