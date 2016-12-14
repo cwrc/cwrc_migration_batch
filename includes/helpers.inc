@@ -199,3 +199,102 @@ function xslt_setup (
   dc_xslt_setup($xslt_file, $xslt_proc);
 }
 
+
+/**
+ * determine schema or use default
+ *
+ *
+ */
+function determine_schema_from_xml($content, $default_schema)
+{
+  $schema = $default_schema;
+  $dom = new DOMDocument;
+  $dom->LoadXML($content);
+
+  $xpath = new DOMXPath($dom);
+  $xpath_qry = "/processing-instruction('xml-model')";
+
+  $tmp_array = $xpath->query($xpath_qry);
+
+  // grab the first
+  $pi_str = null;
+  if ($tmp_array)
+  {
+    $pi_str = $tmp_array->item(0)->data;
+    //drush_print($pi_str);
+    preg_match("/href=[\'\"](.*?)[\'\"]/", $pi_str, $matches);
+    if ($matches[1])
+    {
+      $schema = $matches[1];
+    }
+  }
+  return $schema;
+}
+
+/**
+ * determine schema or use default
+ *
+ *
+ */
+function validate_content(
+    $content
+    , $schema
+    , $validation_url
+    )
+{
+    $schema_type = "RNG_XML";
+
+    $fields = array (
+            "content" => $content
+            , "sch" =>  $schema
+            , "type" => $schema_type
+            );
+    $qry = http_build_query($fields, '');
+
+    //print ($qry);
+    //print "\n";
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $validation_url);
+    curl_setopt($ch, CURLOPT_HEADER, false);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS        , $qry        );
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER        , true        );
+    //curl_setopt($ch, CURLOPT_SSLVERSION        , 3         );
+    //curl_setopt($ch, CURLOPT_USERPWD, "$username:$password");
+    //curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION , true        ); // follow redirects
+    curl_setopt($ch, CURLOPT_ENCODING       , ""        ); // handle all encodings
+    //curl_setopt($ch, CURLOPT_CONNECTTIMEOUT , 120        ); // timeout on connect
+    //curl_setopt($ch, CURLOPT_TIMEOUT        , 120        ); // timeout on response
+    //curl_setopt($ch, CURLOPT_MAXREDIRS      , 10        ); // stop after 10 redirects
+    //curl_setopt($ch, CURLOPT_SSL_VERIFYHOST , 1        );
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER , false        );
+
+    $result = curl_exec($ch);
+
+    if ($result === false)
+    {
+            print ( curl_error($ch) );
+            print ("\n");
+    }
+    /*
+    else
+    {
+            print ("ok");
+            print ("\n");
+    }
+    */
+    curl_close($ch);
+    $result
+        = str_replace(
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            , ""
+            , $result
+            );
+   
+    //print $result;
+    //var_dump($result);
+    return $result; 
+}
+

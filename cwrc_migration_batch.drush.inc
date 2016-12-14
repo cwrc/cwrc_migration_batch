@@ -114,6 +114,20 @@ function cwrc_migration_batch_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
+  $items['cwrc_migration_batch_validate'] = array(
+    'description' => 'A naive attempt to validate cwrc:documentCModel objects against a schema',
+    'options' => array(
+      'collection_pid' => 'pid of the collection',
+      'ds_id' => 'datastream id containing the content to schema validate',
+      'default_rng_schema' => 'schema to use if the schema can not be determined from the xml-model processing instruction',
+    ),
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_validate',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
+
+
 
 
   return $items;
@@ -1892,4 +1906,99 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
 }
 
 
+/** 
+ * CWRC migration batch - validate cwrc:documentCModel objects - 2016-11-29
+ * run an XML schema validation service against the specificed datastream
+ * and schema 
+ *
+ */
+function drush_cwrc_migration_batch_validate() 
+{
+  module_load_include('inc', 'cwrc_migration_batch', 'includes/helpers');
 
+  drush_print("Validation:");
+
+  // collection PID to define set of input documents 
+  $collection_pid = drush_get_option('collection_pid' ,'');
+
+  // the datastream to use with the validation test 
+  $ds_id= drush_get_option('ds_id', 'CWRC');
+
+  // the default schema to use if the xml-model processing instruction
+  // lookup fails
+  $default_rng_schema = drush_get_option(
+    'default_rng_schema'
+    , 'http://cwrc.ca/schemas/orlando_writing.rng'
+  );
+
+  $validation_url = drush_get_option(
+    'validation_url'
+    , 'http://localhost:8080/validator/validate.html'
+  );
+
+  //get all members of the specified collection 
+  $query = <<<EOT
+    PREFIX fre: <info:fedora/fedora-system:def/relations-external#>
+    PREFIX fm: <info:fedora/fedora-system:def/model#>
+    SELECT ?obj
+    FROM <#ri>
+    WHERE {
+      {
+        ?obj fre:isMemberOfCollection ?sub
+      }
+      UNION
+      {
+        ?obj fre:isMemberOf ?sub
+      }
+      ?obj fm:state fm:Active .
+      ?sub fm:state fm:Active
+      FILTER(sameTerm(?sub, <info:fedora/$collection_pid>))
+    }
+EOT;
+
+  drush_print($query);
+  drush_print("Results:");
+
+  $tuque = islandora_get_tuque_connection();
+  $repo = $tuque->repository;
+  $results = $repo->ri->sparqlQuery($query);
+
+  // foreach member of the collection, run the validation test  
+  if (!empty($results)) 
+  { 
+    foreach ($results as $result) 
+    {
+      $pid = $result['obj']['value'];
+
+      drush_print($pid);
+
+      //lookup the object
+      $object = islandora_object_load($pid);
+      var_dump($object);
+      if (!$object) {
+        drush_print("Error: object not found $pid");
+        continue;
+      }
+
+      //contains datastream ID
+      $ds = $object[$ds_id];
+      if (!$ds)
+      {
+        drush_print("Error: datastream not found $pid");
+        continue;
+      }
+
+      drush_print($ds->content);
+      $content = $ds->content;
+
+      $schema = determine_schema_from_xml($content, $default_rng_schema);
+      drush_print($schema);
+
+      $validation_res = validate_content($content, $schema, $validation_url);
+      drush_print($validation_res);
+
+    }
+  }
+
+
+} 
