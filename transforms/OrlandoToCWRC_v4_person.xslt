@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-    * 2015-04-15
+    * Orlando Person Migration to CWRC - 2015-04-15
     * 
     * Modified from the original written by the Arts Resource Centre:
     *   https://github.com/cwrc/CWRC-Entity-Conversions/tree/master/conversionFiles/author
@@ -15,6 +15,8 @@
     * <AUTHORITYLIST>
     * = rest of authority items ( files a-g, h-m, and n-z)
     * </AUTHORITYLIST>
+    *
+    * output conforms to CWRC "entities.rng"
 -->
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:fn="http://www.w3.org/2005/xpath-functions" version="2.0" exclude-result-prefixes="fn">
@@ -28,7 +30,15 @@
 
     <xsl:variable name="occupationCheck">[^,],, ([a-z ]+)$</xsl:variable>
 
-   <xsl:template match="/">
+    <xsl:template match="/">
+      <!-- add schema -->
+      <xsl:processing-instruction name="xml-model">
+        href="http://cwrc.ca/schemas/entities.rng"
+        type="application/xml"
+        schematypens="http://relaxng.org/ns/structure/1.0"
+      </xsl:processing-instruction>
+
+      <!-- build contents -->
       <xsl:apply-templates select="*" />
     </xsl:template>
     

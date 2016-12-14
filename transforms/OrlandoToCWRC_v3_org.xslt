@@ -1,10 +1,40 @@
 <?xml version='1.0'?>
+
+<!--     
+    * Orlando Organization Migration to CWRC - 2015-04-15
+    *    
+    * Modified from the original written by the Arts Resource Centre:
+    *   https://github.com/cwrc/CWRC-Entity-Conversions/tree/master/conversionFiles/organization
+    *    
+    * given the Orlando authority list files concatented together 
+    *    
+    * convert to UTF-8 - even though Orlando authority lists may state another encoding 
+    *    
+    * <?xml version="1.0"  encoding="UTF-8"?>
+    * <AUTHORITYLIST>
+    * = rest of authority items ( files a-g, h-m, and n-z)
+    * </AUTHORITYLIST>
+    *
+    * output conforms to CWRC "entities.rng"      
+-->      
+
+
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:saxon="http://icl.com/saxon" xmlns:dyn="http://saxon.sf.net/" xmlns:fn="http://www.w3.org/2005/xpath-functions" version="2.0" exclude-result-prefixes="fn dyn saxon">
 
     <xsl:output method="xml" indent="yes"/>
 
     <xsl:template match="/">
+
+      <!-- add schema -->                    
+      <xsl:processing-instruction name="xml-model">
+        href="http://cwrc.ca/schemas/entities.rng"                         
+        type="application/xml"               
+        schematypens="http://relaxng.org/ns/structure/1.0"
+      </xsl:processing-instruction>        
+
+      <!-- build contents -->
       <xsl:apply-templates select="*" />
+
     </xsl:template>
     
     <xsl:template match="AUTHORITYLIST">
