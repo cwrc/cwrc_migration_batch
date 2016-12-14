@@ -1727,12 +1727,14 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
     );
     if ($supplemental_filename)
     {
-      $to_dc_xslt_proc->setParameter(
+      $to_v2_xslt_proc->setParameter(
         "supplemental_filename"
          , $saxonProc->createAtomicValue($supplemental_filename) 
       );
     }
     $content_v2_xml = $to_v2_xslt_proc->transformToString();
+
+drush_print($content_v2_xml);
 
     // delete doctype
     $content_v2_xml = str_replace(

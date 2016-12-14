@@ -39,7 +39,7 @@
     </xsl:template>
  
     <xsl:template match="AUTHORITYITEM">
-        <entity>
+      <entity>
             <person>
                 <!--
                     * CWRC entity: Record Info Block
