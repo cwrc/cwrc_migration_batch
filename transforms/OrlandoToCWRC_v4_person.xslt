@@ -1,15 +1,18 @@
 <?xml version="1.0"?>
 <!--
     * 2015-04-15
-    * given the  Orlando authority list files concatented together along with the catalogue file in the following form
-    * altered to grab dates from the catalog file and add to the corresponding name authority, and the name
-    * authorities are converted to person entities
     * 
-    * make sure UTF-8 - even though Orlando authority lists may state another encoding 
+    * Modified from the original written by the Arts Resource Centre:
+    *   https://github.com/cwrc/CWRC-Entity-Conversions/tree/master/conversionFiles/author
+    *
+    * given the Orlando authority list files concatented together 
+    * add in supplemental information from the "supplemental_filename"
+    * parameter
+    *
+    * convert to UTF-8 - even though Orlando authority lists may state another encoding 
     *
     * <?xml version="1.0"  encoding="UTF-8"?>
     * <AUTHORITYLIST>
-    * = paste in catalogue file (root element not within catalogue, not important - <person> element is key
     * = rest of authority items ( files a-g, h-m, and n-z)
     * </AUTHORITYLIST>
 -->
@@ -17,6 +20,11 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:fn="http://www.w3.org/2005/xpath-functions" version="2.0" exclude-result-prefixes="fn">
 
     <xsl:output method="xml" indent="yes" omit-xml-declaration="no"/>
+
+    <!--
+         * parameter passed into the transform to supplement the content
+    -->
+    <xsl:param name="supplemental_filename" select="''"/>
 
     <xsl:variable name="occupationCheck">[^,],, ([a-z ]+)$</xsl:variable>
 
@@ -243,7 +251,7 @@
                         </xsl:analyze-string>
                         
                         <xsl:variable name="AUTH_PERSON_ID" select="@STANDARD"/>
-                        <xsl:variable name="CATALOGUE_PERSON" select="//person[@standard_name = $AUTH_PERSON_ID]"/>
+                        <xsl:variable name="CATALOGUE_PERSON" select="document($supplemental_filename)/catalogue/person[@standard_name = $AUTH_PERSON_ID]"/>
                         <xsl:choose>
                             <xsl:when test="not($CATALOGUE_PERSON)">
                                 <xsl:analyze-string select="@STANDARD" regex="d\. ?(by)? ?\d+ ?">

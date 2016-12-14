@@ -105,6 +105,7 @@ function cwrc_migration_batch_drush_command() {
       'schema_object' => 'schema object pid assigments',
       'XACML_policy' => 'path to the default XACML policy',
       'namespace' => 'pid namespace',
+      'supplemental_filename' => 'supplemental content used to augment content',
     ),
     'examples' => array(
       'drush -u 1 cwrc_migration_batch_ingest_orlando_entities',
@@ -1645,6 +1646,9 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
   $namespace = drush_get_option(
     'namespace', 'orlando'
   );
+  $supplemental_filename = drush_get_option(
+    'supplemental_filename', ''
+  );
 
 
   // Include modules.
@@ -1711,7 +1715,7 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
     // Load xml from a file.
     $legacy_content = file_get_contents($legacy_dir.$file_name);
 
-    // build the UTF-8 version 2.0 
+    // build the UTF-8 version 
     $to_clean_xslt_proc->setSourceFromXdmValue(
       $saxonProc->parseXmlFromString($legacy_content)
     );
@@ -1721,24 +1725,30 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
     $to_v2_xslt_proc->setSourceFromXdmValue(
       $saxonProc->parseXmlFromString($legacy_content)
     );
+    if ($supplemental_filename)
+    {
+      $to_dc_xslt_proc->setParameter(
+        "supplemental_filename"
+         , $saxonProc->createAtomicValue($supplemental_filename) 
+      );
+    }
     $content_v2_xml = $to_v2_xslt_proc->transformToString();
+
+    // delete doctype
     $content_v2_xml = str_replace(
         '<!DOCTYPE ORLANDO [ <!ENTITY % character_entities SYSTEM "http://cwrc.ca/schemas/character_entities.dtd"> %character_entities; ]>\n' 
         , ""
         , $content_v2_xml
       );
 
+    // build DC 
     $to_dc_xslt_proc->setSourceFromXdmValue(
       $saxonProc->parseXmlFromString($content_v2_xml)
     );
     $dc_xml = $to_dc_xslt_proc->transformToString();
 
-    //print ("zzzzzzzzzzzzzzzzzzzz " . $dc_xml);
-
     // set object title
     $title = get_dcTitle_from_dc($dc_xml);
-
-    //print("dc:title extracted - \"$title\" \n");
 
     // determine collection based on workflow
     $content_dom = new DOMDocument();
