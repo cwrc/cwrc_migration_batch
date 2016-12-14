@@ -106,6 +106,7 @@ function cwrc_migration_batch_drush_command() {
       'XACML_policy' => 'path to the default XACML policy',
       'namespace' => 'pid namespace',
       'supplemental_filename' => 'supplemental content used to augment content',
+      'add_pub_c_workflow' => 'add an additional workflow activity - pub-c',
     ),
     'examples' => array(
       'drush -u 1 cwrc_migration_batch_ingest_orlando_entities',
@@ -1649,6 +1650,9 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
   $supplemental_filename = drush_get_option(
     'supplemental_filename', ''
   );
+  $add_pub_c_workflow = drush_get_option(
+    'add_pub_c_workflow', 'no'
+  );
 
 
   // Include modules.
@@ -1734,7 +1738,7 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
     }
     $content_v2_xml = $to_v2_xslt_proc->transformToString();
 
-drush_print($content_v2_xml);
+    //drush_print($content_v2_xml);
 
     // delete doctype
     $content_v2_xml = str_replace(
@@ -1854,6 +1858,25 @@ drush_print($content_v2_xml);
         );
       CWRCWorkflowAPI::updateDatastream($workflow, $object);
 
+      if ($add_pub_c_workflow==='yes')
+      {
+        // add a workflow stamp indicating that the object was ingested
+        $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+        $workflow->addWorkflowStep(
+          $object->id, 
+          new WorkflowItem(WorkflowConst::WORKFLOW, array()),
+          new WorkflowItem(
+            WorkflowConst::ACTIVITY,
+            array(
+              "category" => "machine_processed",
+              'stamp' => 'orlando:PUB',
+              'status' => 'c',
+              "note" => "Update workflow to PUB-C.",
+              )
+            )
+          );
+        CWRCWorkflowAPI::updateDatastream($workflow, $object);
+      }
     }
     catch (Exception $e) {
       $file_error_count++;
