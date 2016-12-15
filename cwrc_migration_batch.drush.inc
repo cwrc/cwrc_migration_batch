@@ -1974,7 +1974,6 @@ EOT;
 
       //lookup the object
       $object = islandora_object_load($pid);
-      var_dump($object);
       if (!$object) {
         drush_print("Error: object not found $pid");
         continue;
@@ -1988,8 +1987,8 @@ EOT;
         continue;
       }
 
-      drush_print($ds->content);
       $content = $ds->content;
+      //drush_print($content);
 
       $schema = determine_schema_from_xml($content, $default_rng_schema);
       drush_print($schema);
