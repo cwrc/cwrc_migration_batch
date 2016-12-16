@@ -1983,7 +1983,7 @@ EOT;
       $ds = $object[$ds_id];
       if (!$ds)
       {
-        drush_print("Error: datastream not found $pid");
+        drush_print("Error: datastream [$ds_id] not found $pid");
         continue;
       }
 
@@ -1998,6 +1998,14 @@ EOT;
 
       $validation_res = validate_content($content, $schema, $validation_url);
       drush_print($validation_res);
+
+
+      module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
+
+      module_load_include('inc', 'islandora_workflow_rest', 'includes/cwrc_workflow');
+      module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
+      module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
+      module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
 
 
       // add entity references to elements
@@ -2019,7 +2027,6 @@ EOT;
         , "STANDARD"
         , "orlando_migration/orlando_entity_lookup_person_org.xq"
       );
-*/
       $content = add_entity_references(
         $content
         , "info:fedora/cwrc:organization-entityCModel"
@@ -2028,7 +2035,7 @@ EOT;
         , "STANDARD"
         , "orlando_migration/orlando_entity_lookup_person_org.xq"
       );
-/*
+*/
       $content = add_entity_references(
         $content
         , "info:fedora/cwrc:citationCModel"
@@ -2045,11 +2052,13 @@ EOT;
         , "DBREF"
         , "orlando_migration/orlando_entity_lookup_bibl.xq"
       );
+/*
 */
       //drush_print($tmp);
 
-/*
-      ds->setContentFromString($tmp);
+      // update object
+      $ds->setContentFromString($content);
+
       // add a workflow stamp indicating that the object was ingested
       $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
       $workflow->addWorkflowStep(
@@ -2066,6 +2075,7 @@ EOT;
           )
         );
       CWRCWorkflowAPI::updateDatastream($workflow, $object);
+/*
 */
     }
   }

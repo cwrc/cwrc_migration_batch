@@ -344,7 +344,6 @@ function add_entity_references(
   $dom = new DOMDocument;
   $dom->loadXML($content);
 
-
   // get all the elements of the given name
   $nodes = $dom->getElementsByTagName($element_name);
 
@@ -408,7 +407,7 @@ function add_entity_references(
         if (!empty($attr_new) and !empty($pid))
         {
           drush_print("INFO: [$element_name] found with lookup [$lookup_str] for [$domElement->nodeValue] ref: [$pid]");
-        // $domElement->setAttribute($attr_new, $pid);
+          $domElement->setAttribute($attr_new, $pid);
         }
         else
         {
@@ -417,7 +416,7 @@ function add_entity_references(
       }
       else
       {
-        drush_print("INFO: Already contains attribute [$attr_new] [$element_name] found with lookup [$lookup_str] for [$domElement->nodeValue]");
+        drush_print("INFO: Already contains attribute [$attr_new] [$element_name] found with lookup [$lookup_str] ");
       }
     }
   }
