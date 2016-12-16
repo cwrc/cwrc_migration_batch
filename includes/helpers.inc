@@ -408,6 +408,9 @@ function add_entity_references(
 {
   if($nodes instanceof DOMNodeList)
   {
+    // get the base of the entity uri
+    $base_entity_url = variable_get('islandora_cwrc_writer_repository_base_object_url', '');
+
     foreach($nodes as $domElement)
     {
       $lookup_str = null;
@@ -465,8 +468,9 @@ function add_entity_references(
 
         if (!empty($attr_new) and !empty($pid))
         {
+          // writin the entity uri (base + PID)
+          $domElement->setAttribute($attr_new, $base_entity_url.$pid);
           drush_print("INFO: [$context] found with lookup [$lookup_str] for [$domElement->nodeValue] ref: [$pid]");
-          $domElement->setAttribute($attr_new, $pid);
         }
         else
         {
