@@ -1359,7 +1359,7 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
   $mods_to_dc_xslt_proc->compileFromFile($xslt_mods_to_dc);
 
 
-  // xpath to determine if PUB-C Orlando document
+  // xpath to determine if PUB-C Orlando document - Biography/Writing/Event
   $xpathStrPub = "/*/ORLANDOHEADER/REVISIONDESC/RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C']";
   //$xpathStrBio = "/BIOGRAPHY";
   //$xpathStrWriting = "/WRITING";
@@ -1692,7 +1692,7 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
   $to_dc_xslt_proc->compileFromFile($xslt_to_dc);
 
 
-  // xpath to determine if PUB-C Orlando document
+  // xpath to determine if PUB-C Orlando document -  BIBL Legacy XPath
   $xpathStrPub = "//RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C']";
 
   // Set source directory for the legacy Orlando content
@@ -1771,9 +1771,9 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
     $title = get_dcTitle_from_dc($dc_xml);
 
     // determine collection based on workflow
-    $content_dom = new DOMDocument();
-    $content_dom->loadXML($content_v2_xml);
-    $xpathObj = new DOMXpath($content_dom); 
+    $legacy_dom = new DOMDocument();
+    $legacy_dom->loadXML($legacy_content);
+    $xpathObj = new DOMXpath($legacy_dom); 
     $pubCRes = $xpathObj->query($xpathStrPub);
     $collection_pid = $collection_pid_non_pub_c;
     if (!is_null($pubCRes) and $pubCRes->length>0)
