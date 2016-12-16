@@ -1990,11 +1990,63 @@ EOT;
       $content = $ds->content;
       //drush_print($content);
 
-      $schema = determine_schema_from_xml($content, $default_rng_schema);
+      $schema = determine_schema_url_from_rels_ext($object);
+      if (empty($schema)) {
+        $schema = determine_schema_url_from_xml($content, $default_rng_schema);
+      }
       drush_print($schema);
 
       $validation_res = validate_content($content, $schema, $validation_url);
       drush_print($validation_res);
+
+
+      // add entity references to elements
+/*      
+      $tmp = add_entity_references(
+        $content
+        , "info:fedora/cwrc:person-entityCModel"
+        , "STANDARD"
+        , "REF"
+        , null
+        , "orlando_migration/orlando_entity_lookup_person_org.xq"
+
+      );
+      $tmp = add_entity_references(
+        $content
+        , "info:fedora/cwrc:person-entityCModel"
+        , "NAME"
+        , "REF"
+        , "STANDARD"
+        , "orlando_migration/orlando_entity_lookup_person_org.xq"
+      );
+*/
+      $tmp = add_entity_references(
+        $content
+        , "info:fedora/cwrc:organization-entityCModel"
+        , "ORGNAME"
+        , "REF"
+        , "STANDARD"
+        , "orlando_migration/orlando_entity_lookup_person_org.xq"
+      );
+/*
+      $tmp = add_entity_references(
+        $content
+        , "info:fedora/cwrc:citationCModel"
+        , "TEXTSCOPE"
+        , "REF"
+        , "DBREF"
+        , "orlando_migration/orlando_entity_lookup_bibl.xq"
+      );
+      $tmp = add_entity_references(
+        $content
+        , "info:fedora/cwrc:citationCModel"
+        , "BIBCIT"
+        , "REF"
+        , "DBREF"
+        , "orlando_migration/orlando_entity_lookup_bibl.xq"
+      );
+*/
+      //drush_print($tmp);
 
     }
   }

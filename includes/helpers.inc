@@ -205,9 +205,9 @@ function xslt_setup (
  *
  *
  */
-function determine_schema_from_xml($content, $default_schema)
+function determine_schema_url_from_xml($content, $default_schema)
 {
-  $schema = $default_schema;
+  $schema_url = $default_schema;
   $dom = new DOMDocument;
   $dom->LoadXML($content);
 
@@ -225,11 +225,47 @@ function determine_schema_from_xml($content, $default_schema)
     preg_match("/href=[\'\"](.*?)[\'\"]/", $pi_str, $matches);
     if ($matches[1])
     {
-      $schema = $matches[1];
+      $schema_url = $matches[1];
     }
   }
-  return $schema;
+  return $schema_url;
 }
+
+/**
+ * use the object RELS-EXT to dermine the schema url 
+ *
+ * @return
+ *    null if not found or not a Fedora external type datastream
+ */
+function determine_schema_url_from_rels_ext($object)
+{
+  module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
+  
+  $schema_url = null;
+
+  $schema_pid = islandora_cwrc_writer_get_document_schema_pid($object);
+  $schema_object = islandora_object_load($schema_pid);
+
+  print_r( ($schema_obj['SCHEMA']) );
+
+  // depending on the type of the SCHEMA datastream, find the url 
+  if (
+    $schema_object['SCHEMA']->controlGroup == 'X' 
+    || $schema_object['SCHEMA']->controlGroup == 'M'
+    ) 
+  {
+    $schema_url = islandora_cwrc_writer_get_absolute_url(
+      "islandora/object/{$schema_object->id}/datastream/SCHEMA/view"
+      );
+  }
+  else
+  {
+    $schema_url = $schema_object['SCHEMA']->url;
+  }
+
+  return $schema_url;
+}
+
 
 /**
  * determine schema or use default
@@ -278,13 +314,7 @@ function validate_content(
             print ( curl_error($ch) );
             print ("\n");
     }
-    /*
-    else
-    {
-            print ("ok");
-            print ("\n");
-    }
-    */
+
     curl_close($ch);
     $result
         = str_replace(
@@ -293,8 +323,131 @@ function validate_content(
             , $result
             );
    
-    //print $result;
-    //var_dump($result);
     return $result; 
 }
+
+
+/**
+ * determine schema or use default
+ *
+ *
+ */
+function add_entity_references(
+    $content
+    , $entity_cmodel
+    , $element_name
+    , $attr_new
+    , $attr_src
+    , $xquery_id 
+    )
+{
+  $dom = new DOMDocument;
+  $dom->loadXML($content);
+
+
+  // get all the elements of the given name
+  $nodes = $dom->getElementsByTagName($element_name);
+
+  if($nodes instanceof DOMNodeList)
+  {
+    foreach($nodes as $domElement)
+    {
+      $lookup_str = null;
+      // find the string to use in the lookup of the URI
+      if (empty($attr_src))
+      {
+        // if no attribute name passed in as the source for the lookup
+        // use the text of the element
+        $lookup_str = $domElement->nodeValue;
+      }
+      else if (!$domElement->hasAttribute($attr_src))
+      {
+        // is the attribute present that will be used to lookup the entity
+        // if not, register error (or could try to build the standard
+        // representation)
+        drush_print("Error: [$element_name] not found with attribute [$attr_src] for [$domElement->nodeValue]");
+      }
+      else
+      {
+        // else use the value of the "$attr_src" - source attribute name value
+        $lookup_str = $domElement->getAttribute($attr_src);
+      }
+
+      // lookup and set the URI reference
+      if (!$domElement->hasAttribute($attr_new))
+      {
+        // is the new attribute already present?
+        // if no then add based on a lookup in the entity set
+        // lookup_entity_given_orlando_standard();
+        $attr_ref_value = lookup_uri_by_string(
+            $lookup_str
+            , $entity_cmodel
+            , $xquery_id
+            );
+        
+        $tmp_array = json_decode($attr_ref_value);
+
+        // may return a list of pids
+        // grap the first that is present in Fedora 
+        // json look like the following: { "pid" : [] }
+        $pid = null;
+        if ($tmp_array->pids)
+        { 
+          $iter = 0;
+          do 
+          {
+            $tmp_pid = $tmp_array->pids[$iter];
+            if (islandora_object_load($tmp_pid))
+            {
+              $pid = $tmp_array->pids[$iter];
+            }
+            $iter++;
+          } while ($iter < count($tmp_array->pids) ) ;
+        }
+
+        if (!empty($attr_new) and !empty($pid))
+        {
+          drush_print("INFO: [$element_name] found with lookup [$lookup_str] for [$domElement->nodeValue] ref: [$pid]");
+        // $domElement->setAttribute($attr_new, $pid);
+        }
+        else
+        {
+          drush_print("ERROR: [$element_name] not found with lookup [$lookup_str] for [$domElement->nodeValue] ref: [$attr_ref_value]");
+        }
+      }
+      else
+      {
+        drush_print("INFO: Already contains attribute [$attr_new] [$element_name] found with lookup [$lookup_str] for [$domElement->nodeValue]");
+      }
+    }
+  }
+  return $dom->saveXML();
+}
+
+
+/**
+ * lookup the URL based on a unique string
+ *
+ */
+function lookup_uri_by_string(
+  $lookup_str
+  , $entity_cmodel
+  , $xquery_id
+  )
+{
+  module_load_include('inc', 'islandora_cwrc_basexdb', 'includes/xmldb_endpoints');
+
+  $result = null;
+  if ($lookup_str)
+  {
+    $keyValueArray = array(
+      "LOOKUP_STR" => "$lookup_str"
+      , "CMODEL_STR" => "$entity_cmodel"
+      );
+
+    $result = islandora_cwrc_exec_xquery($xquery_id, $keyValueArray);
+  }
+  return $result;
+} 
+
 
