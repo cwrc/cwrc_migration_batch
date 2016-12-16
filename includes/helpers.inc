@@ -328,11 +328,10 @@ function validate_content(
 
 
 /**
- * determine schema or use default
- *
+ * 
  *
  */
-function add_entity_references(
+function add_entity_references_via_element(
     $content
     , $entity_cmodel
     , $element_name
@@ -347,6 +346,66 @@ function add_entity_references(
   // get all the elements of the given name
   $nodes = $dom->getElementsByTagName($element_name);
 
+  return add_entity_references(
+    $nodes 
+    , $dom
+    , $entity_cmodel
+    , $element_name
+    , $attr_new
+    , $attr_src
+    , $xquery_id 
+  );
+  
+}
+
+
+/**
+ * 
+ *
+ */
+function add_entity_references_via_xpath(
+    $content
+    , $entity_cmodel
+    , $xpath_str
+    , $attr_new
+    , $attr_src
+    , $xquery_id 
+    )
+{
+  $dom = new DOMDocument;
+  $dom->loadXML($content);
+  $xpath = new DOMXpath($dom);
+
+  // get all the elements of the given name
+  $xpath->registerNamespace('mods', "http://www.loc.gov/mods/v3"); 
+  $nodes = $xpath->query($xpath_str);
+
+  return add_entity_references(
+    $nodes 
+    , $dom
+    , $entity_cmodel
+    , "MODS Subject"
+    , $attr_new
+    , $attr_src
+    , $xquery_id 
+  );
+}
+
+
+/**
+ * 
+ *
+ */
+function add_entity_references(
+    $nodes
+    , $dom
+    , $entity_cmodel
+    , $context
+    , $attr_new
+    , $attr_src
+    , $xquery_id 
+    )
+{
   if($nodes instanceof DOMNodeList)
   {
     foreach($nodes as $domElement)
@@ -364,7 +423,7 @@ function add_entity_references(
         // is the attribute present that will be used to lookup the entity
         // if not, register error (or could try to build the standard
         // representation)
-        drush_print("Error: [$element_name] not found with attribute [$attr_src] for [$domElement->nodeValue]");
+        drush_print("Error: [$context] not found with attribute [$attr_src] for [$domElement->nodeValue]");
       }
       else
       {
@@ -406,17 +465,17 @@ function add_entity_references(
 
         if (!empty($attr_new) and !empty($pid))
         {
-          drush_print("INFO: [$element_name] found with lookup [$lookup_str] for [$domElement->nodeValue] ref: [$pid]");
+          drush_print("INFO: [$context] found with lookup [$lookup_str] for [$domElement->nodeValue] ref: [$pid]");
           $domElement->setAttribute($attr_new, $pid);
         }
         else
         {
-          drush_print("ERROR: [$element_name] not found with lookup [$lookup_str] for [$domElement->nodeValue] ref: [$attr_ref_value]");
+          drush_print("ERROR: [$context] not found with lookup [$lookup_str] for [$domElement->nodeValue] ref: [$attr_ref_value]");
         }
       }
       else
       {
-        drush_print("INFO: Already contains attribute [$attr_new] [$element_name] found with lookup [$lookup_str] ");
+        drush_print("INFO: Already contains attribute [$attr_new] [$context] found with lookup [$lookup_str] ");
       }
     }
   }
