@@ -2035,7 +2035,6 @@ EOT;
         , "STANDARD"
         , "orlando_migration/orlando_entity_lookup_person_org.xq"
       );
-*/
       $content = add_entity_references(
         $content
         , "info:fedora/cwrc:citationCModel"
@@ -2052,8 +2051,10 @@ EOT;
         , "DBREF"
         , "orlando_migration/orlando_entity_lookup_bibl.xq"
       );
-/*
 */
+
+
+/*
       //drush_print($tmp);
 
       // update object
@@ -2075,7 +2076,6 @@ EOT;
           )
         );
       CWRCWorkflowAPI::updateDatastream($workflow, $object);
-/*
 */
     }
   }
