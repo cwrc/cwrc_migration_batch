@@ -148,6 +148,14 @@
                 </languageOfCataloging>
             </recordInfo>
 
+            <xsl:if test="/(BIOGRAPHY|WRITING)">
+              <subject>
+                <name type="personal">
+                  <xsl:value-of select="/(BIOGRAPHY|WRITING)/DIV0/STANDARD/text()"/>
+                </name>
+                </subject>
+              </xsl:if>
+
         </mods>
 
     </xsl:template>
