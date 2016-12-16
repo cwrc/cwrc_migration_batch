@@ -2001,8 +2001,8 @@ EOT;
 
 
       // add entity references to elements
-/*      
-      $tmp = add_entity_references(
+/*     
+      $content = add_entity_references(
         $content
         , "info:fedora/cwrc:person-entityCModel"
         , "STANDARD"
@@ -2011,7 +2011,7 @@ EOT;
         , "orlando_migration/orlando_entity_lookup_person_org.xq"
 
       );
-      $tmp = add_entity_references(
+      $content = add_entity_references(
         $content
         , "info:fedora/cwrc:person-entityCModel"
         , "NAME"
@@ -2020,7 +2020,7 @@ EOT;
         , "orlando_migration/orlando_entity_lookup_person_org.xq"
       );
 */
-      $tmp = add_entity_references(
+      $content = add_entity_references(
         $content
         , "info:fedora/cwrc:organization-entityCModel"
         , "ORGNAME"
@@ -2029,7 +2029,7 @@ EOT;
         , "orlando_migration/orlando_entity_lookup_person_org.xq"
       );
 /*
-      $tmp = add_entity_references(
+      $content = add_entity_references(
         $content
         , "info:fedora/cwrc:citationCModel"
         , "TEXTSCOPE"
@@ -2037,7 +2037,7 @@ EOT;
         , "DBREF"
         , "orlando_migration/orlando_entity_lookup_bibl.xq"
       );
-      $tmp = add_entity_references(
+      $content = add_entity_references(
         $content
         , "info:fedora/cwrc:citationCModel"
         , "BIBCIT"
@@ -2048,6 +2048,25 @@ EOT;
 */
       //drush_print($tmp);
 
+/*
+      ds->setContentFromString($tmp);
+      // add a workflow stamp indicating that the object was ingested
+      $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+      $workflow->addWorkflowStep(
+        $object->id,
+        new WorkflowItem(WorkflowConst::WORKFLOW, array()),
+        new WorkflowItem(
+          WorkflowConst::ACTIVITY,
+          array(
+            "category" => "machine_processed",
+            'stamp' => 'orlando:PUB',
+            'status' => 'c',
+            "note" => "Add URIs to entities.",
+            )
+          )
+        );
+      CWRCWorkflowAPI::updateDatastream($workflow, $object);
+*/
     }
   }
 
