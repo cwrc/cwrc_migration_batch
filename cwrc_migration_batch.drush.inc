@@ -2006,6 +2006,7 @@ EOT;
       module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
       module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
       module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
+      module_load_include('inc', 'islandora_cwrc_basexdb', 'includes/xmldb_endpoints');
 
       // add entity references to elements in content
       $content = add_entity_references_via_element(
@@ -2014,7 +2015,8 @@ EOT;
         , "STANDARD"
         , "REF"
         , null
-        , "orlando_migration/orlando_entity_lookup_person_org.xq"
+        , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
+//        , "orlando_migration/orlando_entity_lookup_person_org.xq"
 
       );
       $content = add_entity_references_via_element(
@@ -2023,7 +2025,8 @@ EOT;
         , "NAME"
         , "REF"
         , "STANDARD"
-        , "orlando_migration/orlando_entity_lookup_person_org.xq"
+        , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
+        //, "orlando_migration/orlando_entity_lookup_person_org.xq"
       );
       $content = add_entity_references_via_element(
         $content
@@ -2031,7 +2034,8 @@ EOT;
         , "ORGNAME"
         , "REF"
         , "STANDARD"
-        , "orlando_migration/orlando_entity_lookup_person_org.xq"
+        , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
+        //, "orlando_migration/orlando_entity_lookup_person_org.xq"
       );
       $content = add_entity_references_via_element(
         $content
@@ -2039,7 +2043,8 @@ EOT;
         , "TEXTSCOPE"
         , "REF"
         , "DBREF"
-        , "orlando_migration/orlando_entity_lookup_bibl.xq"
+        , ISLANDORA_ORLANDO_MIGRATE_BIBL
+        //, "orlando_migration/orlando_entity_lookup_bibl.xq"
       );
       $content = add_entity_references_via_element(
         $content
@@ -2047,7 +2052,8 @@ EOT;
         , "BIBCIT"
         , "REF"
         , "DBREF"
-        , "orlando_migration/orlando_entity_lookup_bibl.xq"
+        , ISLANDORA_ORLANDO_MIGRATE_BIBL
+        //, "orlando_migration/orlando_entity_lookup_bibl.xq"
       );
       //drush_print($content);
 
