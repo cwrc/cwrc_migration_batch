@@ -1587,6 +1587,11 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
         );
       CWRCWorkflowAPI::updateDatastream($workflow, $object);
 
+      //update URI's refences in entities
+      if ($object['CWRC'])
+      {
+        cwrc_migration_batch_add_entity_refs(object, "CWRC");
+      }
     }
     catch (Exception $e) {
       $file_error_count++;
@@ -1922,7 +1927,7 @@ function drush_cwrc_migration_batch_validate()
   $collection_pid = drush_get_option('collection_pid' ,'');
 
   // the datastream to use with the validation test 
-  $ds_id= drush_get_option('ds_id', 'CWRC');
+  $ds_id = drush_get_option('ds_id', 'CWRC');
 
   // the default schema to use if the xml-model processing instruction
   // lookup fails
@@ -1999,105 +2004,127 @@ EOT;
       $validation_res = validate_content($content, $schema, $validation_url);
       drush_print($validation_res);
 
+      //update URI's refences in entities
+//      if ($object['CWRC'])
+//      {
+//        cwrc_migration_batch_add_entity_refs(object, "CWRC");
+//      }
 
-      module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
-
-      module_load_include('inc', 'islandora_workflow_rest', 'includes/cwrc_workflow');
-      module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
-      module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
-      module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
-      module_load_include('inc', 'islandora_cwrc_basexdb', 'includes/xmldb_endpoints');
-
-      // add entity references to elements in content
-      $content = add_entity_references_via_element(
-        $content
-        , "info:fedora/cwrc:person-entityCModel"
-        , "STANDARD"
-        , "REF"
-        , null
-        , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
-//        , "orlando_migration/orlando_entity_lookup_person_org.xq"
-
-      );
-      $content = add_entity_references_via_element(
-        $content
-        , "info:fedora/cwrc:person-entityCModel"
-        , "NAME"
-        , "REF"
-        , "STANDARD"
-        , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
-        //, "orlando_migration/orlando_entity_lookup_person_org.xq"
-      );
-      $content = add_entity_references_via_element(
-        $content
-        , "info:fedora/cwrc:organization-entityCModel"
-        , "ORGNAME"
-        , "REF"
-        , "STANDARD"
-        , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
-        //, "orlando_migration/orlando_entity_lookup_person_org.xq"
-      );
-      $content = add_entity_references_via_element(
-        $content
-        , "info:fedora/cwrc:citationCModel"
-        , "TEXTSCOPE"
-        , "REF"
-        , "DBREF"
-        , ISLANDORA_ORLANDO_MIGRATE_BIBL
-        //, "orlando_migration/orlando_entity_lookup_bibl.xq"
-      );
-      $content = add_entity_references_via_element(
-        $content
-        , "info:fedora/cwrc:citationCModel"
-        , "BIBCIT"
-        , "REF"
-        , "DBREF"
-        , ISLANDORA_ORLANDO_MIGRATE_BIBL
-        //, "orlando_migration/orlando_entity_lookup_bibl.xq"
-      );
-      //drush_print($content);
-
-      // update object
-      $ds->setContentFromString($content);
-
-      //update MODS with a URI
-      $ds = $object['MODS'];
-      if (!$ds)
-      {
-        drush_print("Error: datastream [$ds_id] not found $pid");
-        continue;
-      }
-      $content = $ds->content;
-     
-      $content = add_entity_references_via_xpath(
-         $content
-        , "info:fedora/cwrc:person-entityCModel"
-        , "/mods:mods/mods:subject/mods:name[@type=\"personal\"]"
-        , "valueURI"
-        , ""
-        , "orlando_migration/orlando_entity_lookup_person_org.xq"
-        );
-      $ds->setContentFromString($content);
-
-
-      // add a workflow stamp indicating that the object was ingested
-      $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
-      $workflow->addWorkflowStep(
-        $object->id,
-        new WorkflowItem(WorkflowConst::WORKFLOW, array()),
-        new WorkflowItem(
-          WorkflowConst::ACTIVITY,
-          array(
-            "category" => "machine_processed",
-            'stamp' => 'orlando:PUB',
-            'status' => 'c',
-            "note" => "Add URIs to entities.",
-            )
-          )
-        );
-      CWRCWorkflowAPI::updateDatastream($workflow, $object);
     }
+  }
+}
+
+/** 
+ * CWRC migration batch - add @REF attributes to the core entity elements
+ * (name/org/bibcit/textscope/standard/etc.) 
+ *
+ */
+function cwrc_migration_batch_add_entity_refs($object, $ds_id) 
+{
+
+  module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
+
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/cwrc_workflow');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
+  module_load_include('inc', 'islandora_cwrc_basexdb', 'includes/xmldb_endpoints');
+
+
+  //contains datastream ID
+  $ds = $object[$ds_id];
+  if (!$ds)
+  {
+    drush_print("Error: datastream [$ds_id] not found $pid");
+  }
+  else {
+    $content = $ds->content;
+
+    // add entity references to elements in content
+    $content = add_entity_references_via_element(
+      $content
+      , "info:fedora/cwrc:person-entityCModel"
+      , "STANDARD"
+      , "REF"
+      , null
+      , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
+
+    );
+    $content = add_entity_references_via_element(
+      $content
+      , "info:fedora/cwrc:person-entityCModel"
+      , "NAME"
+      , "REF"
+      , "STANDARD"
+      , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
+    );
+    $content = add_entity_references_via_element(
+      $content
+      , "info:fedora/cwrc:organization-entityCModel"
+      , "ORGNAME"
+      , "REF"
+      , "STANDARD"
+      , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
+    );
+    $content = add_entity_references_via_element(
+      $content
+      , "info:fedora/cwrc:citationCModel"
+      , "TEXTSCOPE"
+      , "REF"
+      , "DBREF"
+      , ISLANDORA_ORLANDO_MIGRATE_BIBL
+    );
+    $content = add_entity_references_via_element(
+      $content
+      , "info:fedora/cwrc:citationCModel"
+      , "BIBCIT"
+      , "REF"
+      , "DBREF"
+      , ISLANDORA_ORLANDO_MIGRATE_BIBL
+    );
+
+    // update object
+    $ds->setContentFromString($content);
+  }
+
+  //update MODS with a URI
+  $ds = $object['MODS'];
+  if (!$ds)
+  {
+    drush_print("Error: datastream [$ds_id] not found $pid");
+  }
+  else 
+  {
+    $content = $ds->content;
+    
+    $content = add_entity_references_via_xpath(
+        $content
+      , "info:fedora/cwrc:person-entityCModel"
+      , "/mods:mods/mods:subject/mods:name[@type=\"personal\"]"
+      , "valueURI"
+      , ""
+      , "orlando_migration/orlando_entity_lookup_person_org.xq"
+      );
+    $ds->setContentFromString($content);
   }
 
 
-} 
+  // add a workflow stamp indicating that the object was ingested
+  $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+  $workflow->addWorkflowStep(
+    $object->id,
+    new WorkflowItem(WorkflowConst::WORKFLOW, array()),
+    new WorkflowItem(
+      WorkflowConst::ACTIVITY,
+      array(
+        "category" => "machine_processed",
+        'stamp' => 'orlando:PUB',
+        'status' => 'c',
+        "note" => "Add URIs to entities.",
+        )
+      )
+    );
+  CWRCWorkflowAPI::updateDatastream($workflow, $object);
+}
+
+
