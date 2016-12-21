@@ -506,7 +506,6 @@ function lookup_uri_by_string(
       "LOOKUP_STR" => "$lookup_str"
       , "CMODEL_STR" => "$entity_cmodel"
       );
-
     $result = islandora_cwrc_exec_xquery($xquery_id, $keyValueArray);
   }
   return $result;

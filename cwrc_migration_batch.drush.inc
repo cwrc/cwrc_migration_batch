@@ -1589,7 +1589,7 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
       //update URI's refences in entities
       if ($object['CWRC'])
       {
-        cwrc_migration_batch_add_entity_refs(object, "CWRC");
+        cwrc_migration_batch_add_entity_refs($object, "CWRC");
       }
     }
     catch (Exception $e) {
@@ -2044,7 +2044,6 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id)
       , "REF"
       , null
       , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
-
     );
     $content = add_entity_references_via_element(
       $content
