@@ -102,7 +102,6 @@ function cwrc_migration_batch_drush_command() {
       'collection_pid_pub_c' => 'add object to the given collection if PUC-C workflow',
       'collection_pid_non_pub_c' => 'add object to the given collection if no PUB-C workflow',
       'cModel_pid' => 'cModel pid assigments',
-      'schema_object' => 'schema object pid assigments',
       'XACML_policy' => 'path to the default XACML policy',
       'namespace' => 'pid namespace',
       'supplemental_filename' => 'supplemental content used to augment content',
@@ -1635,7 +1634,7 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
   );
   $xslt_to_v2 = drush_get_option(
     'xslt_to_v2'
-    , $ext_home . 'transforms/orlando_legacy_to_v2_bio_writing.xsl'
+    , $ext_home . ''
   );
   $xslt_to_dc = drush_get_option(
     'xslt_to_dc'
@@ -1656,9 +1655,6 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
   );
   $cModel_pid = drush_get_option(
     'cModel_pid' , 'cwrc:documentCModel'
-  );
-  $schemaObject = drush_get_option(
-    'schema_object', 'cwrc:biographySchema'
   );
   $policy = drush_get_option(
     'XACML_policy', $ext_home . 'xml/orlando_default_XACML_Policy_Stream.xml'
