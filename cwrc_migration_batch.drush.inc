@@ -1964,9 +1964,9 @@ function drush_cwrc_migration_batch_ingest_ceww_entries()
     'main_ds_id'
     , 'CWRC'
   );
-  $collection_pid_pub_c = drush_get_option(
-    'collection_pid_pub_c'
-    , 'cwrc_migration_batch_ingest_orlando_biography_writing'
+  $collection_pid = drush_get_option(
+    'collection_pid'
+    , 'cwrc:fe081346-e5ba-4b95-a90a-33d127ea85c8'
   );
   $cModel_pid = drush_get_option(
     'cModel_pid' , 'cwrc:documentCModel'
@@ -2117,18 +2117,6 @@ function drush_cwrc_migration_batch_ingest_ceww_entries()
     // create MODS datastream
     create_DS_MODS($mods_xml, $object);
 
-    // Create the Policy datastream.
-    if ( $policy != null && $policy!="NONE" ) 
-    {
-      //create_DS_POLICY($policy, $object);
-      $policy_ds
-          = new IslandoraXacml(
-              $object
-              , file_get_contents($policy)
-              );
-      $policy_ds->writeBackToFedora();
-    }
-
     islandora_cwrc_writer_set_document_schema($object, $schema_obj);
 
     try {
@@ -2138,7 +2126,12 @@ function drush_cwrc_migration_batch_ingest_ceww_entries()
       drush_print("pid=$pid title=\"$title\" was added. #{$file_count} file migrated.");
 
       // add a workflow stamp indicating that the object was ingested
-      $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+      if (!$object['WORKFLOW']) {
+        $workflow = CWRCWorkflowAPI::fromTemplate($object['WORKFLOW']);
+      }
+      else {
+        $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+      }
       $workflow->addWorkflowStep(
         $object->id, 
         new WorkflowItem(WorkflowConst::WORKFLOW, array()),
