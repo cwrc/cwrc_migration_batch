@@ -1966,7 +1966,7 @@ function drush_cwrc_migration_batch_ingest_ceww_entries()
   );
   $collection_pid = drush_get_option(
     'collection_pid'
-    , 'cwrc:fe081346-e5ba-4b95-a90a-33d127ea85c8'
+    , 'ceww:ee081346-e5ba-4b95-a90a-33d127ea85c8'
   );
   $cModel_pid = drush_get_option(
     'cModel_pid' , 'cwrc:documentCModel'
