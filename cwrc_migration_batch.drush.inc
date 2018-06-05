@@ -149,6 +149,20 @@ function cwrc_migration_batch_drush_command() {
   );
 
 
+  $items['cwrc_migration_batch_thumbnail_ceww_entries'] = array(
+    'description' => 'Add a custom thumbnail to the CEWW entries',
+    'options' => array(
+      'input_file' => 'PIDs to modify thumbnails',
+      'tn_path' => 'path to the thumbnail image',
+      'main_ds_id' => 'datastream to add the thumbnail',
+    ),
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_thumbnail_ceww_entries',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
+
+
 
 
   return $items;
@@ -2376,6 +2390,96 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id)
       )
     );
   CWRCWorkflowAPI::updateDatastream($workflow, $object);
+}
+
+
+/** 
+ * CWRC migration batch - CEWW - 2018-05-29
+ * add Thumbnail
+ *
+ */
+function drush_cwrc_migration_batch_thumbnail_ceww_entries() 
+{
+  module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
+
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/cwrc_workflow');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
+
+
+  drush_print("CEWW entries add thumbnail");
+
+
+  $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
+
+  // input file of PIDs; one per line 
+  $input_file = drush_get_option(
+    'input_file' ,'');
+
+  // path to the thumbnail to add to object specified by PID
+  $tn_path = drush_get_option(
+    'tn_path'
+    , ''
+  );
+
+  // object datastream to modify
+  $main_ds_id = drush_get_option(
+    'main_ds_id'
+    , 'TN'
+  );
+
+
+  // Include modules.
+  $connection = null;
+  migration_init($connection);
+
+  // Display the user.
+  drush_print("User: " . $connection->connection->username);
+
+  // input file of PIDs
+  $file_handle = fopen($input_file, "r");
+
+  // Counter for the number of files.
+  $file_count = 0;
+  $file_error_count = 0;
+  while ($file_handle && ($line = fgets($handle)) !== false) 
+  {
+    $pid = trim($line);
+
+    //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
+    // no effect when PHP is running in safe mode
+    // http://php.net/manual/en/function.set-time-limit.php
+    set_time_limit(5);
+
+    drush_print($pid);
+
+    try {
+      // If the object already exists then continue to next file.
+      $object = islandora_object_load($pid);
+
+      if (empty($object['TN'])) {
+        $ds = $object->constructDatastream('TN', 'M');
+        $object->ingestDatastream($ds);
+      }
+      else {
+        $ds = $object['TN'];
+      }
+      $ds->setContentFromFile($tn_path, FALSE);
+      $ds->label = $tn_file->filename;
+      $ds->mimetype = $tn_file->filemime;
+
+    } catch (Exception $e) {
+      $file_error_count++;
+      drush_print("pid=$pid title=\"$title\" was not added.");
+      drush_print($e->getMessage());
+    }
+
+  }
+  drush_print('Migration Complete');
+  drush_print('Number of files migrated: ' . $file_count);
+  drush_print('Number of errors: ' . $file_error_count);
+
 }
 
 
