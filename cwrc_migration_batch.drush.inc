@@ -120,7 +120,7 @@ function cwrc_migration_batch_drush_command() {
       'xslt_to_mods' => 'path to XSLT to convert entriy to mods',
       'xslt_mods_to_dc' => 'path to XSLT to convert mods to DC',
       'main_ds_id' => 'Id of the main datastream (where content XML stored)',
-      'collection_pid_pub_c' => 'add object to the given collection if PUC-C workflow',
+      'collection_pid' => 'add object to the given collection if PUC-C workflow',
       'cModel_pid' => 'cModel pid assigments',
       'schema_object' => 'schema object pid assigments',
       'XACML_policy' => 'path to the default XACML policy',
