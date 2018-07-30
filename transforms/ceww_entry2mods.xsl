@@ -88,17 +88,17 @@
             </xsl:if>
 
             <!-- subject element -->
-            <xsl:if test="normalize-space(/CWRC/ENTRY[1]/HEADING[1]/NAME[1]/@REF) != ''">
+            <xsl:if test="normalize-space(/CWRC/ENTRY[1]/FRONT[1]/HEADING[1]/NAME[1]/@REF) != ''">
                 <subject>
                     <name>
                         <xsl:attribute name="valueURI">
                             <xsl:value-of
-                                select="normalize-space(/CWRC/ENTRY[1]/HEADING[1]/NAME[1]/@REF)"/>
+                                select="normalize-space(/CWRC/ENTRY[1]/FRONT[1]/HEADING[1]/NAME[1]/@REF)"/>
                         </xsl:attribute>
-                        <xsl:if test="normalize-space(/CWRC/ENTRY[1]/HEADING[1]/NAME[1]) != ''">
+                        <xsl:if test="normalize-space(/CWRC/ENTRY[1]/FRONT[1]/HEADING[1]/NAME[1]) != ''">
                             <xsl:element name="namePart">
                                 <xsl:value-of
-                                    select="normalize-space(/CWRC/ENTRY[1]/HEADING[1]/NAME[1])"/>
+                                    select="normalize-space(/CWRC/ENTRY[1]/FRONT[1]/HEADING[1]/NAME[1])"/>
                             </xsl:element>
                         </xsl:if>
                     </name>
