@@ -2452,6 +2452,10 @@ function drush_cwrc_migration_batch_ceww_add_subject()
   {
     $pid = trim($line);
 
+    if (empty(!pid)) {
+      next;
+    }
+
     //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
     // no effect when PHP is running in safe mode
     // http://php.net/manual/en/function.set-time-limit.php
@@ -2599,6 +2603,10 @@ function drush_cwrc_migration_batch_thumbnail_entries()
   while ($file_handle && ($line = fgets($file_handle)) !== false) 
   {
     $pid = trim($line);
+
+    if (empty(!pid)) {
+      next;
+    }
 
     //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
     // no effect when PHP is running in safe mode
