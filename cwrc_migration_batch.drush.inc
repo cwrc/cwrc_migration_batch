@@ -2035,6 +2035,10 @@ function drush_cwrc_migration_batch_ingest_ceww_entries()
   //determine the schema for the object
   drush_print("Schema: $schema_object");
   $schema_obj = islandora_object_load($schema_object);
+  if (empty($schema_obj)) {
+    drush_print("Schema empty - temrinating");
+    exit;
+  }
 
   // Set source directory for the legacy Orlando content
   // Open the source direcotry and iterate through every file in the 
