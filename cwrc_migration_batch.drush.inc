@@ -2032,6 +2032,9 @@ function drush_cwrc_migration_batch_ingest_ceww_entries()
   $to_mods_xslt_proc->compileFromFile($xslt_to_mods);
   $mods_to_dc_xslt_proc->compileFromFile($xslt_mods_to_dc);
 
+  //determine the schema for the object
+  drush_print("Schema: $schema_object");
+  $schema_obj = islandora_object_load($schema_object);
 
   // Set source directory for the legacy Orlando content
   // Open the source direcotry and iterate through every file in the 
@@ -2109,8 +2112,6 @@ function drush_cwrc_migration_batch_ingest_ceww_entries()
 
     //print("dc:title extracted - \"$title\" \n");
 
-    //determine the schema for the object
-    $schema_obj = islandora_object_load($schemaObject);
 
 
     // prepare a new Fedora object.
