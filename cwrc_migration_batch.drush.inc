@@ -2452,8 +2452,8 @@ function drush_cwrc_migration_batch_ceww_add_subject()
   {
     $pid = trim($line);
 
-    if (empty(!pid)) {
-      next;
+    if (empty($pid) || $pid == '') {
+      continue;
     }
 
     //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
@@ -2499,6 +2499,7 @@ XML;
           $subject_dom = $mods_dom->importNode($subject_dom->documentElement,TRUE); 
           $mods_dom->documentElement->appendChild($subject_dom); 
           $object[$dst_dsid]->content = $mods_dom->saveXML();
+          $file_count++;
         }
         else {
           // skip is exists
@@ -2604,8 +2605,8 @@ function drush_cwrc_migration_batch_thumbnail_entries()
   {
     $pid = trim($line);
 
-    if (empty(!pid)) {
-      next;
+    if (empty($pid) || $pid == '') {
+      continue;
     }
 
     //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
@@ -2613,7 +2614,7 @@ function drush_cwrc_migration_batch_thumbnail_entries()
     // http://php.net/manual/en/function.set-time-limit.php
     set_time_limit(5);
 
-    drush_print($pid);
+    drush_print("PID: $pid");
 
     try {
       $object = islandora_object_load($pid);
@@ -2624,6 +2625,7 @@ function drush_cwrc_migration_batch_thumbnail_entries()
         $ds->label = $tn_label;
         $ds->mimetype = $ds_mimetype;
         $object->ingestDatastream($ds);
+        $file_count++;
       }
       else {
         // skip is exists
