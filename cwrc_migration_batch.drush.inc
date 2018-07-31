@@ -1998,7 +1998,7 @@ function drush_cwrc_migration_batch_ingest_ceww_entries()
   $cModel_pid = drush_get_option(
     'cModel_pid' , 'cwrc:documentCModel'
   );
-  $schemaObject = drush_get_option(
+  $schema_object = drush_get_option(
     'schema_object', 'cwrc:fe081346-e5ba-4b95-a90a-33d127ea85c8'
   );
   $policy = drush_get_option(
@@ -2036,7 +2036,7 @@ function drush_cwrc_migration_batch_ingest_ceww_entries()
   drush_print("Schema: $schema_object");
   $schema_obj = islandora_object_load($schema_object);
   if (empty($schema_obj)) {
-    drush_print("Schema empty - temrinating");
+    drush_print("Schema missing - terminating");
     exit;
   }
 
