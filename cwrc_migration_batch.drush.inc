@@ -133,6 +133,17 @@ function cwrc_migration_batch_drush_command() {
   );
 
 
+  $items['cwrc_migration_batch_ceww_add_subject'] = array(
+    'description' => 'CEWW Entry: update to add subject',
+    'options' => array(
+      'pid_file' => 'PIDs to modify',
+    ),
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_ceww_add_subject',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
+
 
 
   $items['cwrc_migration_batch_validate'] = array(
@@ -2392,6 +2403,124 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id)
       )
     );
   CWRCWorkflowAPI::updateDatastream($workflow, $object);
+}
+
+
+/** 
+ * CWRC migration batch - CEWW - 2018-05-29
+ * update subject 
+ *
+ */
+function drush_cwrc_migration_batch_ceww_add_subject() 
+{
+  module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
+
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/cwrc_workflow');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
+
+
+  drush_print("CEWW: Add subject");
+
+
+  $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
+
+  // input file of PIDs; one per line 
+  $pid_file = drush_get_option(
+    'pid_file'
+  );
+
+  // Include modules.
+  $connection = null;
+  migration_init($connection);
+
+  // Display the user.
+  drush_print("User: " . $connection->connection->username);
+
+  // input file of PIDs
+  drush_print("PID File: $pid_file");
+  $file_handle = fopen($pid_file, "r");
+
+  $src_dsid = "CWRC";
+  $dst_dsid = "MODS";
+
+  // Counter for the number of files.
+  $file_count = 0;
+  $file_error_count = 0;
+  while ($file_handle && ($line = fgets($file_handle)) !== false) 
+  {
+    $pid = trim($line);
+
+    //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
+    // no effect when PHP is running in safe mode
+    // http://php.net/manual/en/function.set-time-limit.php
+    set_time_limit(5);
+
+    drush_print($pid);
+
+    $cwrc_dom = new DOMDocument;
+    $mods_dom = new DOMDocument;
+    $subject_dom = new DOMDocument;
+
+    try {
+      $object = islandora_object_load($pid);
+
+      if (!empty($object[$src_dsid]) and !empty($object[$dst_dsid])) {
+
+        $mods_dom->loadXML($object[$dst_dsid]->content);
+        $cwrc_dom->loadXML($object[$src_dsid]->content);
+
+        $mods_xpath = new DOMXpath($mods_dom);
+        $cwrc_xpath = new DOMXpath($cwrc_dom);
+
+        $mods_subject = $mods_xpath->query("/mods:mods/mods:subject");
+
+        if ( $mods_subject->length == 0) {
+          $name_ref = $cwrc_xpath->query("(/CWRC/ENTRY//HEADING)[1]/NAME/@REF")->item(0)->nodeValue;
+          $name_str = $cwrc_xpath->query("(/CWRC/ENTRY//HEADING)[1]/NAME")->item(0)->nodeValue;
+
+          drush_print("Subject: $name_str - $name_ref");
+
+          $subject_str = <<<XML
+                  <subject>
+                    <name valueURI="$name_ref">
+                      <namePart>$name_str</namePart>
+                    </name>
+                  </subject>
+XML;
+
+          //drush_print("Add str: \n $subject_str");
+          $subject_dom->loadXML($subject_str);
+          $subject_dom = $mods_dom->importNode($subject_dom->documentElement,TRUE); 
+          $mods_dom->documentElement->appendChild($subject_dom); 
+          $object[$dst_dsid]->content = $mods_dom->saveXML();
+        }
+        else {
+          // skip is exists
+          drush_print("Skipping " . $pid . " - contains subject");
+          next;
+        }
+      }
+      else {
+        // skip is exists
+        drush_print("Skipping " . $pid . ". ");
+        next;
+      }
+
+    } catch (Exception $e) {
+      $file_error_count++;
+      drush_print("pid=$pid \"$name_str\" was not updated.");
+      drush_print($e->getMessage());
+    }
+
+  }
+  fclose($file_handle);
+
+  drush_print('Migration Complete');
+  drush_print('Number of files migrated: ' . $file_count);
+  drush_print('Number of errors: ' . $file_error_count);
+
 }
 
 
