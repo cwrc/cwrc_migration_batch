@@ -2369,18 +2369,18 @@ function drush_cwrc_migration_batch_ingest_generic()
       // Transform to DC xml.
       // Apply the stylesheet.
       //$dc_xml = $mods_to_dc_xslt_proc->transformToString($mods_dom);
-      //$to_dc_xslt_proc->setParameter( "PID_PARAM", $pid );
+      $to_dc_xslt_proc->setParameter( "PID_PARAM", $saxonProc->createAtomicValue($pid) );
       $to_dc_xslt_proc->setSourceFromXdmValue(
         $saxonProc->parseXmlFromString($mods_xml)
       );
       $dc_xml = $to_dc_xslt_proc->transformToString();
     } else {
-      $to_dc_xslt_proc->setParameter( "PID_PARAM", $pid );
+      $to_dc_xslt_proc->setParameter( "PID_PARAM", $saxonProc->createAtomicValue($pid) );
       $to_dc_xslt_proc->setSourceFromXdmValue(
         $saxonProc->parseXmlFromString($legacy_content)
       );
       $dc_xml = $to_dc_xslt_proc->transformToString();
-      print ("zzzzzzzzzzzzzzzzzzzz " . $dc_xml);
+      //print ("zzzzzzzzzzzzzzzzzzzz " . $dc_xml);
     }
 
 
