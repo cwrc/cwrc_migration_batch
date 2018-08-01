@@ -2315,6 +2315,8 @@ function drush_cwrc_migration_batch_ingest_generic()
   drush_print("Input: " . $legacy_dir);
   $src_dir_handle = opendir($legacy_dir);
 
+  drush_print("DS main: " . $main_ds_id);
+
   // Counter for the number of files to migrate.
   $file_count = 0;
   $file_error_count = 0;
