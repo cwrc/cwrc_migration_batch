@@ -2305,6 +2305,9 @@ function drush_cwrc_migration_batch_ingest_generic()
       exit;
     }
   }
+  else {
+    drush_print("Schema empty - no schema association");
+  }
 
   // Set source directory for the legacy Orlando content
   // Open the source direcotry and iterate through every file in the 
@@ -2424,7 +2427,9 @@ function drush_cwrc_migration_batch_ingest_generic()
       create_DS_MODS($mods_xml, $object);
     }
 
-    islandora_cwrc_writer_set_document_schema($object, $schema_obj);
+    if (!empty($schema_object) || $schema_object !== '') {
+      islandora_cwrc_writer_set_document_schema($object, $schema_obj);
+    }
 
     try {
       // Store the object.
