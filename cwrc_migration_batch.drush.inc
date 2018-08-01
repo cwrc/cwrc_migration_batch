@@ -145,6 +145,27 @@ function cwrc_migration_batch_drush_command() {
   );
 
 
+  $items['cwrc_migration_batch_ingest_generic'] = array(
+    'description' => 'Ingest objects into CWRC',
+    'options' => array(
+      'legacy_dir' => 'path to directory of legacy source material',
+      'xslt_to_mods' => 'path to XSLT to convert entriy to mods',
+      'xslt_to_dc' => 'path to XSLT to convert mods to DC',
+      'main_ds_id' => 'Id of the main datastream (where content XML stored)',
+      'collection_pid' => 'add object to the given collection if PUC-C workflow',
+      'cModel_pid' => 'cModel pid assigments',
+      'schema_object' => 'schema object pid assigments',
+      'XACML_policy' => 'path to the default XACML policy',
+      'namespace' => 'pid namespace',
+    ),
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_ingest_generic',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
+
+
+
 
   $items['cwrc_migration_batch_validate'] = array(
     'description' => 'A naive attempt to validate cwrc:documentCModel objects against a schema',
@@ -2192,6 +2213,261 @@ function drush_cwrc_migration_batch_ingest_ceww_entries()
   drush_print('Number of errors: ' . $file_error_count);
 
 }
+
+
+/** 
+ * CWRC migration batch - Generic - 2018-07-31
+ * assumes MODS and DC generated on the fly 
+ * MODS optional
+ *
+ */
+function drush_cwrc_migration_batch_ingest_generic() 
+{
+  module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
+
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/cwrc_workflow');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
+
+
+  drush_print("Generic ingest");
+
+  // path to the input document files 
+  $legacy_dir = drush_get_option('legacy_dir','/tmp/ceww');
+
+  // if null then no MODS datastream 
+  $xslt_to_mods = drush_get_option(
+    'xslt_to_mods'
+    , ''
+  );
+  $xslt_to_dc = drush_get_option(
+    'xslt_to_dc'
+    , libraries_get_path('islandora_cwrc_xslt_library') . '/xslt/mods_to_dc.xsl'
+  );
+  $main_ds_id = drush_get_option(
+    'main_ds_id'
+    , 'CWRC'
+  );
+  $collection_pid = drush_get_option(
+    'collection_pid'
+    , 'ceww:ee081346-e5ba-4b95-a90a-33d127ea85c8'
+  );
+  $cModel_pid = drush_get_option(
+    'cModel_pid' , 'cwrc:documentCModel'
+  );
+  $schema_object = drush_get_option(
+    'schema_object', ''
+  );
+  $policy = drush_get_option(
+    'XACML_policy', $ext_home . 'xml/ceww_default_XACML_Policy_Stream.xml'
+  );
+  $namespace = drush_get_option(
+    'namespace', 'ceww'
+  );
+
+
+  // Include modules.
+  $connection = null;
+  migration_init($connection);
+
+  // Display the user.
+  drush_print("User: " . $connection->connection->username);
+
+  
+  // setup XSL 
+  // http://www.saxonica.com/saxon-c/index.xml#debug
+  
+  $saxonProc = new Saxon\SaxonProcessor();
+  drush_print("XSLT Version: " . $saxonProc->version());
+  
+  $to_mods_xslt_proc = $saxonProc->newXsltProcessor();
+  $to_dc_xslt_proc = $saxonProc->newXsltProcessor();
+
+  $is_mods = false;
+  if (empty($xslt_to_mods) || @xslt_to_mods == '' ) {
+    drush_print("No MODS");
+    $is_mods = false;
+  } else {
+    drush_print("To MODS XSLT: " . $xslt_to_mods);
+    $to_mods_xslt_proc->compileFromFile($xslt_to_mods);
+    $is_mods = true;
+  }
+  drush_print("To DC XSLT: " . $xslt_to_dc);
+  $to_dc_xslt_proc->compileFromFile($xslt_to_dc);
+
+  //determine the schema for the object
+  drush_print("Schema: $schema_object");
+  if (!empty($schema_object) || $schema_object !== '') {
+    $schema_obj = islandora_object_load($schema_object);
+    if (empty($schema_obj)) {
+      drush_print("Schema missing - terminating");
+      exit;
+    }
+  }
+
+  // Set source directory for the legacy Orlando content
+  // Open the source direcotry and iterate through every file in the 
+  // directory - one file maps to one Fedora 
+  drush_print("Input: " . $legacy_dir);
+  $src_dir_handle = opendir($legacy_dir);
+
+  // Counter for the number of files to migrate.
+  $file_count = 0;
+  $file_error_count = 0;
+  while (FALSE !== ($file_name = readdir($src_dir_handle))) 
+  {
+    $pid = null;
+
+    //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
+    // no effect when PHP is running in safe mode
+    // http://php.net/manual/en/function.set-time-limit.php
+    set_time_limit(5);
+
+    drush_print($file_name);
+    // If the file is a directory then continue to next file.
+    if (is_dir($file_name)) {
+      continue;
+    }
+
+    // generate an id for the object
+    $pid = $connection->repository->getnextIdentifier($namespace, TRUE);
+
+    // Strip out the .xml from the file name and store in the variable.
+    //preg_match('/[a-z0-9-_]*/', $file_name, $object_name);
+    // Strip out file name to get type -b(biography) or -w (writable).
+    //preg_match('/-[a-z]?/', $file_name, $object_type);
+    //$object_name = $object_name[0];
+    //$object_type = $object_type[0];
+    //$pid = "cwrc:$object_name";
+
+    // If the object already exists then continue to next file.
+    if (islandora_object_load($pid)) {
+      drush_print("object $object_name is already in fedora");
+      continue;
+    }
+    
+    $content_datastream_label = preg_replace('/(\.sgm)$/','.xml', $file_name); 
+
+    // Load xml from a file.
+    $legacy_content = file_get_contents($legacy_dir.$file_name);
+
+    // Build MODS XML.
+    if ($is_mods) {
+      $to_mods_xslt_proc->setSourceFromXdmValue(
+        $saxonProc->parseXmlFromString($legacy_content)
+        );
+      $mods_xml = $to_mods_xslt_proc->transformToString();
+
+      //print ("zzzzzzzzzzzzzzzzzzzz " . $mods_xml);
+
+      //$mods_dom = new DOMDocument();
+      //$mods_dom->load($mods_xml);
+
+      // build the DC content
+      // Convert MODS to DC.
+      // Transform to DC xml.
+      // Apply the stylesheet.
+      //$dc_xml = $mods_to_dc_xslt_proc->transformToString($mods_dom);
+      //$to_dc_xslt_proc->setParameter( "PID_PARAM", $pid );
+      $to_dc_xslt_proc->setSourceFromXdmValue(
+        $saxonProc->parseXmlFromString($mods_xml)
+      );
+      $dc_xml = $to_dc_xslt_proc->transformToString();
+    } else {
+      $to_dc_xslt_proc->setParameter( "PID_PARAM", $pid );
+      $to_dc_xslt_proc->setSourceFromXdmValue(
+        $saxonProc->parseXmlFromString($legacy_content)
+      );
+      $dc_xml = $to_dc_xslt_proc->transformToString();
+      print ("zzzzzzzzzzzzzzzzzzzz " . $dc_xml);
+    }
+
+
+    // set object title
+    $title = get_dcTitle_from_dc($dc_xml);
+
+    //print("dc:title extracted - \"$title\" \n");
+
+
+
+    // prepare a new Fedora object.
+    $object
+      = islandora_prepare_new_object(
+        $pid 
+        , $title
+        , array()
+        , array($cModel_pid)
+        , array(
+          array(
+            'relationship' => 'isMemberOfCollection'
+            , 'pid' => "$collection_pid"
+          )
+        )
+      );
+
+
+    // create content datastream
+    // with the legacy content
+    $cwrc_ds = $object->constructDatastream($main_ds_id, 'M');
+    $cwrc_ds->label = $file_name;
+    $cwrc_ds->mimeType = 'text/xml';
+    $cwrc_ds->setContentFromString($legacy_content);
+    $object->ingestDatastream($cwrc_ds);
+ 
+    
+    // create DC datastream
+    create_DS_DC($dc_xml, $object);
+
+    // create MODS datastream
+    if ($is_mods) {
+      create_DS_MODS($mods_xml, $object);
+    }
+
+    islandora_cwrc_writer_set_document_schema($object, $schema_obj);
+
+    try {
+      // Store the object.
+      islandora_add_object($object);
+      $file_count++;
+      drush_print("pid=$pid title=\"$title\" was added. #{$file_count} file migrated.");
+
+      // add a workflow stamp indicating that the object was ingested
+      if (!$object['WORKFLOW']) {
+        $workflow = CWRCWorkflowAPI::fromTemplate($object['WORKFLOW']);
+      }
+      else {
+        $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+      }
+      $workflow->addWorkflowStep(
+        $object->id, 
+        new WorkflowItem(WorkflowConst::WORKFLOW, array()),
+        new WorkflowItem(
+          WorkflowConst::ACTIVITY,
+          array(
+            "category" => "published",
+            'stamp' => 'cwrc:cre',
+            'status' => 'c',
+            "note" => "Initial ingest into the CWRC repository.",
+            )
+          )
+        );
+      CWRCWorkflowAPI::updateDatastream($workflow, $object);
+
+    }
+    catch (Exception $e) {
+      $file_error_count++;
+      drush_print("pid=$pid title=\"$title\" was not added.");
+      drush_print($e->getMessage());
+    }
+
+  }
+  drush_print('Migration Complete');
+  drush_print('Number of files migrated: ' . $file_count);
+  drush_print('Number of errors: ' . $file_error_count);
+
+}
+
 
 
 
