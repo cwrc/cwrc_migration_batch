@@ -1,5 +1,400 @@
 <?php
+
 /**
  * @file
- * Custom CWRC hacks for Islandora.
+ * Implementing various drush scripts and forms to migrate orlando objects to
+ * CWRC objects and ingests them into fedora.
  */
+
+/**
+ * Implements hook_menu().
+ */
+function cwrc_migration_batch_menu() {
+  $items['admin/islandora/cwrc-migration-batch'] = array(
+    'title' => 'CWRC migration batch',
+    'description' => 'Forms to migrate orlando objects to CWRC objects and ingests them into fedora',
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+
+  $file_path = drupal_get_path('module', 'cwrc_migration_batch');
+  $items['admin/islandora/cwrc-migration-batch/xslt'] = array(
+    'title' => 'XSLT Module',
+    'description' => 'Forms to migrate orlando objects to CWRC objects and ingests them into fedora',
+    'page callback' => 'cwrc_migration_batch_xslt_main',
+    'access arguments' => array('run batch migration'),
+    'file' => 'includes/xslt.inc',
+    'file path' => $file_path,
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['admin/islandora/cwrc-migration-batch/xslt/list'] = array(
+    'title' => 'XSLTs',
+    'description' => 'Create, manage and edit xs forms.',
+    'page callback' => 'cwrc_migration_batch_xslt_main',
+    'access arguments' => array('run batch migration'),
+    'file' => 'includes/xslt.inc',
+    'file path' => $file_path,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => 0,
+  );
+  $items['admin/islandora/cwrc-migration-batch/xslt/enabled-associations'] = array(
+    'title' => 'Enabled associations',
+    'description' => 'List of xslt enabled associations with cModel',
+    'page callback' => 'cwrc_migration_batch_xslt_enabled_associations',
+    'access arguments' => array('run batch migration'),
+    'file' => 'includes/xslt.inc',
+    'file path' => $file_path,
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 1,
+  );
+  $items['admin/islandora/cwrc-migration-batch/xslt/import'] = array(
+    'title' => 'Import new',
+    'description' => 'Import new XSLT file',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cwrc_migration_batch_xslt_add_form'),
+    'access arguments' => array('run batch migration'),
+    'file' => 'includes/xslt.inc',
+    'file path' => $file_path,
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 2,
+  );
+  $items['admin/islandora/cwrc-migration-batch/ingest-generic'] = array(
+    'title' => 'Ingest generic',
+    'description' => 'Assumes MODS and DC generated on the fly MODS optional.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cwrc_migration_batch_ingest_generic_form'),
+    'access arguments' => array('run batch migration'),
+    'file' => 'includes/cwrc_migration_batch.form.inc',
+    'file path' => $file_path,
+  );
+  $items['admin/islandora/cwrc-migration-batch/xslt/%/delete'] = array(
+    'title' => 'XSLT Delete',
+    'title callback' => 'cwrc_migration_batch_xslt_delete_title_callback',
+    'title arguments' => array(4),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cwrc_migration_batch_xslt_delete_form_callback', 4),
+    'access arguments' => array('run batch migration'),
+    'file' => 'includes/xslt.inc',
+    'file path' => $file_path,
+  );
+  $items['admin/islandora/cwrc-migration-batch/xslt/%/associate'] = array(
+    'title' => 'XSLT Associate',
+    'title callback' => 'cwrc_migration_batch_xslt_associate_title_callback',
+    'title arguments' => array(4),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cwrc_migration_batch_xslt_associate_form_callback', 4),
+    'access arguments' => array('run batch migration'),
+    'file' => 'includes/xslt.inc',
+    'file path' => $file_path,
+  );
+
+  $items['islandora/autocomplete/cwrc-datastream-id'] = array(
+    'title' => 'Datastream ID autocomplete',
+    'description' => 'Autocomplete a Fedora Datastream ID.',
+    'file' => 'includes/datastream.autocomplete.inc',
+    'page callback' => 'cwrc_migration_batch_datastream_autocomplete',
+    'page arguments' => array(3),
+    'access arguments' => array('run batch migrations'),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function cwrc_migration_batch_permission() {
+  return array(
+    'run batch migration' => array(
+      'title' => t('Run batch migrations'),
+      'description' => t('Run various batch migrations.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_islandora_importer().
+ */
+function cwrc_migration_batch_islandora_importer() {
+  return array(
+    'cwrc_zip_importer' => array(
+      'title' => t('CWRC Importer'),
+      'class' => 'CwrcZipBatchImporter',
+    ),
+  );
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function cwrc_migration_batch_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id === 'islandora_importer_form' && isset($form_state['storage']['importer']['class']) && $form_state['storage']['importer']['class'] === 'CwrcZipBatchImporter') {
+    $values = !empty($form_state['values']) ? $form_state['values'] : array();
+    $parameters = !empty($values['parameters']) ? $values['parameters'] : array();
+    $cm_options = $form['fs']['parameters']['content_model']['#options'];
+    $cwrc_entity_states = array();
+    if (isset($cm_options['cwrc:person-entityCModel'])) {
+      $cwrc_entity_states['invisible'][':input[name="parameters[content_model]"]'] = array('!value' => 'cwrc:person-entityCModel');
+    }
+    if (isset($cm_options['cwrc:place-entityCModel'])) {
+      $cwrc_entity_states['invisible'][':input[name="parameters[content_model]"]'] = array('!value' => 'cwrc:place-entityCModel');
+    }
+
+    $form['fs']['parameters']['cmodel_dependents'] = array(
+      '#type' => 'container',
+      '#prefix' => '<div id="cwrc-migration-batch--cmodel-dependents-wrapper">',
+      '#suffx' => '</div>',
+      '#weight' => 3,
+    );
+    // XSL TRANSFORM.
+    $cmodel_pid = !empty($parameters['content_model']) ? $parameters['content_model'] : '';
+    $has_entity = !empty($cwrc_entity_states);
+    $transform_options = $has_entity ? CwrcZipBatchImporter::getXmlTransformOptions($cmodel_pid) : array();
+    $form['fs']['parameters']['cmodel_dependents']['xsl_transform_dc'] = array(
+      '#type' => 'select',
+      '#title' => t('XSL Transform DC'),
+      '#description' => t("An XSL transform for setting the Fedora object's Dublin Core metadata datastream."),
+      '#options' => $transform_options,
+      '#required' => !empty($transform_options),
+      '#access' => $has_entity,
+    );
+    if ($has_entity) {
+      $form['fs']['parameters']['cmodel_dependents']['xsl_transform_dc']['#states'] = $cwrc_entity_states;
+    }
+
+    $schema_object_condition = array(
+      ':input[name="parameters[content_model]"]' => array('!value' => 'cwrc:documentCModel'),
+    );
+    $is_cwrc_doc_cmodel = $cmodel_pid === 'cwrc:documentCModel';
+    $states_arr = array(
+      'invisible' => $schema_object_condition,
+      'required' => $schema_object_condition,
+    );
+    $form['fs']['parameters']['cmodel_dependents']['schema_object'] = array(
+      '#type' => 'select',
+      '#title' => t('Schema Object'),
+      '#options' => $is_cwrc_doc_cmodel ? cwrc_migration_batch_get_schema_object_options() : array(),
+      '#required' => $is_cwrc_doc_cmodel,
+      '#access' => isset($cm_options['cwrc:documentCModel']),
+      '#states' => $states_arr,
+    );
+    $transform_options = $is_cwrc_doc_cmodel ? CwrcZipBatchImporter::getXmlTransformModsOptions($cmodel_pid) : array();
+    $form['fs']['parameters']['cmodel_dependents']['xsl_transform_mods'] = array(
+      '#type' => 'select',
+      '#title' => t('XSL Transform MODS'),
+      '#description' => t("An XSL transform for setting the Fedora object's MODS Record datastream."),
+      '#options' => $transform_options,
+      '#required' => $is_cwrc_doc_cmodel,
+      '#access' => isset($cm_options['cwrc:documentCModel']),
+      '#states' => $states_arr,
+    );
+
+    $form['#submit'] = array('cwrc_migration_batch_islandora_importer_form_submit_override');
+  }
+}
+
+function cwrc_migration_batch_islandora_importer_form_submit_override(array $form, array &$form_state) {
+  module_load_include('inc', 'islandora', 'includes/utilities');
+
+  $cmodel_ds_mapping = array(
+    'cwrc:person-entityCModel' => 'PERSON',
+    'cwrc:place-entityCModel' => 'PLACE',
+    'cwrc:documentCModel' => 'CWRC',
+  );
+  $values = $form_state['values'];
+  $cmodel_pid = $values['parameters']['content_model'];
+//  $cmodel_requirements = islandora_get_datastreams_requirements_from_content_model($cmodel_pid);
+//  if ($cmodel_requirements) {
+//    $cmodel_requirements = array_filter($cmodel_requirements, function ($item) {
+//      return empty($item['optional']);
+//    });
+//  }
+
+  if (!isset($cmodel_ds_mapping[$cmodel_pid])) {
+    drupal_set_message(t('Selected content model batch upload not supported at the moment.'), 'error');
+    return;
+  }
+  module_load_include('inc', 'cwrc_migration_batch', 'includes/cwrc_migration_batch.form');
+
+  $parameters = array();
+  if ($cmodel_pid === 'cwrc:documentCModel') {
+    $values['parameters']['xsl_transform_dc'] = '';
+    $parameters['xslt_to_mods'] = $values['parameters']['xsl_transform_mods'];
+    $parameters['xslt_mods_to_dc'] = libraries_get_path('islandora_cwrc_xslt_library') . '/xslt/mods_to_dc.xsl';
+    $parameters['schema_object'] = $values['parameters']['schema_object'];
+  }
+
+  $parameters += array(
+    'cmodel_pid' => $cmodel_pid,
+    'collection_pid' => $form_state['storage']['parent_pid'],
+    'main_ds_id' => $cmodel_ds_mapping[$cmodel_pid],
+    'namespace' => $values['parameters']['namespace'],
+    'xslt_to_dc' => $values['parameters']['xsl_transform_dc'],
+  );
+  $form_state['values']['options'] = $parameters;
+  cwrc_migration_batch_ingest_generic_form_submit($form, $form_state);
+}
+
+function cwrc_migration_batch_get_schema_object_options() {
+  global $user;
+
+  module_load_include('inc', 'islandora_basic_collection', 'includes/utilities');
+  $tuque = islandora_get_tuque_connection($user);
+  $sparql_query = <<<EOQ
+SELECT ?pid ?label
+WHERE {
+  ?pid <fedora-model:label> ?label ;
+       <fedora-model:hasModel> <info:fedora/cwrc:schemaCModel>;
+}
+EOQ;
+  $results = $tuque->repository->ri->sparqlQuery($sparql_query);
+  $options = array();
+  foreach ($results as $objects) {
+    $options[$objects['pid']['value']] = t('@label (@pid)', array(
+      '@label' => $objects['label']['value'],
+      '@pid' => $objects['pid']['value'],
+    ));
+  }
+  return $options;
+}
+
+/**
+ * Gets datastreams by supported mime type.
+ *
+ * @return array
+ *   The datastreams.
+ */
+function cwrc_migration_batch_get_datastreams_by_mime_type() {
+  $dsids = &drupal_static(__FUNCTION__);
+  $cache_id = 'cwrc_migration_batch_datastream_ids';
+
+  if (!isset($dsids)) {
+    if ($cache = cache_get($cache_id)) {
+      $dsids = $cache->data;
+    }
+    else {
+      module_load_include('inc', 'islandora', 'includes/utilities');
+      $supported_mime_types = array('text/xml', 'application/xml');
+      $results = islandora_get_content_models();
+
+      foreach ($results as $cmodel) {
+        $cmodel = islandora_object_load($cmodel['pid']);
+        $cmodel_datastreams = islandora_get_datastreams_requirements_from_content_model($cmodel);
+        if ($cmodel_datastreams) {
+          foreach ($cmodel_datastreams as $datastream) {
+            if ($datastream['id'] === 'RELS-EXT' || count($datastream['mime']) !== 1) {
+              continue;
+            }
+
+            $mime_type = $datastream['mime'][0];
+            if (empty($datastream['optional']) && in_array($mime_type, $supported_mime_types, TRUE)) {
+              $dsids[$datastream['id']] = array(
+                'id' => $datastream['id'],
+                'mime_type' => $mime_type,
+              );
+            }
+          }
+        }
+      }
+
+      // Saving this in the cache system.
+      cache_set($cache_id, $dsids);
+    }
+  }
+
+  return $dsids;
+}
+
+/**
+ * Save an entry in the database.
+ *
+ * @param array $entry
+ *   An array containing all the fields of the database record.
+ *
+ * @return \DatabaseStatementInterface|int|null
+ *   The db entry feedback.
+ */
+function cwrc_migration_batch_xslt_entry_insert($entry) {
+  $return_value = NULL;
+  try {
+    $return_value = db_insert('cwrc_migration_batch_xlts')
+      ->fields($entry)
+      ->execute();
+  }
+  catch (Exception $e) {
+    drupal_set_message(t('db_insert failed. Message = %message, query= %query',
+      array('%message' => $e->getMessage(), '%query' => $e->query_string)), 'error');
+  }
+  return $return_value;
+}
+
+/**
+ * Update an entry in the database.
+ *
+ * @param array $entry
+ *   An array containing all the fields of the item to be updated.
+ *
+ * @return \DatabaseStatementInterface|int
+ *   the number of rows updated.
+ */
+function cwrc_migration_batch_xslt_entry_update($entry) {
+  $count = 0;
+  try {
+    $count = db_update('cwrc_migration_batch_xlts')
+      ->fields($entry)
+      ->condition('xslt_id', $entry['xslt_id'])
+      ->execute();
+  }
+  catch (Exception $e) {
+    drupal_set_message(t('db_update failed. Message = %message, query= %query',
+      array('%message' => $e->getMessage(), '%query' => $e->query_string)), 'error');
+  }
+  return $count;
+}
+
+/**
+ * Delete an entry from the database.
+ *
+ * @param array $entry
+ *   An array containing at least the xslt identifier 'xslt_id' element of the
+ *   entry to delete.
+ */
+function cwrc_migration_batch_xslt_entry_delete($entry) {
+  db_delete('cwrc_migration_batch_xlts')
+    ->condition('xslt_id', $entry['xslt_id'])
+    ->execute();
+}
+
+/**
+ * Read from the database using a filter array.
+ *
+ * @param array $entry
+ *   An array containing all the fields used to search the entries in the table.
+ *
+ * @return object
+ *   An object containing the loaded entries if found.
+ */
+function cwrc_migration_batch_xslt_entry_load($entry = array()) {
+  $select = db_select('cwrc_migration_batch_xlts', 'xslts');
+  $select->fields('xslts');
+
+  // Add each field and value as a condition to this query.
+  foreach ($entry as $field => $value) {
+    $select->condition($field, $value);
+  }
+  // Return the result in object format.
+  return $select->execute()->fetchAll();
+}
+
+function _cwrc_migration_batch_get_cmodel_options() {
+  module_load_include('inc', 'islandora', 'includes/content_model.autocomplete');
+  $content_models = islandora_get_content_model_names();
+  $cmodel_pids = array();
+  foreach ($content_models as $model => $label) {
+    $cmodel_pids[$model] = $label;
+  }
+
+  return $cmodel_pids;
+}

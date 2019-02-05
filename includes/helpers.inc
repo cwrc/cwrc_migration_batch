@@ -142,27 +142,17 @@ function create_DS_POLICY (
  * get dc.title from dc
  *
  */
-function get_dcTitle_from_dc (
-    $dc_xml
-  )
-{
-   // set object title
-    $dc_xml_dom = new DOMDocument();
-    $dc_xml_dom->loadXML($dc_xml);
-    $dc_title_xpath = new DOMXpath($dc_xml_dom);
-    $dc_title_xpath->registerNamespace("oai_dc", "http://www.openarchives.org/OAI/2.0/oai_dc/");
-    $dc_title_xpath->registerNamespace("dc", "http://purl.org/dc/elements/1.1/");
-    //$tmp = $dc_title_xpath->query('/oai_dc:dc/dc:title');
-    //$tmp = $dc_title_xpath->query('/srw_dc:dcCollection/srw_dc:dc/dc:title');
-    $tmp = $dc_title_xpath->query('//dc:title');
+function get_dcTitle_from_dc ($dc_xml) {
+  // Set object title.
+  $dc_xml_dom = new DOMDocument();
+  $dc_xml_dom->loadXML($dc_xml);
+  $xpath = new DOMXpath($dc_xml_dom);
+  $xpath->registerNamespace('oai_dc', 'http://www.openarchives.org/OAI/2.0/oai_dc/');
+  $xpath->registerNamespace('dc', 'http://purl.org/dc/elements/1.1/');
+  $label_node = $xpath->evaluate('/oai_dc:dc/dc:title/text()');
 
-    $title = $tmp->item(0)->nodeValue;
-
-    return $title;
-
+  return $label_node->item(0)->nodeValue;
 }
-
-
 
 /**
  * CWRC setup

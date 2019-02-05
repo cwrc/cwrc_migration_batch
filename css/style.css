@@ -1,0 +1,5 @@
+.section-content .block .xslt-enabled-associations ul,
+.xslt-enabled-associations p {
+  margin: 0 0 1em 0;
+  padding-left: 1em;
+}
