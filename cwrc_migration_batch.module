@@ -90,6 +90,15 @@ function cwrc_migration_batch_menu() {
     'file path' => $file_path,
   );
 
+  $items['islandora/object/%islandora_object/manage/datastreams/add-using-xslt'] = array(
+    'title' => 'Add a datastream using XSLT',
+    'file' => 'includes/add_datastream.form.inc',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cwrc_migration_batch_islandora_add_datastream_form', 2),
+    'type' => MENU_LOCAL_ACTION,
+    'access callback' => 'islandora_object_access_callback',
+    'access arguments' => array(ISLANDORA_ADD_DS, 2),
+  );
   $items['islandora/autocomplete/cwrc-datastream-id'] = array(
     'title' => 'Datastream ID autocomplete',
     'description' => 'Autocomplete a Fedora Datastream ID.',
@@ -100,6 +109,16 @@ function cwrc_migration_batch_menu() {
   );
 
   return $items;
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function cwrc_migration_batch_menu_alter(&$items) {
+//  $datastream_add_route = 'islandora/object/%islandora_object/manage/datastreams/add';
+//  if (!empty($items[$datastream_add_route])) {
+    //$items[$datastream_add_route]['page arguments'] = array('cwrc_migration_batch_islandora_add_datastream_form', 2);
+//  }
 }
 
 /**

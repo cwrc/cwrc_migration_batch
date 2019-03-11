@@ -58,7 +58,6 @@ function cwrc_migration_batch_xslt_add_form($form, &$form_state) {
     '#title_display' => 'invisible',
     '#required' => TRUE,
     '#type' => 'managed_file',
-//    '#default_value' => '',
     '#upload_location' => 'public://cwrc-migration-batch-xslts/',
     '#upload_validators' => array(
       'file_validate_extensions' => array('xsl', 'xslt'),
