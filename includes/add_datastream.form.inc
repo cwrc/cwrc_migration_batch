@@ -79,15 +79,18 @@ function cwrc_migration_batch_islandora_add_datastream_form(array $form, array &
   return $form;
 }
 
+/**
+ * Validate callback for cwrc_migration_batch_islandora_add_datastream_form().
+ */
 function cwrc_migration_batch_islandora_add_datastream_form_validate(array $form, array &$form_state) {
   if (empty($form_state['values']['select_xslt'])) {
     form_set_error('source_datastream', t('Please select a valid xslt to do the transformation.'));
   }
-  else {
-    form_set_error('source_datastream', t('Still testing stuff.'));
-  }
 }
 
+/**
+ * Submit callback for cwrc_migration_batch_islandora_add_datastream_form().
+ */
 function cwrc_migration_batch_islandora_add_datastream_form_submit(array $form, array &$form_state) {
   $object = $form['#islandora_object'];
   $values = $form_state['values'];
@@ -96,14 +99,30 @@ function cwrc_migration_batch_islandora_add_datastream_form_submit(array $form, 
   $xslt = $form_state['supported_xslts'][$source_datastream_id][$xslt_id];
   $output_datastream_id = $xslt->datastream_id;
   $datastream = isset($object[$output_datastream_id]) ? $object[$output_datastream_id] : $object->constructDatastream($output_datastream_id, 'M');
-  if ($source_datastream_id == $xslt->datastream_id) {
+
+  $saxon_processor = new Saxon\SaxonProcessor();
+  $xslt_processor = $saxon_processor->newXsltProcessor();
+  $source_xml = $datastream->content;
+  $xslt_processor->setSourceFromXdmValue(
+    $saxon_processor->parseXmlFromString($source_xml)
+  );
+  $output_xml = $xslt_processor->transformToString();
+  $datastream->setContentFromString($output_xml);
+
+//  if ($source_datastream_id == $output_datastream_id) {
     // Update this existing datastream using the xslt datastream output.
-  }
-  else {
+//    $object[$output_datastream_id] = $datastream;
+//  }
+//  else {
+  if ($source_datastream_id != $output_datastream_id) {
     // Create the datastream base on the xslt datastream output.
     $datastream->label = $output_datastream_id;
     $datastream->mimetype = $xslt->datastream_mime_type;
   }
+  $object->ingestDatastream($datastream);
+  drupal_set_message(t('The datastream was successuffly added!'));
+  //  $repository = islandora_get_tuque_connection()->repository;
+//  $repository->ingestObject($object);
 }
 
 /**
@@ -113,6 +132,9 @@ function cwrc_migration_batch_islandora_add_datastream_xslt_select_ajax_callback
   return $form['select_xslt'];
 }
 
+/**
+ * Helper function to get the select xslt options.
+ */
 function _cwrc_migration_batch_get_select_xslt_options($datastream_id, &$form_state) {
   $xslts = cwrc_migration_batch_xslt_entry_load();
   $xslt_options = array('' => t('- select -'));
@@ -130,6 +152,9 @@ function _cwrc_migration_batch_get_select_xslt_options($datastream_id, &$form_st
   return $xslt_options;
 }
 
+/**
+ * Helper function to check if datastream is supported in cmodels.
+ */
 function _cwrc_migration_batch_is_datastream_supported_in_cmodels($cmodels, $datastream_id) {
   $is_supported = FALSE;
   foreach ($cmodels as $cmodel_id => $cmodel_label) {
