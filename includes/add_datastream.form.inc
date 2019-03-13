@@ -76,6 +76,10 @@ function cwrc_migration_batch_islandora_add_datastream_form(array $form, array &
       '#href' => 'islandora/object/' . $object->id,
     ),
   );
+
+  // Adding locks information.
+  form_load_include($form_state, 'inc', 'islandora_object_lock', 'includes/form_handlers');
+  islandora_object_lock_acquire_during_alter($form, $form_state, $object, NULL, 'manage/datastreams/add-using-xslt');
   return $form;
 }
 
