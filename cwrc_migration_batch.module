@@ -91,7 +91,7 @@ function cwrc_migration_batch_menu() {
   );
 
   $items['islandora/object/%islandora_object/manage/datastreams/add-using-xslt'] = array(
-    'title' => 'Add a datastream using XSLT',
+    'title' => 'Add/Change a datastream using XSLT',
     'file' => 'includes/add_datastream.form.inc',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('cwrc_migration_batch_islandora_add_datastream_form', 2),
@@ -109,16 +109,6 @@ function cwrc_migration_batch_menu() {
   );
 
   return $items;
-}
-
-/**
- * Implements hook_menu_alter().
- */
-function cwrc_migration_batch_menu_alter(&$items) {
-//  $datastream_add_route = 'islandora/object/%islandora_object/manage/datastreams/add';
-//  if (!empty($items[$datastream_add_route])) {
-    //$items[$datastream_add_route]['page arguments'] = array('cwrc_migration_batch_islandora_add_datastream_form', 2);
-//  }
 }
 
 /**

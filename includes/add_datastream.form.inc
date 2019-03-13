@@ -99,30 +99,45 @@ function cwrc_migration_batch_islandora_add_datastream_form_submit(array $form, 
   $xslt = $form_state['supported_xslts'][$source_datastream_id][$xslt_id];
   $output_datastream_id = $xslt->datastream_id;
   $datastream = isset($object[$output_datastream_id]) ? $object[$output_datastream_id] : $object->constructDatastream($output_datastream_id, 'M');
+  $source_xml = $object[$source_datastream_id]->content;
 
   $saxon_processor = new Saxon\SaxonProcessor();
   $xslt_processor = $saxon_processor->newXsltProcessor();
-  $source_xml = $datastream->content;
-  $xslt_processor->setSourceFromXdmValue(
-    $saxon_processor->parseXmlFromString($source_xml)
-  );
-  $output_xml = $xslt_processor->transformToString();
-  $datastream->setContentFromString($output_xml);
 
-//  if ($source_datastream_id == $output_datastream_id) {
-    // Update this existing datastream using the xslt datastream output.
-//    $object[$output_datastream_id] = $datastream;
-//  }
-//  else {
-  if ($source_datastream_id != $output_datastream_id) {
-    // Create the datastream base on the xslt datastream output.
-    $datastream->label = $output_datastream_id;
-    $datastream->mimetype = $xslt->datastream_mime_type;
+  $xdm_node = $saxon_processor->parseXmlFromString($source_xml);
+  $xslt_processor->setSourceFromXdmValue($xdm_node);
+  $xslt_file = drupal_realpath($xslt->file->uri);
+  $xslt_processor->compileFromFile($xslt_file);
+  $output_xml = $xslt_processor->transformToString();
+
+  $err_count = !$output_xml ? $xslt_processor->getExceptionCount() : 0;
+  if ($err_count > 0) {
+    $message = t('The XSLT transformer has encountered @count error(s):', array('@count' => $err_count)) . '<ol>';
+    for ($i = 0; $i < $err_count; $i++) {
+      $err_code = $xslt_processor->getErrorCode($i);
+      $err_message = $xslt_processor->getErrorMessage($i);
+      $message .= t('<li><b>Error Code:</b> @code<p><b>Error Message</b><br/>@message</p></li>', array(
+        '@code' => $err_code,
+        '@message' => $err_message,
+      ));
+    }
+    $message .= '</ol>';
+    drupal_set_message($message, 'error');
+    $xslt_processor->exceptionClear();
   }
-  $object->ingestDatastream($datastream);
-  drupal_set_message(t('The datastream was successuffly added!'));
-  //  $repository = islandora_get_tuque_connection()->repository;
-//  $repository->ingestObject($object);
+  else {
+    $datastream->setContentFromString($output_xml);
+    if (!isset($object[$output_datastream_id])) {
+      // Create the datastream base on the xslt datastream output.
+      $datastream->label = $output_datastream_id;
+      $datastream->mimetype = $xslt->datastream_mime_type;
+    }
+    $object->ingestDatastream($datastream);
+    drupal_set_message(t('The datastream was successuffly added!'));
+    $form_state['redirect'] = "islandora/object/{$object->id}/manage/datastreams";
+  }
+  $xslt_processor->clearParameters();
+  $xslt_processor->clearProperties();
 }
 
 /**
