@@ -164,9 +164,6 @@ function cwrc_migration_batch_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
-
-
-
   $items['cwrc_migration_batch_validate'] = array(
     'description' => 'A naive attempt to validate cwrc:documentCModel objects against a schema',
     'options' => array(
@@ -179,7 +176,6 @@ function cwrc_migration_batch_drush_command() {
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
-
 
   $items['cwrc_migration_batch_thumbnail_entries'] = array(
     'description' => 'Add a custom thumbnail to the specified entries',
@@ -196,9 +192,6 @@ function cwrc_migration_batch_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
-
-
-
   return $items;
 }
 
@@ -208,15 +201,10 @@ function cwrc_migration_batch_drush_command() {
  * @param string $connection
  *   tuque connection object
  */
-function migration_init (
-    &$connection
-  )
-{
-  
+function migration_init(&$connection) {
   // https://groups.google.com/forum/#!topic/islandora-dev/1KyBnj7DjCQ
   global $user;
   drush_print($user->name);
-
 
   // Include modules.
   module_load_include('inc', 'islandora', 'includes/utilities');
@@ -224,7 +212,6 @@ function migration_init (
   module_load_include('inc', 'cwrc_migration_batch', 'includes/helpers');
 
   ini_set('max_execution_time', 3000);
-
 
   // Get the tuque connection.
   $connection = islandora_get_tuque_connection();
@@ -236,15 +223,9 @@ function migration_init (
  * CWRC setup
  *
  **/
-function rels_setup (
-    $connection 
-    , $cModel_pid
-    , $collection_pid
-    )
-{
+function rels_setup($connection, $cModel_pid, $collection_pid) {
   // Content Model.  Create the content model.
-  if ( !islandora_object_load($cModel_pid) )
-  {
+  if (!islandora_object_load($cModel_pid)) {
     create_cModel($cModel_pid, $connection);
     drush_print("content model added - $cModel_pid");
   }
@@ -253,19 +234,14 @@ function rels_setup (
   }
 
   // Collection.  Create the collection object.
-  if ( !islandora_object_load($collection_pid) )
-  {
+  if (!islandora_object_load($collection_pid)) {
     create_collection($collection_pid, $connection);
     drush_print("Collection added - $collection_pid");
   }
-  else
-  {
+  else {
     drush_print("collection already exists - $collection_pid");
   }
 }
-
-
-
 
 /** 
  * CWRC migration batch - entities Orlando
@@ -283,18 +259,7 @@ function rels_setup (
  * @param string $entity_to_dc_xslt_path
  *   path to the cwrc_entities to DC XSLT file
  */
-function drush_cwrc_migration_batch_ingest_entities(
-    $path_to_file
-    , $workflow_file
-    , $collection_pid
-    , $cModel_pid
-    , $content_datastream_dsid
-    , $content_datastream_label
-    , $entity_to_dc_xslt_path
-  ) 
-{
-
-  
+function drush_cwrc_migration_batch_ingest_entities($path_to_file, $workflow_file, $collection_pid, $cModel_pid, $content_datastream_dsid, $content_datastream_label, $entity_to_dc_xslt_path) {
   drush_print("CWRC Entities Migration batch");
 
   // Include modules.
@@ -458,16 +423,7 @@ function drush_cwrc_migration_batch_ingest_entities(
  * @param string $policy
  *   location of the Fedora XACML policy 
  */
-function drush_cwrc_migration_batch_ingest_bibliography (
-    $path_to_file
-    , $mods_subdir
-    , $legacy_subdir 
-    , $collection_pid
-    , $cModel_pid
-    , $dc_xslt
-    , $policy 
-  ) 
-{
+function drush_cwrc_migration_batch_ingest_bibliography ($path_to_file, $mods_subdir, $legacy_subdir, $collection_pid, $cModel_pid, $dc_xslt, $policy) {
   drush_print("CWRC Bibliography Migration batch");
 
   // Include modules.
@@ -610,7 +566,6 @@ function drush_cwrc_migration_batch_ingest_bibliography (
 
 }
 
-
 /** 
  * CWRC migration batch - event / documentation Orlando
  * assumes Orlando bibl have been converted into MODS
@@ -631,16 +586,7 @@ function drush_cwrc_migration_batch_ingest_bibliography (
  * @param string $policy
  *   location of the Fedora XACML policy 
  */
-function drush_cwrc_migration_batch_ingest_events_documentation (
-    $path_to_file
-    , $mods_subdir
-    , $legacy_subdir 
-    , $collection_pid
-    , $cModel_pid
-    , $dc_xslt
-    , $policy 
-  ) 
-{
+function drush_cwrc_migration_batch_ingest_events_documentation ($path_to_file, $mods_subdir, $legacy_subdir, $collection_pid, $cModel_pid, $dc_xslt, $policy) {
   drush_print("CWRC Event/Documentation Migration batch");
 
   // Include modules.
@@ -781,10 +727,7 @@ function drush_cwrc_migration_batch_ingest_events_documentation (
   drush_print('Migration Complete');
   drush_print('Number of files migrated: ' . $file_count);
   drush_print('Number of errors: ' . $file_error_count);
-
 }
-
-
 
 /** 
  * CWRC migration batch - biography / writing  Orlando
@@ -808,16 +751,7 @@ function drush_cwrc_migration_batch_ingest_events_documentation (
  * @param string $policy
  *   location of the Fedora XACML policy 
  */
-function drush_cwrc_migration_batch_ingest_biography_writing (
-    $path_to_file
-    , $mods_subdir
-    , $legacy_subdir 
-    , $collection_pid
-    , $cModel_pid
-    , $dc_xslt
-    , $policy 
-  ) 
-{
+function drush_cwrc_migration_batch_ingest_biography_writing ($path_to_file, $mods_subdir, $legacy_subdir, $collection_pid, $cModel_pid, $dc_xslt, $policy) {
   drush_print("CWRC Biography / Writing Migration batch");
 
   // Include modules.
@@ -991,7 +925,6 @@ function drush_cwrc_migration_batch_ingest_biography_writing (
   drush_print('Migration Complete');
   drush_print('Number of files migrated: ' . $file_count);
   drush_print('Number of errors: ' . $file_error_count);
-
 }
 
 /** 
@@ -1012,20 +945,7 @@ function drush_cwrc_migration_batch_ingest_biography_writing (
  * @param string $schema_pid
  *   PID of the Object to reference for schema and css information 
  */
-function drush_cwrc_migration_batch_ingest_cwrc_documents(
-    $path_to_file
-    , $workflow_file
-    , $collection_pid
-    , $cModel_pid
-    , $content_datastream_dsid
-    , $content_datastream_label
-    , $content_to_mods_xslt_path
-    , $mods_to_dc_xslt_path
-    , $schema_pid
-  ) 
-{
-
-  
+function drush_cwrc_migration_batch_ingest_cwrc_documents($path_to_file, $workflow_file, $collection_pid, $cModel_pid, $content_datastream_dsid, $content_datastream_label, $content_to_mods_xslt_path, $mods_to_dc_xslt_path, $schema_pid) {
   drush_print("CWRC documents compatible with CWRC-Writer Migration batch");
 
   // Include modules.
@@ -1054,12 +974,9 @@ function drush_cwrc_migration_batch_ingest_cwrc_documents(
 
   // setup the default workflow
   // get the contents of the default workflow for an entity
-  $path_to_workflow_file
-      = drupal_get_path('module', 'cwrc_migration_batch') .'/'. $workflow_file
-      ;
+  $path_to_workflow_file = drupal_get_path('module', 'cwrc_migration_batch') .'/'. $workflow_file;
   drush_print("Workflow: " . $path_to_workflow_file);
   $workflow_xml = file_get_contents($path_to_workflow_file);
-
 
   // Set source directory for the content to ingest
   $cwrc_directory = $path_to_file;
@@ -1196,7 +1113,6 @@ function drush_cwrc_migration_batch_ingest_cwrc_documents(
   // unsure how to properly set policy - come combo of POLICY and RELS-EXT 
   // datastreams 
   drush_print("\n Next Steps: set permissions on the Collection and objects");
-
 }
 
 /**
@@ -1207,11 +1123,7 @@ function drush_cwrc_migration_batch_ingest_cwrc_documents(
  * $destination_path
  *  path to save the results
  */
-function drush_cwrc_migration_batch_export_book (
-  $path_to_list_of_book_PIDs
-  , $destination_path
-  )
-{
+function drush_cwrc_migration_batch_export_book ($path_to_list_of_book_PIDs, $destination_path) {
   drush_print("CWRC Export Book Batch");
 
   // Include modules.
@@ -1271,9 +1183,7 @@ function drush_cwrc_migration_batch_export_book (
   drush_print('Migration Complete');
   drush_print('Number of files exported: ' . $file_count);
   drush_print('Number of errors: ' . $file_error_count);
-
 }
-
 
 /**
  * CWRC reindex list of objects (by PID)
@@ -1281,10 +1191,7 @@ function drush_cwrc_migration_batch_export_book (
  * $path_to_list_of_book_PIDs
  *  path to the list of book PIDs to export
  */
-function drush_cwrc_migration_batch_reindex_list(
-  $path_to_list_of_book_PIDs
-  )
-{
+function drush_cwrc_migration_batch_reindex_list($path_to_list_of_book_PIDs) {
   drush_print("CWRC reindex list ");
 
   // Include modules.
@@ -1305,8 +1212,7 @@ function drush_cwrc_migration_batch_reindex_list(
   $file_error_count = 0;
   $line = null;
   $tmp = null;
-  while ($handle_read && ($line = fgets($handle_read)) !== false)
-  {
+  while ($handle_read && ($line = fgets($handle_read)) !== false) {
     $pid = trim($line);
 
     //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
@@ -1339,9 +1245,6 @@ function drush_cwrc_migration_batch_reindex_list(
 
 }
 
-
-
-
 /** 
  * CWRC migration batch - biography / writing / Events Orlando version 2 - 2016-11-29
  * assumes MODS and DC generated on the fly 
@@ -1350,15 +1253,13 @@ function drush_cwrc_migration_batch_reindex_list(
  * linked via MODS entity reference
  *
  */
-function drush_cwrc_migration_batch_ingest_orlando_biography_writing () 
-{
+function drush_cwrc_migration_batch_ingest_orlando_biography_writing() {
   module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
 
   module_load_include('inc', 'islandora_workflow_rest', 'includes/cwrc_workflow');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
-
 
   drush_print("Orlando Biography / Writing / Event migration batch version 2.0");
 
@@ -1379,7 +1280,7 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
     'xslt_mods_to_dc'
     , libraries_get_path('islandora_cwrc_xslt_library') . '/xslt/mods_to_dc.xsl'
   );
-  
+
   $collection_pid_pub_c = drush_get_option(
     'collection_pid_pub_c'
     , 'cwrc:fc271c04-7fd1-46b4-9462-339dbe917c46'
@@ -1401,24 +1302,22 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
     'namespace', 'orlando'
   );
 
-
   // Include modules.
   $connection = null;
   migration_init($connection);
 
   // Display the user.
   drush_print("User: " . $connection->connection->username);
-
   
   // setup XSL 
   // http://www.saxonica.com/saxon-c/index.xml#debug
   //xslt_setup($xslt_bio_writ_to_v2, $bio_writ_to_v2_xslt_proc);
   //xslt_setup($xslt_bio_writ_to_mods, $bio_writ_to_mods_xslt_proc);
   //xslt_setup($xslt_mods_to_dc, $mods_to_dc_xslt_proc);
-  
+
   $saxonProc = new Saxon\SaxonProcessor();
   drush_print("XSLT Version: " . $saxonProc->version());
-  
+
   $to_v2_xslt_proc = $saxonProc->newXsltProcessor();
   $to_mods_xslt_proc = $saxonProc->newXsltProcessor();
   $mods_to_dc_xslt_proc = $saxonProc->newXsltProcessor();
@@ -1426,7 +1325,6 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
   $to_v2_xslt_proc->compileFromFile($xslt_to_v2);
   $to_mods_xslt_proc->compileFromFile($xslt_to_mods);
   $mods_to_dc_xslt_proc->compileFromFile($xslt_mods_to_dc);
-
 
   // xpath to determine if PUB-C Orlando document - Biography/Writing/Event
   $xpathStrPub = "/*/ORLANDOHEADER/REVISIONDESC/RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C']";
@@ -1672,24 +1570,20 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
   drush_print('Migration Complete');
   drush_print('Number of files migrated: ' . $file_count);
   drush_print('Number of errors: ' . $file_error_count);
-
 }
-
 
 /** 
  * CWRC migration batch - Entities to Orlando version 2 - 2016-11-29
  * workflow is pulled from the legacy Orlando format stored in subdir
  *
  */
-function drush_cwrc_migration_batch_ingest_orlando_entities() 
-{
+function drush_cwrc_migration_batch_ingest_orlando_entities() {
   module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
 
   module_load_include('inc', 'islandora_workflow_rest', 'includes/cwrc_workflow');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
-
 
   drush_print("Orlando entity migration batch version 2.0");
 
@@ -1739,7 +1633,6 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
     'add_pub_c_workflow', 'no'
   );
 
-
   // Include modules.
   $connection = null;
   migration_init($connection);
@@ -1747,13 +1640,12 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
   // Display the user.
   drush_print("User: " . $connection->connection->username);
 
-  
   // setup XSL 
   // http://www.saxonica.com/saxon-c/index.xml#debug
-  
+
   $saxonProc = new Saxon\SaxonProcessor();
   drush_print("XSLT Version: " . $saxonProc->version());
-  
+
   $to_clean_xslt_proc = $saxonProc->newXsltProcessor();
   $to_v2_xslt_proc = $saxonProc->newXsltProcessor();
   $to_dc_xslt_proc = $saxonProc->newXsltProcessor();
@@ -1761,7 +1653,6 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
   $to_clean_xslt_proc->compileFromFile($xslt_to_clean);
   $to_v2_xslt_proc->compileFromFile($xslt_to_v2);
   $to_dc_xslt_proc->compileFromFile($xslt_to_dc);
-
 
   // xpath to determine if PUB-C Orlando document -  BIBL Legacy XPath
   $xpathStrPub = "//RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C']";
@@ -1973,9 +1864,7 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
   drush_print('Migration Complete');
   drush_print('Number of files migrated: ' . $file_count);
   drush_print('Number of errors: ' . $file_error_count);
-
 }
-
 
 /** 
  * CWRC migration batch - CEWW - 2018-05-17
@@ -1983,15 +1872,12 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
  * workflow is pulled from a file 
  *
  */
-function drush_cwrc_migration_batch_ingest_ceww_entries() 
-{
+function drush_cwrc_migration_batch_ingest_ceww_entries() {
   module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
-
   module_load_include('inc', 'islandora_workflow_rest', 'includes/cwrc_workflow');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
-
 
   drush_print("CEWW entries ingest");
 
@@ -2029,7 +1915,6 @@ function drush_cwrc_migration_batch_ingest_ceww_entries()
     'namespace', 'ceww'
   );
 
-
   // Include modules.
   $connection = null;
   migration_init($connection);
@@ -2037,13 +1922,12 @@ function drush_cwrc_migration_batch_ingest_ceww_entries()
   // Display the user.
   drush_print("User: " . $connection->connection->username);
 
-  
   // setup XSL 
   // http://www.saxonica.com/saxon-c/index.xml#debug
   //xslt_setup($xslt_bio_writ_to_v2, $bio_writ_to_v2_xslt_proc);
   //xslt_setup($xslt_bio_writ_to_mods, $bio_writ_to_mods_xslt_proc);
   //xslt_setup($xslt_mods_to_dc, $mods_to_dc_xslt_proc);
-  
+
   $saxonProc = new Saxon\SaxonProcessor();
   drush_print("XSLT Version: " . $saxonProc->version());
   
@@ -2211,9 +2095,7 @@ function drush_cwrc_migration_batch_ingest_ceww_entries()
   drush_print('Migration Complete');
   drush_print('Number of files migrated: ' . $file_count);
   drush_print('Number of errors: ' . $file_error_count);
-
 }
-
 
 /** 
  * CWRC migration batch - Generic - 2018-07-31
@@ -2221,15 +2103,12 @@ function drush_cwrc_migration_batch_ingest_ceww_entries()
  * MODS optional
  *
  */
-function drush_cwrc_migration_batch_ingest_generic() 
-{
+function drush_cwrc_migration_batch_ingest_generic() {
   module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
-
   module_load_include('inc', 'islandora_workflow_rest', 'includes/cwrc_workflow');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
-
 
   drush_print("Generic ingest");
 
@@ -2266,7 +2145,6 @@ function drush_cwrc_migration_batch_ingest_generic()
     'namespace', 'ceww'
   );
 
-
   // Include modules.
   $connection = null;
   migration_init($connection);
@@ -2274,18 +2152,17 @@ function drush_cwrc_migration_batch_ingest_generic()
   // Display the user.
   drush_print("User: " . $connection->connection->username);
 
-  
   // setup XSL 
   // http://www.saxonica.com/saxon-c/index.xml#debug
-  
+
   $saxonProc = new Saxon\SaxonProcessor();
   drush_print("XSLT Version: " . $saxonProc->version());
-  
+
   $to_mods_xslt_proc = $saxonProc->newXsltProcessor();
   $to_dc_xslt_proc = $saxonProc->newXsltProcessor();
 
   $is_mods = false;
-  if (empty($xslt_to_mods) || @xslt_to_mods == '' ) {
+  if (empty($xslt_to_mods) || $xslt_to_mods === '' ) {
     drush_print("No MODS");
     $is_mods = false;
   } else {
@@ -2379,7 +2256,8 @@ function drush_cwrc_migration_batch_ingest_generic()
         $saxonProc->parseXmlFromString($mods_xml)
       );
       $dc_xml = $to_dc_xslt_proc->transformToString();
-    } else {
+    }
+    else {
       $to_dc_xslt_proc->setParameter( "PID_PARAM", $saxonProc->createAtomicValue($pid) );
       $to_dc_xslt_proc->setSourceFromXdmValue(
         $saxonProc->parseXmlFromString($legacy_content)
@@ -2475,17 +2353,13 @@ function drush_cwrc_migration_batch_ingest_generic()
 
 }
 
-
-
-
 /** 
  * CWRC migration batch - validate cwrc:documentCModel objects - 2016-11-29
  * run an XML schema validation service against the specificed datastream
  * and schema 
  *
  */
-function drush_cwrc_migration_batch_validate() 
-{
+function drush_cwrc_migration_batch_validate() {
   module_load_include('inc', 'cwrc_migration_batch', 'includes/helpers');
 
   drush_print("Validation:");
@@ -2586,17 +2460,13 @@ EOT;
  * (name/org/bibcit/textscope/standard/etc.) 
  *
  */
-function cwrc_migration_batch_add_entity_refs($object, $ds_id) 
-{
-
+function cwrc_migration_batch_add_entity_refs($object, $ds_id) {
   module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
-
   module_load_include('inc', 'islandora_workflow_rest', 'includes/cwrc_workflow');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
   module_load_include('inc', 'islandora_cwrc_basexdb', 'includes/xmldb_endpoints');
-
 
   //contains datastream ID
   $ds = $object[$ds_id];
@@ -2674,7 +2544,6 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id)
     $ds->setContentFromString($content);
   }
 
-
   // add a workflow stamp indicating that the object was ingested
   $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
   $workflow->addWorkflowStep(
@@ -2693,24 +2562,19 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id)
   CWRCWorkflowAPI::updateDatastream($workflow, $object);
 }
 
-
 /** 
  * CWRC migration batch - CEWW - 2018-05-29
  * update subject 
  *
  */
-function drush_cwrc_migration_batch_ceww_add_subject() 
-{
+function drush_cwrc_migration_batch_ceww_add_subject() {
   module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
-
   module_load_include('inc', 'islandora_workflow_rest', 'includes/cwrc_workflow');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
 
-
   drush_print("CEWW: Add subject");
-
 
   $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
 
@@ -2813,27 +2677,21 @@ XML;
   drush_print('Migration Complete');
   drush_print('Number of files migrated: ' . $file_count);
   drush_print('Number of errors: ' . $file_error_count);
-
 }
-
 
 /** 
  * CWRC migration batch - CEWW - 2018-05-29
  * add Thumbnail
  *
  */
-function drush_cwrc_migration_batch_thumbnail_entries() 
-{
+function drush_cwrc_migration_batch_thumbnail_entries() {
   module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
-
   module_load_include('inc', 'islandora_workflow_rest', 'includes/cwrc_workflow');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
 
-
   drush_print("Add thumbnail");
-
 
   $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
 
@@ -2933,7 +2791,4 @@ function drush_cwrc_migration_batch_thumbnail_entries()
   drush_print('Migration Complete');
   drush_print('Number of files migrated: ' . $file_count);
   drush_print('Number of errors: ' . $file_error_count);
-
 }
-
-
