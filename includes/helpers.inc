@@ -512,3 +512,34 @@ function lookup_uri_by_string(
 } 
 
 
+/**
+ * build hash array of entry id's and associated file names
+ * */
+function build_hash_map(&$entries, $src_dir, $file_type, $file_sccs) {
+
+    $src_dh = opendir($src_dir);
+    while (FALSE !== ($file_name = readdir($src_dh))) {
+
+        //drush_print($file_name."\n");
+
+        // If the file is a directory then continue to next file.
+        if (is_dir($file_name)) {
+            continue;
+        }
+
+        //$file_name_xml = preg_replace('/(\.sgm)$/','.xml', $file_name);
+        //print("xml:" . $file_name_xml."\n");
+
+        $entry_id = preg_replace('/^([a-zA-Z_0-9]{6,6})-[wb]\.xml/','$1', $file_name);
+        $entry_type = preg_replace('/^[a-zA-Z_0-9]{6,6}-([wb])\.xml/','$1', $file_name);                                        
+
+        if (!empty($entries[$entry_id])) {
+            $entries[$entry_id][$file_type] = $file_name;
+            $entries[$entry_id][$file_sccs] = "s.".$entry_id."-".$entry_type.".sgm";
+        } else {
+            $entries[$entry_id] = array("$file_type" => "$file_name");
+            $entries[$entry_id][$file_sccs] = "s.".$entry_id."-".$entry_type.".sgm";
+        }                                                                                                                   
+    }
+    closedir($src_dh);
+}
