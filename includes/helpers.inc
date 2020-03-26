@@ -543,3 +543,58 @@ function build_hash_map(&$entries, $src_dir, $file_type, $file_sccs) {
     }
     closedir($src_dh);
 }
+
+/**
+  * Initialize the hash of entities
+**/
+function entity_mapping_init(&$entityMapping) {
+    $entityMapping = array(
+        "Person" => array(),
+        "Organization" => array(),
+        "Citation" => array(),
+        );
+}
+function entity_mapping_load(&$entityMapping, $entityJSONFilename) {
+  if (file_exists($entityJSONFilename)) {
+    $entityMapping = json_decode(file_get_contents($entityJSONFilename));
+  } else {
+    initEntity($entityMapping);
+  }
+}
+
+function entity_mapping_add(&$entity_mapping, $id, $pid, $entityType) {
+  $entity_mapping->$entityType->$id = $pid;
+}
+
+function entity_mapping_lookup($entity_mapping, $id, $entityType) {
+  return $entity_mapping->$entityType->$id;
+}
+
+function entity_mapping_write_to_file($entity_mapping, $entityJSONFilename) {
+  $fp = fopen($entityJSONFilename, 'w');
+  fwrite($fp, json_encode($resources));
+  fclose($fp);
+}
+
+/**
+ * get standard name or bibl id entity 
+ *
+ */
+function entity_mapping_extract_id ($xml)
+{
+  $xml_dom = new DOMDocument();
+  $xml_dom->loadXML($xml);
+  $id_xpath = new DOMXpath($xml_dom);
+  //$dc_title_xpath->registerNamespace("oai_dc", "http://www.openarchives.org/OAI/2.0/oai_dc/");
+  //$dc_title_xpath->registerNamespace("dc", "http://purl.org/dc/elements/1.1/");
+  //$tmp = $dc_title_xpath->query('/oai_dc:dc/dc:title');
+  $tmp = $id_xpath->query('/AUTHORITYITEM/@STANDARD || /BIBLIOGRAPHY_ENTRY/@BI_ID');
+
+  $id = $tmp->item(0)->nodeValue;
+
+  return $id;
+}
+
+
+
+
