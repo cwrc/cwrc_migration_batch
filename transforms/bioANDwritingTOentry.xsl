@@ -14,6 +14,7 @@
     </xsl:template>
 
 
+
     <!--    Remove elements AND content-->
 
     <xsl:template match="BIOGRAPHY/ORLANDOHEADER"/>
@@ -21,8 +22,9 @@
     <xsl:template match="BIOGRAPHY/DIV0/STANDARD"/>
     <xsl:template match="WRITING/DIV0/STANDARD"/>
     <xsl:template match="WRITING/DIV0/AUTHORSUMMARY"/>
-
-
+    <xsl:template match="BIOGRAPHY/DIV0/WORKSCITED"/>
+    <xsl:template match="WRITING/DIV0/WORKSCITED"/>
+    <xsl:template match="WRITING/DIV0/WORKSCITED/SOURCE[text() = 'Unless otherwise noted, all information is from the FC']"/>
 
 
     <!--    Remove attributes-->
@@ -36,8 +38,6 @@
     <xsl:template match="DIV0">
         <xsl:apply-templates select="@* | node()"/>
     </xsl:template>
-
-
 
 
     <!--Master template-->
@@ -64,23 +64,23 @@
                         Project</SOURCEDESC>
                 </FILEDESC>
                 <REVISIONDESC TYPE="LEGACY">
-                    <xsl:copy-of select="descendant::RESPONSIBILITY"/>
+                    <xsl:for-each
+                        select="(BIOGRAPHY | WRITING)/ORLANDOHEADER/REVISIONDESC/RESPONSIBILITY">
+                        <xsl:sort select="DATE/@VALUE" order="ascending" data-type="text"/>
+                        <xsl:element name="{local-name(.)}">
+                            <xsl:choose>
+                                <xsl:when test="ancestor::BIOGRAPHY">
+                                    <xsl:attribute name="TARGET">BIOGRAPHY</xsl:attribute>
+                                </xsl:when>
+                                <xsl:otherwise>
+                                    <xsl:attribute name="TARGET">WRITING</xsl:attribute>
+                                </xsl:otherwise>
+                            </xsl:choose>
+                            <xsl:copy-of select="@*"/>
+                            <xsl:copy-of select="node()"/>
+                        </xsl:element>
 
-                    <!--For Jeff: I am trying to grab all responsibility statements, add the target attribute and sort them ascendengly,
-          but it doesn't seem to be working and I am too tired to figure out why (it's probably something stupid simple)  -->
-
-                    <!--<xsl:for-each select="RESPONSIBILITY">
-                        <xsl:sort select="DATE/@VALUE" order="ascending" data-type="number"/>
-                        <xsl:choose>
-                            <xsl:when test="ancestor::BIOGRAPHY">
-                                <xsl:attribute name="TARGET">BIOGRAPHY</xsl:attribute>
-                            </xsl:when>
-                            <xsl:otherwise>
-                                <xsl:attribute name="TARGET">WRITING</xsl:attribute>
-                            </xsl:otherwise>
-                        </xsl:choose>
-                        <xsl:apply-templates/>
-                    </xsl:for-each>-->
+                    </xsl:for-each>
 
                 </REVISIONDESC>
             </ORLANDOHEADER>
@@ -89,9 +89,21 @@
                 <xsl:copy-of select="descendant::STANDARD[1]"/>
                 <!--         For Jeff: This assumes that AUTHORSUMMARY elements in BIO and WRITING are always identical - please confirm. -->
                 <AUTHORSUMMARY>
-                    <xsl:copy-of select="descendant::AUTHORSUMMARY/SHORTPROSE/node()"/>
+                    <xsl:copy-of select="descendant::AUTHORSUMMARY[1]/SHORTPROSE/node()"/>
                 </AUTHORSUMMARY>
                 <xsl:apply-templates/>
+                <WORKSCITED>
+                    <SOURCE>Unless otherwise noted, all information is from the FC</SOURCE>
+                    <xsl:for-each-group select="(BIOGRAPHY | WRITING)/DIV0/WORKSCITED/SOURCE"
+                        group-by="text()">
+                        <xsl:sort select="text()" order="ascending" data-type="text"/>
+                           <xsl:element name="{local-name(.)}">
+                            <xsl:copy-of select="@*"/>
+                            <xsl:copy-of select="node()"/>
+                        </xsl:element>
+                    </xsl:for-each-group>
+                </WORKSCITED>
+
             </DIV0>
         </ENTRY>
     </xsl:template>
