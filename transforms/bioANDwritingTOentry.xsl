@@ -3,49 +3,27 @@
     <xsl:output method="xml" encoding="UTF-8" indent="yes"/>
 
     <!-- Remove any white-space-only text nodes -->
+
     <xsl:strip-space elements="*"/>
 
     <!-- Copy all document -->
-    <xsl:template match="*">
+
+    <xsl:template match="@* | node()">
         <xsl:copy>
-            <xsl:copy-of select="@*"/>
-            <xsl:apply-templates/>
+            <xsl:apply-templates select="@* | node()"/>
         </xsl:copy>
     </xsl:template>
-
-
 
     <!--    Remove elements AND content-->
 
     <xsl:template match="BIOGRAPHY/ORLANDOHEADER"/>
     <xsl:template match="WRITING/ORLANDOHEADER"/>
-    <xsl:template match="BIOGRAPHY/DIV0/STANDARD"/>
-    <xsl:template match="WRITING/DIV0/STANDARD"/>
-    <xsl:template match="WRITING/DIV0/AUTHORSUMMARY"/>
-    <xsl:template match="BIOGRAPHY/DIV0/WORKSCITED"/>
-    <xsl:template match="WRITING/DIV0/WORKSCITED"/>
-    <xsl:template match="WRITING/DIV0/WORKSCITED/SOURCE[text() = 'Unless otherwise noted, all information is from the FC']"/>
-
-
-    <!--    Remove attributes-->
-
-    <!-- For Jeff: why can't I remove the attributes on Bio and Writing tags? -->
-    <xsl:template match="BIOGRAPHY/@SEX"/>
-    <xsl:template match="WRITING/@SEX"/>
-
-    <!--    Remove elements BUT keep content and children-->
-
-    <xsl:template match="DIV0">
-        <xsl:apply-templates select="@* | node()"/>
-    </xsl:template>
-
+    <xsl:template
+        match="WRITING/DIV0/WORKSCITED/SOURCE[text() = 'Unless otherwise noted, all information is from the FC']"/>
 
     <!--Master template-->
 
-
     <xsl:template match="ENTRY">
-        <xsl:processing-instruction name="xml-model">href="https://cwrc.ca/schemas/orlando_entry-draft.rng"</xsl:processing-instruction>
-        <xsl:processing-instruction name="xml-stylesheet">href="https://cwrc.ca/templates/css/orlando.css" type="text/css"</xsl:processing-instruction>
         <ENTRY>
             <xsl:copy-of select="@ID | (BIOGRAPHY | WRITING)/(@SEX | @PERSON)"/>
             <ORLANDOHEADER>
@@ -85,19 +63,26 @@
                 </REVISIONDESC>
             </ORLANDOHEADER>
             <DIV0>
-                <!--         For Jeff: This assumes that STANDAARD elements in BIO and WRITING are always identical - please confirm. -->
                 <xsl:copy-of select="descendant::STANDARD[1]"/>
-                <!--         For Jeff: This assumes that AUTHORSUMMARY elements in BIO and WRITING are always identical - please confirm. -->
                 <AUTHORSUMMARY>
                     <xsl:copy-of select="descendant::AUTHORSUMMARY[1]/SHORTPROSE/node()"/>
                 </AUTHORSUMMARY>
-                <xsl:apply-templates/>
+                <BIOGRAPHY>
+                    <xsl:copy-of
+                        select="descendant::BIOGRAPHY/DIV0/*[not(self::WORKSCITED | self::STANDARD | self::AUTHORSUMMARY)]"
+                    />
+                </BIOGRAPHY>
+                <WRITING>
+                    <xsl:copy-of
+                        select="descendant::WRITING/DIV0/*[not(self::WORKSCITED | self::STANDARD | self::AUTHORSUMMARY)]"
+                    />
+                </WRITING>
                 <WORKSCITED>
                     <SOURCE>Unless otherwise noted, all information is from the FC</SOURCE>
                     <xsl:for-each-group select="(BIOGRAPHY | WRITING)/DIV0/WORKSCITED/SOURCE"
                         group-by="text()">
                         <xsl:sort select="text()" order="ascending" data-type="text"/>
-                           <xsl:element name="{local-name(.)}">
+                        <xsl:element name="{local-name(.)}">
                             <xsl:copy-of select="@*"/>
                             <xsl:copy-of select="node()"/>
                         </xsl:element>
@@ -107,10 +92,5 @@
             </DIV0>
         </ENTRY>
     </xsl:template>
-
-
-
-
-
 
 </xsl:stylesheet>
