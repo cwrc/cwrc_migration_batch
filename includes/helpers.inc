@@ -338,6 +338,8 @@ function add_entity_references_via_element(
     , $attr_new
     , $attr_src
     , $xquery_id 
+    , $entity_type
+    , $entity_mapping
     )
 {
   $dom = new DOMDocument;
@@ -354,6 +356,8 @@ function add_entity_references_via_element(
     , $attr_new
     , $attr_src
     , $xquery_id 
+    , $entity_type
+    , $entity_mapping
   );
   
 }
@@ -370,6 +374,8 @@ function add_entity_references_via_xpath(
     , $attr_new
     , $attr_src
     , $xquery_id 
+    , $entity_type
+    , $entity_mapping
     )
 {
   $dom = new DOMDocument;
@@ -388,6 +394,8 @@ function add_entity_references_via_xpath(
     , $attr_new
     , $attr_src
     , $xquery_id 
+    , $entity_type
+    , $entity_mapping
   );
 }
 
@@ -404,6 +412,8 @@ function add_entity_references(
     , $attr_new
     , $attr_src
     , $xquery_id 
+    , $entity_type
+    , $entity_mapping
     )
 {
   if($nodes instanceof DOMNodeList)
@@ -437,35 +447,15 @@ function add_entity_references(
       // lookup and set the URI reference
       if (!$domElement->hasAttribute($attr_new))
       {
-        // is the new attribute already present?
-        // if no then add based on a lookup in the entity set
-        // lookup_entity_given_orlando_standard();
-        $attr_ref_value = lookup_uri_by_string(
-            $lookup_str
-            , $entity_cmodel
-            , $xquery_id
-            );
-        
-        $tmp_array = json_decode($attr_ref_value);
 
-        // may return a list of pids
-        // grap the first that is present in Fedora 
-        // json look like the following: { "pid" : [] }
-        $pid = null;
-        if ($tmp_array->pids)
-        { 
-          $iter = 0;
-          do 
-          {
-            $tmp_pid = $tmp_array->pids[$iter];
-            if (islandora_object_load($tmp_pid))
-            {
-              $pid = $tmp_array->pids[$iter];
-            }
-            $iter++;
-          } while ($iter < count($tmp_array->pids) ) ;
+        // lookup PID
+        if (isset($xquery_id)) {
+          $pid = lookup_id_in_XML_database($lookup_str, $entity_cmodel, $xquery_id);
+        } else if (isset($entity_mapping) && isset($entity_type)) {
+          $pid = entity_mapping_lookup($entity_mapping, $lookup_str, $entity_type);
         }
 
+        // update XML element node with new attribute
         if (!empty($attr_new) and !empty($pid))
         {
           // writin the entity uri (base + PID)
@@ -488,8 +478,43 @@ function add_entity_references(
 
 
 /**
+ * lookup standard_name / bibcit in XML Database 
+ */
+function lookup_id_in_XML_database($lookup_str, $entity_cmodel, $xquery_id) 
+{
+  // is the new attribute already present?
+  // if no then add based on a lookup in the entity set
+  // lookup_entity_given_orlando_standard();
+  $attr_ref_value = lookup_uri_by_string(
+      $lookup_str
+      , $entity_cmodel
+      , $xquery_id
+      );
+  
+  $tmp_array = json_decode($attr_ref_value);
+
+  // may return a list of pids
+  // grap the first that is present in Fedora 
+  // json look like the following: { "pid" : [] }
+  $pid = null;
+  if ($tmp_array->pids)
+  { 
+    $iter = 0;
+    do 
+    {
+      $tmp_pid = $tmp_array->pids[$iter];
+      if (islandora_object_load($tmp_pid))
+      {
+        $pid = $tmp_array->pids[$iter];
+      }
+      $iter++;
+    } while ($iter < count($tmp_array->pids) ) ;
+  }
+  return $pid;
+}
+
+/**
  * lookup the URL based on a unique string
- *
  */
 function lookup_uri_by_string(
   $lookup_str

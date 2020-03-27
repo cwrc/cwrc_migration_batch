@@ -1390,6 +1390,12 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
   // path to the input document files 
   $legacy_dir = drush_get_option('legacy_dir','/tmp/orlando/bio_writ');
 
+  // path to entity mapping file
+  $entity_mapping_file = drush_get_option(
+    'entity_mapping_file'
+    , '/tmp/orlando/entity_mapping.json'
+    );
+
   // 
   $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
   $xslt_to_v2 = drush_get_option(
@@ -1452,6 +1458,11 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
   $to_mods_xslt_proc->compileFromFile($xslt_to_mods);
   $mods_to_dc_xslt_proc->compileFromFile($xslt_mods_to_dc);
 
+  // Initialize entity mapping: a JSON file ofPID to standard name 
+  // entity mapping file used to add URI's to bio/writing/event',
+  $entity_mapping = null;
+  entity_mapping_load($entity_mapping, $entity_mapping_file);
+  drush_print("Entity mapping file: " . $entity_mapping_file);
 
   // xpath to determine if PUB-C Orlando document - Biography/Writing/Event
   $xpathStrPub = "/*/ORLANDOHEADER/REVISIONDESC/RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C']";
@@ -1684,7 +1695,7 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
       //update URI's refences in entities
       if ($object['CWRC'])
       {
-        cwrc_migration_batch_add_entity_refs($object, "CWRC");
+        cwrc_migration_batch_add_entity_refs($object, "CWRC", $entity_mapping);
       }
     }
     catch (Exception $e) {
@@ -1694,6 +1705,10 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
     }
 
   }
+  
+  // write the entity mapping file
+  entity_mapping_write_to_file($entity_mapping, $entity_mapping_file);
+
   drush_print('Migration Complete');
   drush_print('Number of files migrated: ' . $file_count);
   drush_print('Number of errors: ' . $file_error_count);
@@ -2143,7 +2158,7 @@ break;
       //update URI's refences in entities
       if ($object['CWRC'])
       {
-        cwrc_migration_batch_add_entity_refs($object, "CWRC");
+        cwrc_migration_batch_add_entity_refs($object, "CWRC", $entity_mapping);
       }
     }
     catch (Exception $e) {
@@ -3105,7 +3120,7 @@ EOT;
  * (name/org/bibcit/textscope/standard/etc.) 
  *
  */
-function cwrc_migration_batch_add_entity_refs($object, $ds_id) 
+function cwrc_migration_batch_add_entity_refs($object, $ds_id, $entity_mapping) 
 {
 
   module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
@@ -3134,6 +3149,8 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id)
       , "REF"
       , null
       , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
+      , "NAME"
+      , $entity_mapping
     );
     $content = add_entity_references_via_element(
       $content
@@ -3142,6 +3159,8 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id)
       , "REF"
       , "STANDARD"
       , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
+      , "NAME"
+      , $entity_mapping
     );
     $content = add_entity_references_via_element(
       $content
@@ -3150,6 +3169,8 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id)
       , "REF"
       , "STANDARD"
       , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
+      , ORGNAME
+      , $entity_mapping
     );
     $content = add_entity_references_via_element(
       $content
@@ -3158,6 +3179,8 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id)
       , "REF"
       , "DBREF"
       , ISLANDORA_ORLANDO_MIGRATE_BIBL
+      , BIBCIT 
+      , $entity_mapping
     );
     $content = add_entity_references_via_element(
       $content
@@ -3166,6 +3189,8 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id)
       , "REF"
       , "DBREF"
       , ISLANDORA_ORLANDO_MIGRATE_BIBL
+      , BIBCIT 
+      , $entity_mapping
     );
 
     // update object
@@ -3189,6 +3214,8 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id)
       , "valueURI"
       , ""
       , "orlando_migration/orlando_entity_lookup_person_org.xq"
+      , "BIBCIT" 
+      , $entity_mapping
       );
     $ds->setContentFromString($content);
   }
