@@ -1902,7 +1902,7 @@ function drush_cwrc_migration_batch_ingest_orlando_combine_biography_writing ()
     // build combined doc with both biography and writing orlando documents
     // <ORLANDO><BIOGRAPHY/><WRITING></ORLANDO>
     $tmp_doctype = "<!DOCTYPE ORLANDO [ <!ENTITY % character_entities SYSTEM 'http://cwrc.ca/schemas/character_entities.dtd'> %character_entities; ]>\n";
-    $legacy_content =
+    $legacy_combined =
         "<?xml version='1.0' encoding='UTF-8'?>\n"
         . "<?xml-model href='https://cwrc.ca/schemas/orlando_entry.rng' type='application/xml' schematypens='http://relaxng.org/ns/structure/1.0'?>\n"
         . "<?xml-stylesheet type='text/css' href='https://cwrc.ca/templates/css/orlando.css'?>\n"
@@ -1920,7 +1920,7 @@ function drush_cwrc_migration_batch_ingest_orlando_combine_biography_writing ()
     // build the version 2.0 of the biography / writing document
     // UTF-8 + Legacy Dates + remove DOCTYPE
     $to_v2_xslt_proc->setSourceFromXdmValue(
-      $saxonProc->parseXmlFromString($legacy_content)
+      $saxonProc->parseXmlFromString($legacy_combined)
     );
     //$bio_writ_to_v2_xslt_proc->setSourceFromXdmValue($content_dom);
     $content_v2_xml = $to_v2_xslt_proc->transformToString();
