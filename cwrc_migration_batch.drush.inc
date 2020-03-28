@@ -76,6 +76,7 @@ function cwrc_migration_batch_drush_command() {
     'description' => 'Ingest Orlando Biography/Writing/event objects into CWRC',
     'options' => array(
       'legacy_dir' => 'path to directory of legacy source material',
+      'entity_mapping_file' => 'path to the JSON PID to standard name entity mapping file used to add URIs to bio/writing/event',
       'xslt_to_v2' => 'convert legacy bio/writ docs to version 2 (convert dates, utf-8)',
       'xslt_to_mods' => 'path to XSLT to convert biography/writing/event to mods',
       'xslt_mods_to_dc' => 'path to XSLT to convert mods to DC',
@@ -1462,9 +1463,18 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
 
   // Initialize entity mapping: a JSON file ofPID to standard name 
   // entity mapping file used to add URI's to bio/writing/event',
-  $entity_mapping = null;
-  entity_mapping_load($entity_mapping, $entity_mapping_file);
-  drush_print("Entity mapping file: " . $entity_mapping_file);
+  try {
+    drush_print("Entity mapping file: " . $entity_mapping_file);
+    entity_mapping_load($entity_mapping, $entity_mapping_file);
+    drush_print("person: " . count($entity_mapping["NAME"]));
+    drush_print("org: " . count($entity_mapping["ORGNAME"]));
+    drush_print("bibl: " . count($entity_mapping["BIBCIT"]));
+    // write the entity mapping file
+    entity_mapping_write_to_file($entity_mapping, $entity_mapping_file);
+  } catch (Exception $e) {
+    drush_print($e);
+    exit();
+  }
 
   // xpath to determine if PUB-C Orlando document - Biography/Writing/Event
   $xpathStrPub = "/*/ORLANDOHEADER/REVISIONDESC/RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C']";
