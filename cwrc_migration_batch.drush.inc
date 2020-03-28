@@ -1812,7 +1812,7 @@ function drush_cwrc_migration_batch_ingest_orlando_combine_biography_writing ()
   $mods_to_dc_xslt_proc = $saxonProc->newXsltProcessor();
 
   $to_v2_xslt_proc->compileFromFile($xslt_to_v2);
-  $to_v3_xslt_proc->compileFromFile($xslt_to_v2);
+  $to_v3_xslt_proc->compileFromFile($xslt_to_v3);
   $to_mods_xslt_proc->compileFromFile($xslt_to_mods);
   $mods_to_dc_xslt_proc->compileFromFile($xslt_mods_to_dc);
 
@@ -1934,6 +1934,8 @@ function drush_cwrc_migration_batch_ingest_orlando_combine_biography_writing ()
       $saxonProc->parseXmlFromString($content_v2_xml)
     );
     $content_v3_xml = $to_v3_xslt_proc->transformToString();
+
+    //print ("zzzzzzzzzzzzzzzzzzzz " . $content_v3_xml);
 
     // Build MODS XML.
     $to_mods_xslt_proc->setParameter(

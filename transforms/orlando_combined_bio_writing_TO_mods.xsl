@@ -31,10 +31,10 @@
                     <xsl:choose>
                         <xsl:when test="ORLANDO">
                             <!-- might be both bio and writ sections: use first -->
-                            <xsl:value-of select="/ORLANDO/(BIOGRAPHY|WRITING|DOCUMENTATION)[1]/ORLANDOHEADER/FILEDESC/TITLESTMT/DOCTITLE/text()"/>
+                            <xsl:value-of select="/ORLANDO/(BIOGRAPHY|WRITING|DOCUMENTATION|ENTRY)[1]/ORLANDOHEADER/FILEDESC/TITLESTMT/DOCTITLE/text()"/>
                         </xsl:when>
-                        <xsl:when test="BIOGRAPHY | WRITING | DOCUMENTATION">
-                            <xsl:value-of select="/(BIOGRAPHY|WRITING|DOCUMENTATION)/ORLANDOHEADER/FILEDESC/TITLESTMT/DOCTITLE/text()"/>
+                        <xsl:when test="BIOGRAPHY | WRITING | DOCUMENTATION | ENTRY">
+                            <xsl:value-of select="/(BIOGRAPHY|WRITING|DOCUMENTATION|ENTRY)/ORLANDOHEADER/FILEDESC/TITLESTMT/DOCTITLE/text()"/>
                         </xsl:when>
                         <xsl:when test="EVENT" xml:space="default">
                             <xsl:variable name="TEXT_TO_SUBSTRING" select="normalize-space(/EVENT/CHRONEVENT/CHRONSTRUCT/CHRONPROSE)" xml:space="default"/>
