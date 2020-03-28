@@ -131,6 +131,7 @@ function cwrc_migration_batch_drush_command() {
       'namespace' => 'pid namespace',
       'supplemental_filename' => 'supplemental content used to augment content',
       'add_pub_c_workflow' => 'add an additional workflow activity - pub-c',
+      'entity_type' => 'define the entity type (based on XML element name)',
     ),
     'examples' => array(
       'drush -u 1 cwrc_migration_batch_ingest_orlando_entities',
@@ -2279,9 +2280,18 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
 
   // Initialize entity mapping: a JSON file ofPID to standard name 
   // entity mapping file used to add URI's to bio/writing/event',
-  $entity_mapping = null;
-  entity_mapping_load($entity_mapping, $entity_mapping_file);
-  drush_print("Entity mapping file: " . $entity_mapping_file);
+  try {
+    drush_print("Entity mapping file: " . $entity_mapping_file);
+    entity_mapping_load($entity_mapping, $entity_mapping_file);
+    drush_print("person: " . count($entity_mapping["NAME"]));
+    drush_print("org: " . count($entity_mapping["ORGNAME"]));
+    drush_print("bibl: " . count($entity_mapping["BIBCIT"]));
+    // write the entity mapping file
+    entity_mapping_write_to_file($entity_mapping, $entity_mapping_file);
+  } catch (Exception $e) {
+    drush_print($e);
+    exit();
+  }
 
   // xpath to determine if PUB-C Orlando document -  BIBL Legacy XPath
   $xpathStrPub = "//RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C']";
@@ -2332,12 +2342,13 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
 
     // add ID and PID to the entity mapping
     // ToDo: assumption - use UTF-8 version
-    $legacy_id = entity_mapping_extract_id($xml);
+    $legacy_id = entity_mapping_extract_id($clean_xml);
     if ( isset($pid) && isset($legacy_id) ) {
       entity_mapping_add($entity_mapping, $legacy_id, $pid, $entity_type);
+      drush_print("Entity ID [$legacy_id] added with value [$pid]");
     }
     else {
-      drush_print("ID [$legacy_id] not found");
+      drush_print("Entity ID [$legacy_id] not found");
     }
 
     // build the version 2.0 
@@ -2373,6 +2384,7 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
 
     // determine collection based on workflow
     $legacy_dom = new DOMDocument();
+    $legacy_dom->resolveExternals = true;
     $legacy_dom->loadXML($legacy_content);
     $xpathObj = new DOMXpath($legacy_dom); 
     $pubCRes = $xpathObj->query($xpathStrPub);
@@ -2502,7 +2514,9 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
 
   }
 
-  // write the entity mapping file
+  drush_print("person: " . count($entity_mapping["NAME"]));
+  drush_print("org: " . count($entity_mapping["ORGNAME"]));
+  drush_print("bibl: " . count($entity_mapping["BIBCIT"]));
   entity_mapping_write_to_file($entity_mapping, $entity_mapping_file);
 
   drush_print('Migration Complete');
