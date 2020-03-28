@@ -71,10 +71,12 @@ function cwrc_migration_batch_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
+  # 2019-12-19: events only? 
   $items['cwrc_migration_batch_ingest_orlando_biography_writing'] = array(
     'description' => 'Ingest Orlando Biography/Writing/event objects into CWRC',
     'options' => array(
       'legacy_dir' => 'path to directory of legacy source material',
+      'entity_mapping_file' => 'path to the JSON PID to standard name entity mapping file used to add URIs to bio/writing/event',
       'xslt_to_v2' => 'convert legacy bio/writ docs to version 2 (convert dates, utf-8)',
       'xslt_to_mods' => 'path to XSLT to convert biography/writing/event to mods',
       'xslt_mods_to_dc' => 'path to XSLT to convert mods to DC',
@@ -91,11 +93,36 @@ function cwrc_migration_batch_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
- 
+  # 2019-12-19: combine bio/writ 
+  $items['cwrc_migration_batch_ingest_orlando_combine_biography_writing'] = array(
+    'description' => 'Ingest Orlando Biography/Writing objects into CWRC',
+    'options' => array(
+      'legacy_dir' => 'path to directory of legacy source material',
+      'entity_mapping_file' => 'path to the JSON PID to standard name entity mapping file used to add URIs to bio/writing/event',
+      'xslt_to_v2' => 'convert legacy bio/writ docs to version 2 (convert dates, utf-8)',
+      'xslt_to_v3' => 'update combined documents to version 3 (header)',
+      'xslt_to_mods' => 'path to XSLT to convert biography/writing/event to mods',
+      'xslt_mods_to_dc' => 'path to XSLT to convert mods to DC',
+      'collection_pid_pub_c' => 'add object to the given collection if PUC-C workflow',
+      'collection_pid_non_pub_c' => 'add object to the given collection if no PUB-C workflow',
+      'cModel_pid' => 'cModel pid assigments',
+      'schema_object' => 'schema object pid assigments',
+      'XACML_policy' => 'path to the default XACML policy',
+      'namespace' => 'pid namespace',
+    ),
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_ingest_orlando_combine_biography_writing ',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
+
+
+  # 2019-12-19: name/org/bibl 
   $items['cwrc_migration_batch_ingest_orlando_entities'] = array(
     'description' => 'Ingest Orlando Entity objects into CWRC',
     'options' => array(
       'legacy_dir' => 'path to directory of legacy source material',
+      'entity_mapping_file' => 'path to the JSON PID to standard name entity mapping file used to add URIs to bio/writing/event',
       'xslt_to_v2' => 'convert legacy Orlando docs to version 2 (convert dates, utf-8)',
       'xslt_to_dc' => 'path to XSLT to convert mods to DC',
       'main_ds_id' => 'Id of the main datastream (where content XML stored)',
@@ -106,6 +133,7 @@ function cwrc_migration_batch_drush_command() {
       'namespace' => 'pid namespace',
       'supplemental_filename' => 'supplemental content used to augment content',
       'add_pub_c_workflow' => 'add an additional workflow activity - pub-c',
+      'entity_type' => 'define the entity type (based on XML element name)',
     ),
     'examples' => array(
       'drush -u 1 cwrc_migration_batch_ingest_orlando_entities',
@@ -1365,6 +1393,12 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
   // path to the input document files 
   $legacy_dir = drush_get_option('legacy_dir','/tmp/orlando/bio_writ');
 
+  // path to entity mapping file
+  $entity_mapping_file = drush_get_option(
+    'entity_mapping_file'
+    , '/tmp/orlando/entity_mapping.json'
+    );
+
   // 
   $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
   $xslt_to_v2 = drush_get_option(
@@ -1427,6 +1461,20 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
   $to_mods_xslt_proc->compileFromFile($xslt_to_mods);
   $mods_to_dc_xslt_proc->compileFromFile($xslt_mods_to_dc);
 
+  // Initialize entity mapping: a JSON file ofPID to standard name 
+  // entity mapping file used to add URI's to bio/writing/event',
+  try {
+    drush_print("Entity mapping file: " . $entity_mapping_file);
+    entity_mapping_load($entity_mapping, $entity_mapping_file);
+    drush_print("person: " . count($entity_mapping["NAME"]));
+    drush_print("org: " . count($entity_mapping["ORGNAME"]));
+    drush_print("bibl: " . count($entity_mapping["BIBCIT"]));
+    // write the entity mapping file
+    entity_mapping_write_to_file($entity_mapping, $entity_mapping_file);
+  } catch (Exception $e) {
+    drush_print($e);
+    exit();
+  }
 
   // xpath to determine if PUB-C Orlando document - Biography/Writing/Event
   $xpathStrPub = "/*/ORLANDOHEADER/REVISIONDESC/RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C']";
@@ -1659,7 +1707,7 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
       //update URI's refences in entities
       if ($object['CWRC'])
       {
-        cwrc_migration_batch_add_entity_refs($object, "CWRC");
+        cwrc_migration_batch_add_entity_refs($object, "CWRC", $entity_mapping);
       }
     }
     catch (Exception $e) {
@@ -1669,15 +1717,491 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
     }
 
   }
+  
+  // write the entity mapping file
+  entity_mapping_write_to_file($entity_mapping, $entity_mapping_file);
+
   drush_print('Migration Complete');
   drush_print('Number of files migrated: ' . $file_count);
   drush_print('Number of errors: ' . $file_error_count);
 
 }
 
+/** 
+ * CWRC migration batch - combine biography / writing Orlando version 3 - 2019-12-19
+ * assumes MODS and DC generated on the fly 
+ * workflow is pulled from the legacy Orlando format stored in subdir
+ * the separate biography and writing docs for a person are
+ * linked via MODS entity reference
+ *
+ */
+function drush_cwrc_migration_batch_ingest_orlando_combine_biography_writing () 
+{
+  module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
+
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/cwrc_workflow');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
+
+
+  drush_print("Orlando Biography / Writing / Event migration batch version 2.0");
+
+  // path to the input document files 
+  $legacy_dir = drush_get_option('legacy_dir','/tmp/orlando/bio_writ');
+
+  // path to entity mapping file
+  $entity_mapping_file = drush_get_option(
+    'entity_mapping_file'
+    , '/tmp/orlando/entity_mapping.json'
+    );
+
+  // UTF-8 plus legacy dates 
+  $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
+  $xslt_to_v2 = drush_get_option(
+    'xslt_to_v2'
+    , $ext_home . 'transforms/orlando_legacy_to_v2_bio_writing.xsl'
+  );
+
+  // merge bio/writing doc headers
+  $xslt_to_v3 = drush_get_option(
+    'xslt_to_v3'
+    , $ext_home . 'transforms/bioANDwritingTOentry.xsl'
+  );
+
+  $xslt_to_mods = drush_get_option(
+    'xslt_to_mods'
+    , $ext_home . 'transforms/orlando_combined_bio_writing_TO_mods.xsl'
+  );
+  $xslt_mods_to_dc = drush_get_option(
+    'xslt_mods_to_dc'
+    , libraries_get_path('islandora_cwrc_xslt_library') . '/xslt/mods_to_dc.xsl'
+  );
+  
+  $collection_pid_pub_c = drush_get_option(
+    'collection_pid_pub_c'
+    , 'cwrc:fc271c04-7fd1-46b4-9462-339dbe917c46'
+  );
+  $collection_pid_non_pub_c = drush_get_option(
+    'collection_pid_non_pub_c'
+    , 'cwrc:bf8ba2b7-dbed-440b-9000-88860be1bcc9'
+  );
+  $cModel_pid = drush_get_option(
+    'cModel_pid' , 'cwrc:documentCModel'
+  );
+  $schemaObject = drush_get_option(
+    'schema_object', 'cwrc:biographySchema'
+  );
+  $policy = drush_get_option(
+    'XACML_policy', $ext_home . 'xml/orlando_default_XACML_Policy_Stream.xml'
+  );
+  $namespace = drush_get_option(
+    'namespace', 'orlando'
+  );
+
+
+  // Include modules.
+  $connection = null;
+  migration_init($connection);
+
+  // Display the user.
+  drush_print("User: " . $connection->connection->username);
+
+  // setup XSL 
+  // http://www.saxonica.com/saxon-c/index.xml#debug
+  //xslt_setup($xslt_bio_writ_to_v2, $bio_writ_to_v2_xslt_proc);
+  //xslt_setup($xslt_bio_writ_to_mods, $bio_writ_to_mods_xslt_proc);
+  //xslt_setup($xslt_mods_to_dc, $mods_to_dc_xslt_proc);
+  
+  $saxonProc = new Saxon\SaxonProcessor();
+  drush_print("XSLT Version: " . $saxonProc->version());
+  
+  $to_v2_xslt_proc = $saxonProc->newXsltProcessor();
+  $to_v3_xslt_proc = $saxonProc->newXsltProcessor();
+  $to_mods_xslt_proc = $saxonProc->newXsltProcessor();
+  $mods_to_dc_xslt_proc = $saxonProc->newXsltProcessor();
+
+  $to_v2_xslt_proc->compileFromFile($xslt_to_v2);
+  $to_v3_xslt_proc->compileFromFile($xslt_to_v3);
+  $to_mods_xslt_proc->compileFromFile($xslt_to_mods);
+  $mods_to_dc_xslt_proc->compileFromFile($xslt_mods_to_dc);
+
+  // Initialize entity mapping: a JSON file ofPID to standard name 
+  // entity mapping file used to add URI's to bio/writing/event',
+  try {
+    drush_print("Entity mapping file: " . $entity_mapping_file);
+    entity_mapping_load($entity_mapping, $entity_mapping_file);
+    drush_print("person: " . count($entity_mapping["NAME"]));
+    drush_print("org: " . count($entity_mapping["ORGNAME"]));
+    drush_print("bibl: " . count($entity_mapping["BIBCIT"]));
+    // write the entity mapping file
+    entity_mapping_write_to_file($entity_mapping, $entity_mapping_file);
+  } catch (Exception $e) {
+    drush_print($e);
+    exit();
+  }
+
+  // xpath to determine if PUB-C Orlando document - Biography/Writing/Event
+  $xpathStrPub = "/*/ORLANDOHEADER/REVISIONDESC/RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C']";
+  //$xpathStrBio = "/BIOGRAPHY";
+  //$xpathStrWriting = "/WRITING";
+
+  // Set source directory for the legacy Orlando content
+  // Open the source direcotry and iterate through every file in the 
+  // directory - one file maps to one Fedora 
+  drush_print("Input legacy dir: " . $legacy_dir);
+  $legacy_bio = $legacy_dir . "/biography/";
+  $legacy_writ = $legacy_dir . "/writing/";
+  $legacy_sccs = $legacy_dir . "/sccs_archive/";
+
+  // build hash map of author ids with bio/writing doc attached
+  // entries = array(
+  //                "austja" => array(
+  //                        "bio_xml" => ""
+  //                        "writing_xml" => ""
+  //                        "bio_sccs" => ""
+  //                        "writing_sccs" => ""
+  //                        )
+  //                )
+  $entries = array();
+  build_hash_map($entries, $legacy_writ, "writ_xml", "writ_sccs");
+  build_hash_map($entries, $legacy_bio, "bio_xml", "bio_sccs");
+
+  // Counter for the number of files to migrate.
+  $file_count = 0; 
+  $file_error_count = 0;
+  foreach ($entries as $key => $entry) {
+
+    $pid = null;
+
+    //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
+    // no effect when PHP is running in safe mode
+    // http://php.net/manual/en/function.set-time-limit.php
+    set_time_limit(5);
+
+    drush_print("Entry: " . $key);
+
+    // generate an id for the object
+    $pid = $connection->repository->getnextIdentifier($namespace, TRUE);
+
+    // Strip out the .xml from the file name and store in the variable.
+    //preg_match('/[a-z0-9-_]*/', $file_name, $object_name);
+    // Strip out file name to get type -b(biography) or -w (writable).
+    //preg_match('/-[a-z]?/', $file_name, $object_type);
+    //$object_name = $object_name[0];
+    //$object_type = $object_type[0];
+    //$pid = "cwrc:$object_name";
+
+    // If the object already exists then continue to next file.
+    if (islandora_object_load($pid)) {
+      drush_print("object $pid - $key is already in fedora");
+      continue;
+    }
+
+
+    // get legacy files
+    $legacy_writing_content = null;
+    if (isset($entry['writ_xml'])) {
+        $legacy_writing_content = file_get_contents($legacy_dir."/writing/".$entry['writ_xml']);
+    }
+    $legacy_biography_content = null;
+    if (isset($entry['bio_xml'])) {
+        $legacy_biography_content = file_get_contents($legacy_dir."/biography/".$entry['bio_xml']);
+    }
+
+    // build combined doc with both biography and writing orlando documents
+    // <ORLANDO><BIOGRAPHY/><WRITING></ORLANDO>
+    $tmp_doctype = "<!DOCTYPE ORLANDO [ <!ENTITY % character_entities SYSTEM 'http://cwrc.ca/schemas/character_entities.dtd'> %character_entities; ]>\n";
+    $legacy_combined =
+        "<?xml version='1.0' encoding='UTF-8'?>\n"
+        . "<?xml-model href='https://cwrc.ca/schemas/orlando_entry.rng' type='application/xml' schematypens='http://relaxng.org/ns/structure/1.0'?>\n"
+        . "<?xml-stylesheet type='text/css' href='https://cwrc.ca/templates/css/orlando.css'?>\n"
+        . $tmp_doctype
+        . "<ENTRY ID='".$key."'>\n"
+        . ((isset($entry['bio_xml'])) ? preg_replace("/^.*(<BIOGRAPHY.+$)/s",'$1', $legacy_biography_content) : "")
+        . ((isset($entry['writ_xml'])) ? preg_replace('/^.*(<WRITING.+$)/s','$1', $legacy_writing_content) : "")
+        . "</ENTRY>"
+        ;
+
+        
+    //drush_print($legacy_content);
+
+
+    // build the version 2.0 of the biography / writing document
+    // UTF-8 + Legacy Dates + remove DOCTYPE
+    $to_v2_xslt_proc->setSourceFromXdmValue(
+      $saxonProc->parseXmlFromString($legacy_combined)
+    );
+    //$bio_writ_to_v2_xslt_proc->setSourceFromXdmValue($content_dom);
+    $content_v2_xml = $to_v2_xslt_proc->transformToString();
+    $content_v2_xml = str_replace($tmp_doctype , "" , $content_v2_xml);
+
+    //drush_print($content_v2_xml);
+
+    // build the version 3.0 of the biography / writing document
+    // * merge bio/writing doc headers
+    $to_v3_xslt_proc->setSourceFromXdmValue(
+      $saxonProc->parseXmlFromString($content_v2_xml)
+    );
+    $content_v3_xml = $to_v3_xslt_proc->transformToString();
+
+    //print ("zzzzzzzzzzzzzzzzzzzz " . $content_v3_xml);
+
+    // Build MODS XML.
+    $to_mods_xslt_proc->setParameter(
+      "param_original_id", $saxonProc->createAtomicValue($key) 
+      );
+    if (isset($entry['bio_xml'])) {
+        $to_mods_xslt_proc->setParameter(
+            "param_original_bio_filename", $saxonProc->createAtomicValue($entry['bio_xml']) 
+            );
+    }
+    if (isset($entry['writ_xml'])) {
+        $to_mods_xslt_proc->setParameter(
+            "param_original_writ_filename", $saxonProc->createAtomicValue($entry['writ_xml']) 
+            );
+    }
+    $to_mods_xslt_proc->setSourceFromXdmValue(
+      $saxonProc->parseXmlFromString($content_v3_xml)
+      );
+    $mods_xml = $to_mods_xslt_proc->transformToString();
+
+    //print ("zzzzzzzzzzzzzzzzzzzz " . $mods_xml);
+
+
+    // build the DC content
+    // Convert MODS to DC.
+    // Transform to DC xml.
+    // Apply the stylesheet.
+    //$mods_to_dc_xslt_proc->setParameter( "", "PID_PARAM", $pid );
+    //$dc_xml = $mods_to_dc_xslt_proc->transformToString($mods_dom);
+    $mods_to_dc_xslt_proc->setSourceFromXdmValue(
+      $saxonProc->parseXmlFromString($mods_xml)
+    );
+    $dc_xml = $mods_to_dc_xslt_proc->transformToString();
+
+    //print ("zzzzzzzzzzzzzzzzzzzz " . $dc_xml);
+
+    // set object title
+    $title = get_dcTitle_from_dc($dc_xml);
+
+    //print("dc:title extracted - \"$title\" \n");
+
+    // TODO: update 2019-12-20 based on new schema
+    // determine collection PUB-C versus non-PUB-C based on workflow
+    $content_dom = new DOMDocument();
+    $content_dom->loadXML($content_v3_xml);
+    $xpathObj = new DOMXpath($content_dom); 
+    $pubCRes = $xpathObj->query($xpathStrPub);
+    $collection_pid = $collection_pid_non_pub_c;
+    if (!is_null($pubCRes) and $pubCRes->length>0)
+    {
+      $collection_pid = $collection_pid_pub_c;
+      drush_print("pub-c");
+    } 
+
+    //determine the schema for the object
+    //$schema_obj = null;
+    //$tmpBioSchema = $xpathObj->query($xpathStrBio);
+    //if (!is_null($tmpBioSchema))
+    //{
+      //$schema_obj = islandora_object_load($bioSchemaObject);
+    //}
+    //$tmpWritingSchema = $xpathObj->query($xpathStrWriting);
+    //if (!is_null($tmpWritingSchema))
+    //{
+      //$schema_obj = islandora_object_load($writingSchemaObject);
+    //}
+    $schema_obj = islandora_object_load($schemaObject);
+
+
+    // prepare a new Fedora object.
+    $object
+      = islandora_prepare_new_object(
+        $pid 
+        , $title
+        , array()
+        , array($cModel_pid)
+        , array(
+          array(
+            'relationship' => 'isMemberOfCollection'
+            , 'pid' => "$collection_pid"
+          )
+        )
+      );
+
+    // common label root
+    //$content_datastream_label = preg_replace('/(\.sgm)$/','.xml', $file_name); 
+    $content_datastream_label = $key;
+
+    // create LEGACY_WRITING XML datastream from Doc Archive contents <=2019
+    if (isset($entry['writ_xml'])) {
+        $cwrc_ds = $object->constructDatastream('LEGACY_WRITING_XML', 'M');
+        $cwrc_ds->label = $content_datastream_label."-w.xml";
+        $cwrc_ds->mimeType = 'text/xml';
+        $cwrc_ds->setContentFromString($legacy_writing_content);
+        $object->ingestDatastream($cwrc_ds);
+    }
+
+    // create LEGACY_WRITING SCCS version datastream from Doc Archive contents <=2019
+    if (isset($entry['writ_sccs'])) {
+        //$legacy_writing_sccs = file_get_contents($legacy_dir."/sccs/".$entry['writ_sccs']);
+        $legacy_writing_sccs = $legacy_sccs.$entry['writ_sccs'];
+        $cwrc_ds = $object->constructDatastream('LEGACY_WRITING_SCCS', 'M');
+        $cwrc_ds->label = "s.".$content_datastream_label."-w.sgm";
+        $cwrc_ds->mimeType = 'application/octet-stream';
+        $cwrc_ds->setContentFromFile($legacy_writing_sccs, FALSE);
+        //$cwrc_ds->setContentFromString($legacy_writing_sccs);
+        $object->ingestDatastream($cwrc_ds);
+        $legacy_writing_sccs = null;
+    }
+
+    // create LEGACY_BIOGRAPHY XML datastream from Doc Archive contents <=2019
+    if (isset($entry['bio_xml'])) {
+        $cwrc_ds = $object->constructDatastream('LEGACY_BIOGRAPHY_XML', 'M');
+        $cwrc_ds->label = $content_datastream_label."-b.xml";
+        $cwrc_ds->mimeType = 'text/xml';
+        $cwrc_ds->setContentFromString($legacy_biography_content);
+        $object->ingestDatastream($cwrc_ds);
+    }
+
+    // create LEGACY_BIOGRAPHY SCCS version datastream from Doc Archive contents <=2019
+    if (isset($entry['bio_sccs'])) {
+        //$legacy_writing_sccs = file_get_contents($legacy_dir."/sccs/".$entry['bio_sccs']);
+        $legacy_bio_sccs = $legacy_sccs.$entry['bio_sccs'];
+        $cwrc_ds = $object->constructDatastream('LEGACY_BIOGRAPHY_SCCS', 'M');
+        $cwrc_ds->label = "s.".$content_datastream_label."-b.sgm";
+        $cwrc_ds->mimeType = 'application/octet-stream';
+        $cwrc_ds->setContentFromFile($legacy_bio_sccs, FALSE);
+        //$cwrc_ds->setContentFromString($legacy_writing_sccs);
+        $object->ingestDatastream($cwrc_ds);
+        $legacy_biography_sccs = null;
+    } 
+
+    // create combined content datastream
+    // with the legacy content
+    $cwrc_ds = $object->constructDatastream('CWRC', 'M');
+    $cwrc_ds->label = $content_datastream_label.".xml";
+    $cwrc_ds->mimeType = 'text/xml';
+    $cwrc_ds->setContentFromString($legacy_combined);
+    $object->ingestDatastream($cwrc_ds);
+    
+    // create DC datastream
+    create_DS_DC($dc_xml, $object);
+
+    // create MODS datastream
+    create_DS_MODS($mods_xml, $object);
+
+    // Workflow Datastream.
+    // We want to get all of the responsibilitie tags.
+    // For each responsibility create a workflow element.
+    // Create the MODS datastream.
+    create_DS_workflow_from_Source($content_v3_xml, $object);
+
+    // Create the Policy datastream.
+    if ( $policy != null && $policy!="NONE" ) 
+    {
+      //create_DS_POLICY($policy, $object);
+      $policy_ds
+          = new IslandoraXacml(
+              $object
+              , file_get_contents($policy)
+              );
+      $policy_ds->writeBackToFedora();
+    }
+
+    islandora_cwrc_writer_set_document_schema($object, $schema_obj);
+
+    try {
+      // Store the object.
+      islandora_add_object($object);
+      $file_count++;
+      drush_print("pid=$pid title=\"$title\" was added. #{$file_count} file migrated.");
+
+      // add a workflow stamp indicating that the object was ingested
+      $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+      $workflow->addWorkflowStep(
+        $object->id, 
+        new WorkflowItem(WorkflowConst::WORKFLOW, array()),
+        new WorkflowItem(
+          WorkflowConst::ACTIVITY,
+          array(
+            "category" => "machine_processed",
+            'stamp' => 'orlando:SUB',
+            'status' => 'c',
+            "note" => "Initial ingest into the CWRC repository.",
+            )
+          )
+        );
+      CWRCWorkflowAPI::updateDatastream($workflow, $object);
+
+      // update content datastream with version 2.0 of the content
+      // UTF-8 and ISO 8601 dates
+      $object['CWRC']->setContentFromString($content_v2_xml);
+
+      // add a workflow stamp indicating that the object was ingested
+      $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+      $workflow->addWorkflowStep(
+        $object->id, 
+        new WorkflowItem(WorkflowConst::WORKFLOW, array()),
+        new WorkflowItem(
+          WorkflowConst::ACTIVITY,
+          array(
+            "category" => "machine_processed",
+            'stamp' => 'orlando:SUB',
+            'status' => 'c',
+            "note" => "Conversion to version 2.0 of the Orlando format (UTF-8 and ISO 8601 dates).",
+            )
+          )
+        );
+      CWRCWorkflowAPI::updateDatastream($workflow, $object);
+
+      // update content datastream with version 3.0 of the content
+      // * merge bio/writing doc headers
+      $object['CWRC']->setContentFromString($content_v3_xml);
+
+      // add a workflow stamp indicating that the object was ingested
+      $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+      $workflow->addWorkflowStep(
+        $object->id, 
+        new WorkflowItem(WorkflowConst::WORKFLOW, array()),
+        new WorkflowItem(
+          WorkflowConst::ACTIVITY,
+          array(
+            "category" => "machine_processed",
+            'stamp' => 'orlando:SUB',
+            'status' => 'c',
+            "note" => "Conversion to version 3.0 of the Orlando format (rearrange elements).",
+            )
+          )
+        );
+      CWRCWorkflowAPI::updateDatastream($workflow, $object);
+
+      //update URI's refences in entities
+      if ($object['CWRC'])
+      {
+        cwrc_migration_batch_add_entity_refs($object, "CWRC", $entity_mapping);
+      }
+    }
+    catch (Exception $e) {
+      $file_error_count++;
+      drush_print("pid=$pid title=\"$title\" was not added.");
+      drush_print($e->getMessage());
+    }
+
+  }
+
+  // write the entity mapping file
+  entity_mapping_write_to_file($entity_mapping, $entity_mapping_file);
+
+  drush_print('Migration Complete');
+  drush_print('Number of files migrated: ' . $file_count);
+  drush_print('Number of errors: ' . $file_error_count);
+}
+
 
 /** 
- * CWRC migration batch - Entities to Orlando version 2 - 2016-11-29
+ * CWRC migration batch - Entities to Orlando version 2 - 2016-11-29 - 2019-12-19
  * workflow is pulled from the legacy Orlando format stored in subdir
  *
  */
@@ -1694,7 +2218,16 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
   drush_print("Orlando entity migration batch version 2.0");
 
   // path to the input document files 
-  $legacy_dir = drush_get_option('legacy_dir','/tmp/orlando/bio_writ');
+  $legacy_dir = drush_get_option(
+    'legacy_dir'
+    , '/tmp/orlando/bio_writ'
+    );
+
+  // path to entity mapping file
+  $entity_mapping_file = drush_get_option(
+    'entity_mapping_file'
+    , '/tmp/orlando/entity_mapping.json'
+    );
 
   // 
   $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
@@ -1714,6 +2247,10 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
   $main_ds_id = drush_get_option(
     'main_ds_id'
     , 'MODS'
+  );
+  $entity_type = drush_get_option(
+    'entity_type'
+    , 'BIBL'
   );
   $collection_pid_pub_c = drush_get_option(
     'collection_pid_pub_c'
@@ -1762,6 +2299,20 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
   $to_v2_xslt_proc->compileFromFile($xslt_to_v2);
   $to_dc_xslt_proc->compileFromFile($xslt_to_dc);
 
+  // Initialize entity mapping: a JSON file ofPID to standard name 
+  // entity mapping file used to add URI's to bio/writing/event',
+  try {
+    drush_print("Entity mapping file: " . $entity_mapping_file);
+    entity_mapping_load($entity_mapping, $entity_mapping_file);
+    drush_print("person: " . count($entity_mapping["NAME"]));
+    drush_print("org: " . count($entity_mapping["ORGNAME"]));
+    drush_print("bibl: " . count($entity_mapping["BIBCIT"]));
+    // write the entity mapping file
+    entity_mapping_write_to_file($entity_mapping, $entity_mapping_file);
+  } catch (Exception $e) {
+    drush_print($e);
+    exit();
+  }
 
   // xpath to determine if PUB-C Orlando document -  BIBL Legacy XPath
   $xpathStrPub = "//RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C']";
@@ -1795,7 +2346,7 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
 
     // If the object already exists then continue to next file.
     if (islandora_object_load($pid)) {
-      drush_print("object $object_name is already in fedora");
+      drush_print("object $pid is already in fedora");
       continue;
     }
     
@@ -1804,11 +2355,22 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
     // Load xml from a file.
     $legacy_content = file_get_contents($legacy_dir.$file_name);
 
-    // build the UTF-8 version 
+    // build the UTF-8 version with conversion of Orlando dates
     $to_clean_xslt_proc->setSourceFromXdmValue(
       $saxonProc->parseXmlFromString($legacy_content)
     );
     $clean_xml = $to_clean_xslt_proc->transformToString();
+
+    // add ID and PID to the entity mapping
+    // ToDo: assumption - use UTF-8 version
+    $legacy_id = entity_mapping_extract_id($clean_xml);
+    if ( isset($pid) && isset($legacy_id) ) {
+      entity_mapping_add($entity_mapping, $legacy_id, $pid, $entity_type);
+      drush_print("Entity ID [$legacy_id] added with value [$pid]");
+    }
+    else {
+      drush_print("Entity ID [$legacy_id] not found");
+    }
 
     // build the version 2.0 
     $to_v2_xslt_proc->setSourceFromXdmValue(
@@ -1843,6 +2405,7 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
 
     // determine collection based on workflow
     $legacy_dom = new DOMDocument();
+    $legacy_dom->resolveExternals = true;
     $legacy_dom->loadXML($legacy_content);
     $xpathObj = new DOMXpath($legacy_dom); 
     $pubCRes = $xpathObj->query($xpathStrPub);
@@ -1945,6 +2508,7 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
 
       if ($add_pub_c_workflow==='yes')
       {
+        // ToDo: assume all name and org are pub-c as input authority lists don't contain workflow
         // add a workflow stamp indicating that the object was ingested
         $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
         $workflow->addWorkflowStep(
@@ -1970,10 +2534,15 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
     }
 
   }
+
+  drush_print("person: " . count($entity_mapping["NAME"]));
+  drush_print("org: " . count($entity_mapping["ORGNAME"]));
+  drush_print("bibl: " . count($entity_mapping["BIBCIT"]));
+  entity_mapping_write_to_file($entity_mapping, $entity_mapping_file);
+
   drush_print('Migration Complete');
   drush_print('Number of files migrated: ' . $file_count);
   drush_print('Number of errors: ' . $file_error_count);
-
 }
 
 
@@ -2586,7 +3155,7 @@ EOT;
  * (name/org/bibcit/textscope/standard/etc.) 
  *
  */
-function cwrc_migration_batch_add_entity_refs($object, $ds_id) 
+function cwrc_migration_batch_add_entity_refs($object, $ds_id, $entity_mapping) 
 {
 
   module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
@@ -2615,6 +3184,8 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id)
       , "REF"
       , null
       , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
+      , "NAME"
+      , $entity_mapping
     );
     $content = add_entity_references_via_element(
       $content
@@ -2623,6 +3194,8 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id)
       , "REF"
       , "STANDARD"
       , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
+      , "NAME"
+      , $entity_mapping
     );
     $content = add_entity_references_via_element(
       $content
@@ -2631,6 +3204,8 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id)
       , "REF"
       , "STANDARD"
       , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
+      , "ORGNAME"
+      , $entity_mapping
     );
     $content = add_entity_references_via_element(
       $content
@@ -2639,6 +3214,8 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id)
       , "REF"
       , "DBREF"
       , ISLANDORA_ORLANDO_MIGRATE_BIBL
+      , "BIBCIT"
+      , $entity_mapping
     );
     $content = add_entity_references_via_element(
       $content
@@ -2647,6 +3224,8 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id)
       , "REF"
       , "DBREF"
       , ISLANDORA_ORLANDO_MIGRATE_BIBL
+      , "BIBCIT" 
+      , $entity_mapping
     );
 
     // update object
@@ -2670,6 +3249,8 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id)
       , "valueURI"
       , ""
       , "orlando_migration/orlando_entity_lookup_person_org.xq"
+      , "NAME" 
+      , $entity_mapping
       );
     $ds->setContentFromString($content);
   }

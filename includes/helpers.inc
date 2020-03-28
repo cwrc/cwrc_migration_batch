@@ -338,6 +338,8 @@ function add_entity_references_via_element(
     , $attr_new
     , $attr_src
     , $xquery_id 
+    , $entity_type
+    , $entity_mapping
     )
 {
   $dom = new DOMDocument;
@@ -354,6 +356,8 @@ function add_entity_references_via_element(
     , $attr_new
     , $attr_src
     , $xquery_id 
+    , $entity_type
+    , $entity_mapping
   );
   
 }
@@ -370,6 +374,8 @@ function add_entity_references_via_xpath(
     , $attr_new
     , $attr_src
     , $xquery_id 
+    , $entity_type
+    , $entity_mapping
     )
 {
   $dom = new DOMDocument;
@@ -388,6 +394,8 @@ function add_entity_references_via_xpath(
     , $attr_new
     , $attr_src
     , $xquery_id 
+    , $entity_type
+    , $entity_mapping
   );
 }
 
@@ -404,6 +412,8 @@ function add_entity_references(
     , $attr_new
     , $attr_src
     , $xquery_id 
+    , $entity_type
+    , $entity_mapping
     )
 {
   if($nodes instanceof DOMNodeList)
@@ -437,35 +447,15 @@ function add_entity_references(
       // lookup and set the URI reference
       if (!$domElement->hasAttribute($attr_new))
       {
-        // is the new attribute already present?
-        // if no then add based on a lookup in the entity set
-        // lookup_entity_given_orlando_standard();
-        $attr_ref_value = lookup_uri_by_string(
-            $lookup_str
-            , $entity_cmodel
-            , $xquery_id
-            );
-        
-        $tmp_array = json_decode($attr_ref_value);
 
-        // may return a list of pids
-        // grap the first that is present in Fedora 
-        // json look like the following: { "pid" : [] }
-        $pid = null;
-        if ($tmp_array->pids)
-        { 
-          $iter = 0;
-          do 
-          {
-            $tmp_pid = $tmp_array->pids[$iter];
-            if (islandora_object_load($tmp_pid))
-            {
-              $pid = $tmp_array->pids[$iter];
-            }
-            $iter++;
-          } while ($iter < count($tmp_array->pids) ) ;
+        // lookup PID
+        if (isset($entity_mapping) && isset($entity_type)) {
+          $pid = entity_mapping_lookup($entity_mapping, $lookup_str, $entity_type);
+        } else if (isset($xquery_id)) {
+          $pid = lookup_id_in_XML_database($lookup_str, $entity_cmodel, $xquery_id);
         }
 
+        // update XML element node with new attribute
         if (!empty($attr_new) and !empty($pid))
         {
           // writin the entity uri (base + PID)
@@ -474,7 +464,7 @@ function add_entity_references(
         }
         else
         {
-          drush_print("ERROR: [$context] not found with lookup [$lookup_str] for [$domElement->nodeValue] ref: [$attr_ref_value]");
+          drush_print("ERROR: [$context] not found with lookup [$lookup_str] for [$domElement->nodeValue] ref: [$attr_ref_value] pid: [$pid] entity_type: [$entity_type]");
         }
       }
       else
@@ -488,8 +478,43 @@ function add_entity_references(
 
 
 /**
+ * lookup standard_name / bibcit in XML Database 
+ */
+function lookup_id_in_XML_database($lookup_str, $entity_cmodel, $xquery_id) 
+{
+  // is the new attribute already present?
+  // if no then add based on a lookup in the entity set
+  // lookup_entity_given_orlando_standard();
+  $attr_ref_value = lookup_uri_by_string(
+      $lookup_str
+      , $entity_cmodel
+      , $xquery_id
+      );
+  
+  $tmp_array = json_decode($attr_ref_value);
+
+  // may return a list of pids
+  // grap the first that is present in Fedora 
+  // json look like the following: { "pid" : [] }
+  $pid = null;
+  if ($tmp_array->pids)
+  { 
+    $iter = 0;
+    do 
+    {
+      $tmp_pid = $tmp_array->pids[$iter];
+      if (islandora_object_load($tmp_pid))
+      {
+        $pid = $tmp_array->pids[$iter];
+      }
+      $iter++;
+    } while ($iter < count($tmp_array->pids) ) ;
+  }
+  return $pid;
+}
+
+/**
  * lookup the URL based on a unique string
- *
  */
 function lookup_uri_by_string(
   $lookup_str
@@ -510,5 +535,97 @@ function lookup_uri_by_string(
   }
   return $result;
 } 
+
+
+/**
+ * build hash array of entry id's and associated file names
+ * */
+function build_hash_map(&$entries, $src_dir, $file_type, $file_sccs) {
+
+    $src_dh = opendir($src_dir);
+    while (FALSE !== ($file_name = readdir($src_dh))) {
+
+        //drush_print($file_name."\n");
+
+        // If the file is a directory then continue to next file.
+        if (is_dir($file_name)) {
+            continue;
+        }
+
+        //$file_name_xml = preg_replace('/(\.sgm)$/','.xml', $file_name);
+        //print("xml:" . $file_name_xml."\n");
+
+        $entry_id = preg_replace('/^([a-zA-Z_0-9]{6,6})-[wb]\.xml/','$1', $file_name);
+        $entry_type = preg_replace('/^[a-zA-Z_0-9]{6,6}-([wb])\.xml/','$1', $file_name);                                        
+
+        if (!empty($entries[$entry_id])) {
+            $entries[$entry_id][$file_type] = $file_name;
+            $entries[$entry_id][$file_sccs] = "s.".$entry_id."-".$entry_type.".sgm";
+        } else {
+            $entries[$entry_id] = array("$file_type" => "$file_name");
+            $entries[$entry_id][$file_sccs] = "s.".$entry_id."-".$entry_type.".sgm";
+        }                                                                                                                   
+    }
+    closedir($src_dh);
+}
+
+/**
+  * Initialize the hash of entities
+**/
+function entity_mapping_init(&$entityMapping) {
+    $entityMapping = array(
+        "NAME" => array(),
+        "ORGNAME" => array(),
+        "BIBCIT" => array(),
+        );
+}
+function entity_mapping_load(&$entityMapping, $entityJSONFilename) {
+  if (file_exists($entityJSONFilename)) {
+    $entityMapping = json_decode(file_get_contents($entityJSONFilename), true);
+  } else {
+    entity_mapping_init($entityMapping);
+  }
+}
+
+function entity_mapping_add(&$entityMapping, $id, $pid, $entityType) {
+
+  //$entity_mapping->$entityType->$id = $pid;
+  $entityMapping[$entityType][$id] = $pid;
+}
+
+function entity_mapping_lookup($entityMapping, $id, $entityType) {
+  //return $entity_mapping->$entityType->$id;
+  return $entityMapping[$entityType][$id];
+}
+
+function entity_mapping_write_to_file($entityMapping, $entityJSONFilename) {
+  $fp = fopen($entityJSONFilename, 'w');
+  if (!$fp) {
+    throw new Exception('file open failed');
+  }
+  fwrite($fp, json_encode($entityMapping));
+  fclose($fp);
+}
+
+/**
+ * get standard name or bibl id entity 
+ *
+ */
+function entity_mapping_extract_id ($xml)
+{
+  $xml_dom = new DOMDocument();
+  $xml_dom->loadXML($xml);
+  $id_xpath = new DOMXpath($xml_dom);
+  //$dc_title_xpath->registerNamespace("oai_dc", "http://www.openarchives.org/OAI/2.0/oai_dc/");
+  //$dc_title_xpath->registerNamespace("dc", "http://purl.org/dc/elements/1.1/");
+  //$tmp = $dc_title_xpath->query('/oai_dc:dc/dc:title');
+  $tmp = $id_xpath->query('/AUTHORITYITEM/@STANDARD | /BIBLIOGRAPHY_ENTRY/@BI_ID');
+
+  $id = $tmp->item(0)->nodeValue;
+
+  return $id;
+}
+
+
 
 
