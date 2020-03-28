@@ -99,6 +99,7 @@ function cwrc_migration_batch_drush_command() {
       'legacy_dir' => 'path to directory of legacy source material',
       'entity_mapping_file' => 'path to the JSON PID to standard name entity mapping file used to add URIs to bio/writing/event',
       'xslt_to_v2' => 'convert legacy bio/writ docs to version 2 (convert dates, utf-8)',
+      'xslt_to_v3' => 'update combined documents to version 3 (header)',
       'xslt_to_mods' => 'path to XSLT to convert biography/writing/event to mods',
       'xslt_mods_to_dc' => 'path to XSLT to convert mods to DC',
       'collection_pid_pub_c' => 'add object to the given collection if PUC-C workflow',
@@ -1817,9 +1818,18 @@ function drush_cwrc_migration_batch_ingest_orlando_combine_biography_writing ()
 
   // Initialize entity mapping: a JSON file ofPID to standard name 
   // entity mapping file used to add URI's to bio/writing/event',
-  $entity_mapping = null;
-  entity_mapping_load($entity_mapping, $entity_mapping_file);
-  drush_print("Entity mapping file: " . $entity_mapping_file);
+  try {
+    drush_print("Entity mapping file: " . $entity_mapping_file);
+    entity_mapping_load($entity_mapping, $entity_mapping_file);
+    drush_print("person: " . count($entity_mapping["NAME"]));
+    drush_print("org: " . count($entity_mapping["ORGNAME"]));
+    drush_print("bibl: " . count($entity_mapping["BIBCIT"]));
+    // write the entity mapping file
+    entity_mapping_write_to_file($entity_mapping, $entity_mapping_file);
+  } catch (Exception $e) {
+    drush_print($e);
+    exit();
+  }
 
   // xpath to determine if PUB-C Orlando document - Biography/Writing/Event
   $xpathStrPub = "/*/ORLANDOHEADER/REVISIONDESC/RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C']";
@@ -1832,7 +1842,7 @@ function drush_cwrc_migration_batch_ingest_orlando_combine_biography_writing ()
   drush_print("Input legacy dir: " . $legacy_dir);
   $legacy_bio = $legacy_dir . "/biography/";
   $legacy_writ = $legacy_dir . "/writing/";
-  $legacy_sccs = $legacy_dir . "/sccs/";
+  $legacy_sccs = $legacy_dir . "/sccs_archive/";
 
   // build hash map of author ids with bio/writing doc attached
   // entries = array(
@@ -2024,7 +2034,7 @@ function drush_cwrc_migration_batch_ingest_orlando_combine_biography_writing ()
     // create LEGACY_WRITING SCCS version datastream from Doc Archive contents <=2019
     if (isset($entry['writ_sccs'])) {
         //$legacy_writing_sccs = file_get_contents($legacy_dir."/sccs/".$entry['writ_sccs']);
-        $legacy_writing_sccs = $legacy_dir."/sccs/".$entry['writ_sccs'];
+        $legacy_writing_sccs = $legacy_sccs.$entry['writ_sccs'];
         $cwrc_ds = $object->constructDatastream('LEGACY_WRITING_SCCS', 'M');
         $cwrc_ds->label = "s.".$content_datastream_label."-w.sgm";
         $cwrc_ds->mimeType = 'application/octet-stream';
@@ -2046,7 +2056,7 @@ function drush_cwrc_migration_batch_ingest_orlando_combine_biography_writing ()
     // create LEGACY_BIOGRAPHY SCCS version datastream from Doc Archive contents <=2019
     if (isset($entry['bio_sccs'])) {
         //$legacy_writing_sccs = file_get_contents($legacy_dir."/sccs/".$entry['bio_sccs']);
-        $legacy_bio_sccs = $legacy_dir."/sccs/".$entry['bio_sccs'];
+        $legacy_bio_sccs = $legacy_sccs.$entry['bio_sccs'];
         $cwrc_ds = $object->constructDatastream('LEGACY_BIOGRAPHY_SCCS', 'M');
         $cwrc_ds->label = "s.".$content_datastream_label."-b.sgm";
         $cwrc_ds->mimeType = 'application/octet-stream';
@@ -2134,7 +2144,6 @@ function drush_cwrc_migration_batch_ingest_orlando_combine_biography_writing ()
         );
       CWRCWorkflowAPI::updateDatastream($workflow, $object);
 
-break;
       // update content datastream with version 3.0 of the content
       // * merge bio/writing doc headers
       $object['CWRC']->setContentFromString($content_v3_xml);
