@@ -449,10 +449,10 @@ function add_entity_references(
       {
 
         // lookup PID
-        if (isset($xquery_id)) {
-          $pid = lookup_id_in_XML_database($lookup_str, $entity_cmodel, $xquery_id);
-        } else if (isset($entity_mapping) && isset($entity_type)) {
+        if (isset($entity_mapping) && isset($entity_type)) {
           $pid = entity_mapping_lookup($entity_mapping, $lookup_str, $entity_type);
+        } else if (isset($xquery_id)) {
+          $pid = lookup_id_in_XML_database($lookup_str, $entity_cmodel, $xquery_id);
         }
 
         // update XML element node with new attribute
@@ -464,7 +464,7 @@ function add_entity_references(
         }
         else
         {
-          drush_print("ERROR: [$context] not found with lookup [$lookup_str] for [$domElement->nodeValue] ref: [$attr_ref_value]");
+          drush_print("ERROR: [$context] not found with lookup [$lookup_str] for [$domElement->nodeValue] ref: [$attr_ref_value] pid: [$pid] entity_type: [$entity_type]");
         }
       }
       else

@@ -3192,7 +3192,7 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id, $entity_mapping)
       , "REF"
       , "STANDARD"
       , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
-      , ORGNAME
+      , "ORGNAME"
       , $entity_mapping
     );
     $content = add_entity_references_via_element(
@@ -3202,7 +3202,7 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id, $entity_mapping)
       , "REF"
       , "DBREF"
       , ISLANDORA_ORLANDO_MIGRATE_BIBL
-      , BIBCIT 
+      , "BIBCIT"
       , $entity_mapping
     );
     $content = add_entity_references_via_element(
@@ -3212,7 +3212,7 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id, $entity_mapping)
       , "REF"
       , "DBREF"
       , ISLANDORA_ORLANDO_MIGRATE_BIBL
-      , BIBCIT 
+      , "BIBCIT" 
       , $entity_mapping
     );
 
@@ -3237,7 +3237,7 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id, $entity_mapping)
       , "valueURI"
       , ""
       , "orlando_migration/orlando_entity_lookup_person_org.xq"
-      , "BIBCIT" 
+      , "NAME" 
       , $entity_mapping
       );
     $ds->setContentFromString($content);
