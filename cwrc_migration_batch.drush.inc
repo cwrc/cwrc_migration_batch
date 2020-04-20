@@ -2398,6 +2398,10 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
     $to_dc_xslt_proc->setSourceFromXdmValue(
       $saxonProc->parseXmlFromString($content_v2_xml)
     );
+    $to_dc_xslt_proc->setParameter(
+        "PID_PARAM"
+         , $saxonProc->createAtomicValue($pid) 
+      );
     $dc_xml = $to_dc_xslt_proc->transformToString();
 
     // set object title
