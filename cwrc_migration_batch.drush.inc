@@ -1508,6 +1508,17 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
     // generate an id for the object
     $pid = $connection->repository->getnextIdentifier($namespace, TRUE);
 
+    // add ID and PID to the entity mapping
+    // ToDo: assumption - use UTF-8 version
+    $legacy_id = $file_name;
+    if ( isset($pid) && isset($legacy_id) ) {
+      entity_mapping_add($entity_mapping, $legacy_id, $pid, "EVENT");
+      drush_print("Entity ID [$legacy_id] added with value [$pid]");
+    }
+    else {
+      drush_print("Entity ID [$legacy_id] not found");
+    }
+
     // Strip out the .xml from the file name and store in the variable.
     //preg_match('/[a-z0-9-_]*/', $file_name, $object_name);
     // Strip out file name to get type -b(biography) or -w (writable).
@@ -1884,6 +1895,17 @@ function drush_cwrc_migration_batch_ingest_orlando_combine_biography_writing ()
     // generate an id for the object
     $pid = $connection->repository->getnextIdentifier($namespace, TRUE);
 
+    // add ID and PID to the entity mapping
+    // ToDo: assumption - use UTF-8 version
+    $legacy_id = $key;
+    if ( isset($pid) && isset($legacy_id) ) {
+      entity_mapping_add($entity_mapping, $legacy_id, $pid, "ENTRY");
+      drush_print("Entity ID [$legacy_id] added with value [$pid]");
+    }
+    else {
+      drush_print("Entity ID [$legacy_id] not found");
+    }
+
     // Strip out the .xml from the file name and store in the variable.
     //preg_match('/[a-z0-9-_]*/', $file_name, $object_name);
     // Strip out file name to get type -b(biography) or -w (writable).
@@ -2250,7 +2272,7 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
   );
   $entity_type = drush_get_option(
     'entity_type'
-    , 'BIBL'
+    , 'BIBCIT'
   );
   $collection_pid_pub_c = drush_get_option(
     'collection_pid_pub_c'
