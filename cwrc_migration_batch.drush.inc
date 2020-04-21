@@ -210,6 +210,21 @@ function cwrc_migration_batch_drush_command() {
   );
 
 
+  $items['cwrc_migration_batch_verify_orlando'] = array(
+    'description' => 'A naive attempt to verify the Orlando batch ingest',
+    'options' => array(
+      'legacy_dir' => 'path to directory of legacy source material',
+      'entity_mapping_file' => 'path to the JSON PID to standard name entity mapping file used to add URIs to bio/writing/event',
+      'main_ds_id' => 'Id of the main datastream (where content XML stored)',
+      'item_type' => 'Type of the input: EVENT, ENTRY, NAME, ORGNAME, BIBCIT',
+    ),
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_verify_orlando',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
+
+
   $items['cwrc_migration_batch_thumbnail_entries'] = array(
     'description' => 'Add a custom thumbnail to the specified entries',
     'options' => array(
@@ -3176,6 +3191,187 @@ EOT;
     }
   }
 }
+
+
+/** 
+ * Orlando verify batch 
+ * compare the files for migration to the results after migration 
+ *
+ */
+function drush_cwrc_migration_batch_verify_orlando() 
+{
+  module_load_include('inc', 'cwrc_migration_batch', 'includes/helpers');
+
+  drush_print("Verification:");
+
+  // path to the input document files 
+  $legacy_dir = drush_get_option(
+    'legacy_dir'
+    , '/tmp/orlando/bio_writ'
+    );
+
+  // path to entity mapping file
+  $entity_mapping_file = drush_get_option(
+    'entity_mapping_file'
+    , '/tmp/orlando/entity_mapping.json'
+    );
+
+  $entity_type = drush_get_option(
+    'main_ds_id'
+    , 'CWRC'
+  );
+  
+  $item_type = drush_get_option(
+    'item_type'
+    , 'EVENT'
+  );
+
+  // convert to UTF-8
+  $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
+  $xslt_to_clean = drush_get_option(
+    'xslt_to_clean'
+    , $ext_home . 'transforms/orlando_legacy_to_v2_bio_writing.xsl'
+  );
+
+  // Include modules.
+  $connection = null;
+  migration_init($connection);
+
+  // Initialize entity mapping: a JSON file ofPID to standard name
+  // entity mapping file used to add URI's to bio/writing/event',
+  try {
+    drush_print("Entity mapping file: " . $entity_mapping_file);
+    entity_mapping_load($entity_mapping, $entity_mapping_file);
+    drush_print("person: " . count($entity_mapping["NAME"]));
+    drush_print("org: " . count($entity_mapping["ORGNAME"]));
+    drush_print("bibl: " . count($entity_mapping["BIBCIT"]));
+    drush_print("event: " . count($entity_mapping["EVENT"]));
+    drush_print("entry: " . count($entity_mapping["ENTRY"]));
+    // write the entity mapping file
+    entity_mapping_write_to_file($entity_mapping, $entity_mapping_file);
+  } catch (Exception $e) {
+    drush_print($e);
+    exit();
+  }
+
+  $saxonProc = new Saxon\SaxonProcessor();
+  drush_print("XSLT Version: " . $saxonProc->version());
+
+  $to_clean_xslt_proc = $saxonProc->newXsltProcessor();
+  $to_clean_xslt_proc->compileFromFile($xslt_to_clean);
+
+  // Set source directory for the legacy Orlando content
+  // Open the source directory and iterate through every file in the
+  // directory - one file maps to one Fedora
+  drush_print("Input: " . $legacy_dir);
+  $src_dir_handle = opendir($legacy_dir);
+
+  // Counter for the number of files to migrate.
+  $file_count = 0;
+  $file_error_count = 0;
+  while (FALSE !== ($file_name = readdir($src_dir_handle)))
+  {
+    drush_print($file_name);
+
+    // If the file is a directory then continue to next file.
+    if (is_dir($file_name)) {
+      continue;
+    }    
+
+    
+    $legacy_content = file_get_contents($legacy_dir.$file_name);
+    // build the UTF-8 version with conversion of Orlando dates
+    $to_clean_xslt_proc->setSourceFromXdmValue(
+      $saxonProc->parseXmlFromString($legacy_content)
+      );
+    $clean_xml = $to_clean_xslt_proc->transformToString();
+
+    $json_status = 'fail';
+    $fedora_status = 'fail';
+    $pid = cwrc_migration_batch_lookup_pid($entity_mapping, $item_type, $file_name, $clean_contents);
+    if (isset($pid) or !empty($pid)) {
+      $json_status = "success";
+      // if not in the json file then fedora test will also fail
+      $fedora_status = cwrc_migration_batch_verify_fedora($item_type, $pid, $file_name);
+    } 
+
+    drush_print("Verify [$file_name] in json mapping: [$json_status] with pid: [$pid] in fedora: [$fedora_status]");
+  }
+
+}
+
+function cwrc_migration_batch_lookup_pid($entity_mapping, $item_type, $file_name, $xml) 
+{
+  $item_id = null;
+  switch ($item_type) {
+    case 'EVENT':
+      $item_id = $file_name;
+      break;
+    case 'ENTRY':
+      $item_id = preg_replace('/^([a-zA-Z_0-9]{6,6})-[wb]\.xml/','$1', $file_name);
+      break;
+    case 'NAME':
+    case 'ORGNAME':
+    case 'BIBCIT':
+      $item_id = entity_mapping_extract_id ($xml);
+      break;
+  }    
+  return $entity_mapping[$item_type][$item_id];
+}
+
+function cwrc_migration_batch_verify_fedora($item_type, $pid, $file_name) 
+{
+  $status = fail;
+  //$status = islandora_object_load($pid) ? "success" : "fail";
+  $obj = islandora_object_load($pid);
+  if ($item_type === 'ENTRY') {
+    $entry_type = preg_replace('/^[a-zA-Z_0-9]{6,6}-([wb])\.xml/','$1', $file_name);
+    $xml_match = ($entry_type === 'w') ? '/<WRITING/' : '/<BIOGRAPHY/';
+    
+    if (!empty($obj)
+      and !empty($obj['CWRC'])
+      and !empty($obj['WORKFLOW'])
+      and !empty($obj['MODS'])
+      and preg_match($xml_match, $obj['CWRC']->content)
+      ) {
+        $status = 'success';
+      }
+  } else if ($item_type === 'EVENT') {
+    if (!empty($obj)
+      and !empty($obj['CWRC'])
+      and !empty($obj['WORKFLOW'])
+      and !empty($obj['MODS'])
+      and preg_match('<EVENT', $obj['CWRC']->content)
+      ) {
+        $status = 'success';
+      }
+  } else if ($item_type === 'NAME') {
+    if (!empty($obj)
+      and !empty($obj['NAME'])
+      and !empty($obj['WORKFLOW'])
+      ) {
+        $status = 'success';
+      }
+  } else if ($item_type === 'ORGNAME') {
+    if (!empty($obj)
+      and !empty($obj['ORGNAME'])
+      and !empty($obj['WORKFLOW'])
+      ) {
+        $status = 'success';
+      }
+  } else if ($item_type === 'BIBCIT') {
+    if (!empty($obj)
+      and !empty($obj['MODS'])
+      and !empty($obj['WORKFLOW'])
+      ) {
+        $status = 'success';
+      }
+  }
+
+  return $status;
+
+}
+
 
 /** 
  * CWRC migration batch - add @REF attributes to the core entity elements
