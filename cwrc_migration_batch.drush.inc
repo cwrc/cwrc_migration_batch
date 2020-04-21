@@ -201,6 +201,7 @@ function cwrc_migration_batch_drush_command() {
       'collection_pid' => 'pid of the collection',
       'ds_id' => 'datastream id containing the content to schema validate',
       'default_rng_schema' => 'schema to use if the schema can not be determined from the xml-model processing instruction',
+      'validation_url' => 'url of the validation service: https://validator.services.cwrc.ca/validate.html',
     ),
     'examples' => array(
       'drush -u 1 cwrc_migration_batch_validate',
