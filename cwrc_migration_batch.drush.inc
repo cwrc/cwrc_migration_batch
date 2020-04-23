@@ -200,7 +200,7 @@ function cwrc_migration_batch_drush_command() {
     'options' => array(
       'collection_pid' => 'pid of the collection',
       'ds_id' => 'datastream id containing the content to schema validate',
-      'default_rng_schema' => 'schema to use if the schema can not be determined from the xml-model processing instruction',
+      'override_rng_schema' => 'schema to use if the schema can not be determined from the xml-model processing instruction',
       'validation_url' => 'url of the validation service: https://validator.services.cwrc.ca/validate.html',
     ),
     'examples' => array(
@@ -3109,9 +3109,9 @@ function drush_cwrc_migration_batch_validate()
 
   // the default schema to use if the xml-model processing instruction
   // lookup fails
-  $default_rng_schema = drush_get_option(
-    'default_rng_schema'
-    , 'http://cwrc.ca/schemas/orlando_writing.rng'
+  $override_rng_schema = drush_get_option(
+    'override_rng_schema'
+    , '' // default empty unless set
   );
 
   $validation_url = drush_get_option(
@@ -3153,7 +3153,7 @@ EOT;
     {
       $pid = $result['obj']['value'];
 
-      drush_print($pid);
+      //drush_print($pid);
 
       //lookup the object
       $object = islandora_object_load($pid);
@@ -3173,20 +3173,27 @@ EOT;
       $content = $ds->content;
       //drush_print($content);
 
-      $schema = determine_schema_url_from_rels_ext($object);
-      if (empty($schema)) {
-        $schema = determine_schema_url_from_xml($content, $default_rng_schema);
+
+      if (!empty($override_rng_schema)) {
+        // if override then use
+        $schema = $override_rng_schema;
+      } else if ($ds_id === 'ENTRY' and !empty($override_rng_schema)) {
+        // special handling for the CWRC-Writer enabled modules - DS ID = "ENTRY" use attached schema object
+        $schema = determine_schema_url_from_rels_ext($object);
       }
-      drush_print($schema);
+      else {
+        // otherwise use the schema at the top of the content
+        $schema = determine_schema_url_from_xml($content, $override_rng_schema);
+      }
 
       $validation_res = validate_content($content, $schema, $validation_url);
-      drush_print($validation_res);
+      drush_print("INFO: [$pid] using [$schema] - result: [$validation_res]");
 
-      //update URI's refences in entities
-//      if ($object['CWRC'])
-//      {
-//        cwrc_migration_batch_add_entity_refs(object, "CWRC");
-//      }
+      // update URI's refences in entities
+      // if ($object['CWRC'])
+      // {
+      //   cwrc_migration_batch_add_entity_refs(object, "CWRC");
+      // }
 
     }
   }
