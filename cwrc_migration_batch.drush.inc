@@ -2445,6 +2445,12 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
     $cwrc_ds->setContentFromString($legacy_content);
     $object->ingestDatastream($cwrc_ds);
  
+    // create LEGACY_ENTITY datastream from Doc Archive contents <=2019
+    $legacy_ds = $object->constructDatastream('LEGACY_BIOGRAPHY_XML', 'M');
+    $legacy_ds->label = "legacy_" . $file_name;
+    $legacy_ds->mimeType = 'text/xml';
+    $legacy_ds->setContentFromString($legacy_content);
+    $object->ingestDatastream($legacy_ds);
     
     // create DC datastream
     create_DS_DC($dc_xml, $object);
