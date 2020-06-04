@@ -1882,7 +1882,9 @@ function drush_cwrc_migration_batch_ingest_orlando_combine_biography_writing ()
     drush_print("Entry: " . $key);
 
     // generate an id for the object
-    $pid = $connection->repository->getnextIdentifier($namespace, TRUE);
+    // $pid = $connection->repository->getnextIdentifier($namespace, TRUE);
+    // Use $key as the PID for example, orlando:austja 
+    $pid = $namespace . ":" . $key; 
 
     // Strip out the .xml from the file name and store in the variable.
     //preg_match('/[a-z0-9-_]*/', $file_name, $object_name);
@@ -1897,7 +1899,6 @@ function drush_cwrc_migration_batch_ingest_orlando_combine_biography_writing ()
       drush_print("object $pid - $key is already in fedora");
       continue;
     }
-
 
     // get legacy files
     $legacy_writing_content = null;
