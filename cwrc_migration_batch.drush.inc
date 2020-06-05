@@ -2413,7 +2413,7 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
 
     // build the version 2.0 
     $to_v2_xslt_proc->setSourceFromXdmValue(
-      $saxonProc->parseXmlFromString($legacy_content)
+      $saxonProc->parseXmlFromString($clean_xml)
     );
     if ($supplemental_filename)
     {
@@ -2484,7 +2484,7 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
     $object->ingestDatastream($cwrc_ds);
  
     // create LEGACY_ENTITY datastream from Doc Archive contents <=2019
-    $legacy_ds = $object->constructDatastream('LEGACY_BIOGRAPHY_XML', 'M');
+    $legacy_ds = $object->constructDatastream('LEGACY_'.$main_ds_id, 'M');
     $legacy_ds->label = "legacy_" . $file_name;
     $legacy_ds->mimeType = 'text/xml';
     $legacy_ds->setContentFromString($legacy_content);
@@ -2529,6 +2529,26 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
             'stamp' => 'orlando:SUB',
             'status' => 'c',
             "note" => "Initial ingest into the CWRC repository.",
+            )
+          )
+        );
+      CWRCWorkflowAPI::updateDatastream($workflow, $object);
+
+      // update content datastream: UTF-8 and ISO 8601 dates
+      $object[$main_ds_id]->setContentFromString($clean_xml);
+
+      // add a workflow stamp indicating that the object was ingested
+      $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+      $workflow->addWorkflowStep(
+        $object->id, 
+        new WorkflowItem(WorkflowConst::WORKFLOW, array()),
+        new WorkflowItem(
+          WorkflowConst::ACTIVITY,
+          array(
+            "category" => "machine_processed",
+            'stamp' => 'orlando:SUB',
+            'status' => 'c',
+            "note" => "UTF-8 and ISO 8601 dates.",
             )
           )
         );

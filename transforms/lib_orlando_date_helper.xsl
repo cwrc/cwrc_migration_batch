@@ -191,7 +191,14 @@
         </xsl:if>
         
     </xsl:template>
-    
+
+    <!-- given a date in the legacy Orlando Doc Archive format (e.g., "2000- -" or "2000-10-") convert to iso6801 -->
+    <xsl:template name="legacy_orlando_date_to_iso">
+        <xsl:param name="INPUT_DATE"/>
+        <xsl:if test="$INPUT_DATE and string-length($INPUT_DATE) > 4">
+            <xsl:value-of select="replace(normalize-space($INPUT_DATE), '-{1,2}$','')"/>
+        </xsl:if>
+    </xsl:template>
     
     
     <!-- given a month, MM in 2 digit format, convert to the character representation -->
