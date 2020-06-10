@@ -330,6 +330,9 @@
                     <xsl:attribute name="type">personal</xsl:attribute>
                 </xsl:otherwise>
             </xsl:choose>
+            <xsl:if test="NAME/@REF">
+                <xsl:attribute name="valueURI" select="NAME/@REF" />
+            </xsl:if>
             <!-- name variables -->
             <xsl:variable name="currentPositionNum" select="position()" />
             <xsl:variable name="lastPositionNum" select="last()" />

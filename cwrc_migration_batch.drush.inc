@@ -2411,9 +2411,19 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
       drush_print("Entity ID [$legacy_id] not found");
     }
 
+    if ($main_ds_id=='MODS') {
+      // update URI's refences in bibliographic entities
+      // requires UTF-8 
+      $uri_xml = cwrc_migration_batch_add_entity_refs_content($clean_xml, $main_ds_id, $entity_mapping);
+    }
+    else {
+      // for other entity 
+      $uri_xml = $clean_xml;
+    }
+
     // build the version 2.0 
     $to_v2_xslt_proc->setSourceFromXdmValue(
-      $saxonProc->parseXmlFromString($clean_xml)
+      $saxonProc->parseXmlFromString($uri_xml)
     );
     if ($supplemental_filename)
     {
@@ -2554,8 +2564,29 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
         );
       CWRCWorkflowAPI::updateDatastream($workflow, $object);
 
+      // update URI's refences in entities
+      // requires UTF-8 
+      $object[$main_ds_id]->setContentFromString($uri_xml);
+
+      // add a workflow stamp indicating that the object was ingested
+      $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+      $workflow->addWorkflowStep(
+        $object->id,
+        new WorkflowItem(WorkflowConst::WORKFLOW, array()),
+        new WorkflowItem(
+          WorkflowConst::ACTIVITY,
+          array(
+            "category" => "machine_processed",
+            'stamp' => 'orlando:PUB',
+            'status' => 'c',
+            "note" => "Add URIs to entities.",
+            )
+          )
+        );
+      CWRCWorkflowAPI::updateDatastream($workflow, $object);
+
       // update content datastream with version 2.0 of the content
-      // UTF-8 and ISO 8601 dates
+      // UTF-8 and ISO 8601 dates (from previous steps)
       $object[$main_ds_id]->setContentFromString($content_v2_xml);
 
       // add a workflow stamp indicating that the object was ingested
@@ -2569,7 +2600,7 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
             "category" => "machine_processed",
             'stamp' => 'orlando:SUB',
             'status' => 'c',
-            "note" => "Conversion to version 2.0 of the Orlando format (UTF-8 and ISO 8601 dates).",
+            "note" => "Conversion to version 2.0 of the Orlando format.",
             )
           )
         );
@@ -3403,9 +3434,87 @@ function cwrc_migration_batch_verify_fedora($item_type, $pid, $file_name)
   }
 
   return $status;
-
 }
 
+
+function cwrc_migration_batch_add_entity_refs_content($content, $ds_id, $entity_mapping) 
+{
+
+  // add entity references to elements in content
+  if ($ds_id != "MODS") {
+    $content = add_entity_references_via_element(
+      $content
+      , "info:fedora/cwrc:person-entityCModel"
+      , "STANDARD"
+      , "REF"
+      , null
+      , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
+      , "NAME"
+      , $entity_mapping
+    );
+  }
+  $content = add_entity_references_via_element(
+    $content
+    , "info:fedora/cwrc:person-entityCModel"
+    , "NAME"
+    , "REF"
+    , "STANDARD"
+    , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
+    , "NAME"
+    , $entity_mapping
+  );
+  $content = add_entity_references_via_element(
+    $content
+    , "info:fedora/cwrc:organization-entityCModel"
+    , "ORGNAME"
+    , "REF"
+    , "STANDARD"
+    , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
+    , "ORGNAME"
+    , $entity_mapping
+  );
+  if ($ds_id != "MODS") {
+    $content = add_entity_references_via_element(
+      $content
+      , "info:fedora/cwrc:citationCModel"
+      , "TEXTSCOPE"
+      , "REF"
+      , "DBREF"
+      , ISLANDORA_ORLANDO_MIGRATE_BIBL
+      , "BIBCIT"
+      , $entity_mapping
+    );
+    $content = add_entity_references_via_element(
+      $content
+      , "info:fedora/cwrc:citationCModel"
+      , "BIBCIT"
+      , "REF"
+      , "DBREF"
+      , ISLANDORA_ORLANDO_MIGRATE_BIBL
+      , "BIBCIT" 
+      , $entity_mapping
+    );
+  }
+
+  // update MODS with a URI
+  // XQuery XMLDatabase version 
+  // if ($ds_id == "MODS") {
+  // $content = add_entity_references_via_xpath(
+    // $content
+    // , "info:fedora/cwrc:person-entityCModel"
+    // , "/mods:mods/mods:subject/mods:name[@type=\"personal\"]"
+    // , "valueURI"
+    // , ""
+    // , "orlando_migration/orlando_entity_lookup_person_org.xq"
+    // , "NAME" 
+    // , $entity_mapping
+    // );
+  // }
+
+
+  return $content;
+
+}
 
 /** 
  * CWRC migration batch - add @REF attributes to the core entity elements
@@ -3433,85 +3542,11 @@ function cwrc_migration_batch_add_entity_refs($object, $ds_id, $entity_mapping)
   else {
     $content = $ds->content;
 
-    // add entity references to elements in content
-    $content = add_entity_references_via_element(
-      $content
-      , "info:fedora/cwrc:person-entityCModel"
-      , "STANDARD"
-      , "REF"
-      , null
-      , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
-      , "NAME"
-      , $entity_mapping
-    );
-    $content = add_entity_references_via_element(
-      $content
-      , "info:fedora/cwrc:person-entityCModel"
-      , "NAME"
-      , "REF"
-      , "STANDARD"
-      , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
-      , "NAME"
-      , $entity_mapping
-    );
-    $content = add_entity_references_via_element(
-      $content
-      , "info:fedora/cwrc:organization-entityCModel"
-      , "ORGNAME"
-      , "REF"
-      , "STANDARD"
-      , ISLANDORA_ORLANDO_MIGRATE_PERSON_ORG
-      , "ORGNAME"
-      , $entity_mapping
-    );
-    $content = add_entity_references_via_element(
-      $content
-      , "info:fedora/cwrc:citationCModel"
-      , "TEXTSCOPE"
-      , "REF"
-      , "DBREF"
-      , ISLANDORA_ORLANDO_MIGRATE_BIBL
-      , "BIBCIT"
-      , $entity_mapping
-    );
-    $content = add_entity_references_via_element(
-      $content
-      , "info:fedora/cwrc:citationCModel"
-      , "BIBCIT"
-      , "REF"
-      , "DBREF"
-      , ISLANDORA_ORLANDO_MIGRATE_BIBL
-      , "BIBCIT" 
-      , $entity_mapping
-    );
+    $content = cwrc_migration_batch_add_entity_refs_content($content, $ds_id, $entity_mapping);
 
     // update object
     $ds->setContentFromString($content);
   }
-
-  //update MODS with a URI
-  $ds = $object['MODS'];
-  if (!$ds)
-  {
-    drush_print("Error: datastream [$ds_id] not found $pid");
-  }
-  else 
-  {
-    $content = $ds->content;
-    
-    $content = add_entity_references_via_xpath(
-        $content
-      , "info:fedora/cwrc:person-entityCModel"
-      , "/mods:mods/mods:subject/mods:name[@type=\"personal\"]"
-      , "valueURI"
-      , ""
-      , "orlando_migration/orlando_entity_lookup_person_org.xq"
-      , "NAME" 
-      , $entity_mapping
-      );
-    $ds->setContentFromString($content);
-  }
-
 
   // add a workflow stamp indicating that the object was ingested
   $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
