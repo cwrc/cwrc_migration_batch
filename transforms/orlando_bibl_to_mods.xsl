@@ -408,7 +408,17 @@
     <xsl:template match="@PUBLISHED_AS_NAME" mode="bibliography">
         <displayForm><xsl:apply-templates select="." /></displayForm>
     </xsl:template>
-    
+
+    <!-- publisher template -->
+    <xsl:template match="PUBLISHER"> 
+        <xsl:element name="publisher">
+            <xsl:if test="ORGNAME/@REF">
+                <xsl:attribute name="valueURI" select="ORGNAME/@REF" />
+            </xsl:if>
+            <xsl:apply-templates select="ORGNAME" />
+        </xsl:element>
+    </xsl:template>
+
     <!-- originInfo template -->
     <xsl:template match="IMPRINT">
             <originInfo>
@@ -425,7 +435,7 @@
                 <!-- mpo: pending issue: express publisher as name type="corporate" with publisher role?
                     / if so, add to delivery metadata specs -->
                 <xsl:if test="PUBLISHER">
-                    <publisher><xsl:value-of select="PUBLISHER"/></publisher>
+                    <xsl:apply-templates select="PUBLISHER" />
                 </xsl:if>
                 <!-- dates -->
                 <xsl:apply-templates select="DATE_OF_PUBLICATION" mode="bibliography" />
