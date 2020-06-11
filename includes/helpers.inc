@@ -458,8 +458,9 @@ function add_entity_references(
         // update XML element node with new attribute
         if (!empty($attr_new) and !empty($pid))
         {
-          // writin the entity uri (base + PID)
-          $domElement->setAttribute($attr_new, $base_entity_url.$pid);
+          // write the entity uri (base + PID) + remove trailing forward slash and ensure one is added
+          $base_entity_url = rtrim($base_entity_url,'/');
+          $domElement->setAttribute($attr_new, $base_entity_url."/".$pid);
           drush_print("INFO: [$context] found with lookup [$lookup_str] for [$domElement->nodeValue] ref: [$pid]");
         }
         else

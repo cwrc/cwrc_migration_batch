@@ -1,15 +1,12 @@
-
 <!--
-* convert Orlando Legacy Biography and Writing documents, bibl, and entities into a CWRC v2 format
-** remove named character references (e.g., &eacute; etc.) - XSL does this automatically
-** remove the Orlando Legacy data format 2016-01- or double  '-' if no month
-
+* convert Orlando Legacy date format to ISO 8601 in MODS records
 -->
 
 <xsl:stylesheet
     version="2.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:tei="http://www.tei-c.org/ns/1.0"
+    xmlns:mods="http://www.loc.gov/mods/v3" exclude-result-prefixes="mods"
     >
     
     <xsl:output method="xml" encoding="UTF-8"/>
@@ -29,8 +26,7 @@
             <xsl:apply-templates select="child::node()"/>
         </xsl:copy>
     </xsl:template>
-    
-    
+
     <!--
     * add all attributes
     -->
@@ -43,17 +39,15 @@
       * update date attributes:
       * convert from legacy Orlando format to ISO8601 (e.g. YYYY-MM- to YYYY-MM)
     -->
-    <xsl:template match="DATE/@VALUE | DATESTRUCT/@VALUE | DATERANGE/@FROM | DATERANGE/@TO | DATE_OF_PUBLICATION/@REG | DATE_OF_ORIGINAL_PUBLICATION/@REG | DATE_OF_ACCESS/@REG" >
+    <xsl:template match="mods:dateOther | mods:dateIssued | mods:dateCreated">
         <!-- trim Orlando format date -->
-        <xsl:attribute name='{name(.)}'>
+        <xsl:element name='{name(.)}' namespace="http://www.loc.gov/mods/v3">
+            <xsl:apply-templates select="@*" />
             <xsl:call-template name="legacy_orlando_date_to_iso">
-                <xsl:with-param name="INPUT_DATE" select="."/>
+                <xsl:with-param name="INPUT_DATE" select="text()"/>
             </xsl:call-template>
-        </xsl:attribute>
+        </xsl:element>
 
     </xsl:template>
-    
-    
+
 </xsl:stylesheet>
-
-
