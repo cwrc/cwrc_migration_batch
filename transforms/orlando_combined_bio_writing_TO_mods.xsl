@@ -82,17 +82,26 @@
                         <roleTerm authority="marcrelator" type="text">Editor</roleTerm>
                     </role>
                 </name>
+                <!-- might be both bio and writ sections: use first -->
+                <xsl:variable name="date_issued_date" select="/*/(ENTRY|BIOGRAPHY|WRITING)[1]/ORLANDOHEADER/REVISIONDESC/(RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C'])[1]/DATE/text()" />
                 <originInfo>
                     <dateIssued encoding="w3cdtf">
                         <xsl:call-template name="convert_mla_to_iso">
-                            <!-- might be both bio and writ sections: use first -->
-                            <xsl:with-param name="INPUT_DATE" select="/*/(ENTRY|BIOGRAPHY|WRITING)[1]/ORLANDOHEADER/REVISIONDESC/(RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C'])[1]/DATE/text()"/>
+                            <xsl:with-param name="INPUT_DATE" select="$date_issued_date" />
                         </xsl:call-template>
                     </dateIssued>
                     <place>
                         <placeTerm type="text">Cambridge, United Kingdom</placeTerm>
                     </place>
                     <publisher>Cambridge University Press</publisher>
+                </originInfo>
+                <originInfo>
+                    <dateIssued encoding="w3cdtf">
+                        <xsl:call-template name="convert_mla_to_iso">
+                            <xsl:with-param name="INPUT_DATE" select="$date_issued_date" />
+                        </xsl:call-template>
+                    </dateIssued>
+                    <publisher>Canadian Writing Research Collaboratory</publisher>
                 </originInfo>
             </relatedItem>
 
