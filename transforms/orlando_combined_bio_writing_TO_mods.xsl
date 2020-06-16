@@ -42,7 +42,7 @@
                             <xsl:text>: </xsl:text>
                             <!-- <xsl:value-of select="/EVENT/CHRONEVENT/CHRONSTRUCT/CHRONPROSE"></xsl:value-of> -->
                             <!-- build snippet from longer chronprose, break at a "space", and restrict output to a max of "n" characters -->
-                            <xsl:value-of select="substring($TEXT_TO_SUBSTRING, 1, 40 + string-length(substring-before(substring($TEXT_TO_SUBSTRING, 41),' ')))" xml:space="default"/>
+                            <xsl:value-of select="substring($TEXT_TO_SUBSTRING, 1, 80 + string-length(substring-before(substring($TEXT_TO_SUBSTRING, 41),' ')))" xml:space="default"/>
                             <xsl:text>...</xsl:text>
                         </xsl:when>
                         <xsl:otherwise>
