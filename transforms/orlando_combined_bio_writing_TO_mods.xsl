@@ -31,10 +31,10 @@
                     <xsl:choose>
                         <xsl:when test="ORLANDO">
                             <!-- might be both bio and writ sections: use first -->
-                            <xsl:value-of select="/ORLANDO/(BIOGRAPHY|WRITING|DOCUMENTATION|ENTRY)[1]/ORLANDOHEADER/FILEDESC/TITLESTMT/DOCTITLE/text()"/>
+                            <xsl:value-of select="/ORLANDO/(ENTRY|BIOGRAPHY|WRITING|DOCUMENTATION)[1]/ORLANDOHEADER/FILEDESC/TITLESTMT/DOCTITLE/text()"/>
                         </xsl:when>
-                        <xsl:when test="BIOGRAPHY | WRITING | DOCUMENTATION | ENTRY">
-                            <xsl:value-of select="/(BIOGRAPHY|WRITING|DOCUMENTATION|ENTRY)/ORLANDOHEADER/FILEDESC/TITLESTMT/DOCTITLE/text()"/>
+                        <xsl:when test="ENTRY | BIOGRAPHY | WRITING | DOCUMENTATION">
+                            <xsl:value-of select="/(ENTRY|BIOGRAPHY|WRITING|DOCUMENTATION)/ORLANDOHEADER/FILEDESC/TITLESTMT/DOCTITLE/text()"/>
                         </xsl:when>
                         <xsl:when test="EVENT" xml:space="default">
                             <xsl:variable name="TEXT_TO_SUBSTRING" select="normalize-space(/EVENT/CHRONEVENT/CHRONSTRUCT/CHRONPROSE)" xml:space="default"/>
@@ -86,7 +86,7 @@
                     <dateIssued encoding="w3cdtf">
                         <xsl:call-template name="convert_mla_to_iso">
                             <!-- might be both bio and writ sections: use first -->
-                            <xsl:with-param name="INPUT_DATE" select="/*/(BIOGRAPHY|WRITING)[1]/ORLANDOHEADER/REVISIONDESC/(RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C'])[1]/DATE/text()"/>
+                            <xsl:with-param name="INPUT_DATE" select="/*/(ENTRY|BIOGRAPHY|WRITING)[1]/ORLANDOHEADER/REVISIONDESC/(RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C'])[1]/DATE/text()"/>
                         </xsl:call-template>
                     </dateIssued>
                     <place>
@@ -121,7 +121,7 @@
             </accessCondition>
 
             <note type="researchNote">
-                <xsl:value-of select="/*/(BIOGRAPHY|WRITING|DOCUMENTATION)[1]/DIV0/STANDARD"/>
+                <xsl:value-of select="/*/(ENTRY|BIOGRAPHY|WRITING|DOCUMENTATION)[1]/DIV0/STANDARD"/>
             </note>
 
 
@@ -165,10 +165,13 @@
                 </languageOfCataloging>
             </recordInfo>
 
-            <xsl:if test="/*/(BIOGRAPHY|WRITING)">
+            <xsl:if test="/*/(ENTRY|BIOGRAPHY|WRITING)">
               <subject>
+                <xsl:variable name="standard_name_node" select="/*/(ENTRY|BIOGRAPHY|WRITING)[1]/DIV0/STANDARD" />
                 <name type="personal">
-                    <xsl:value-of select="/*/(BIOGRAPHY|WRITING)[1]/DIV0/STANDARD/text()"/>
+                    <xsl:attribute name="type"><xsl:text>personal</xsl:text></xsl:attribute>
+                    <xsl:attribute name="valueURI"><xsl:value-of select="$standard_name_node/@REF" /></xsl:attribute>
+                    <xsl:value-of select="$standard_name_node/text()"/>
                 </name>
                 </subject>
               </xsl:if>
