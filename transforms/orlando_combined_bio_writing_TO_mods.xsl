@@ -34,11 +34,11 @@
                             <xsl:value-of select="/ORLANDO/(ENTRY|BIOGRAPHY|WRITING|DOCUMENTATION)[1]/ORLANDOHEADER/FILEDESC/TITLESTMT/DOCTITLE/text()"/>
                         </xsl:when>
                         <xsl:when test="ENTRY | BIOGRAPHY | WRITING | DOCUMENTATION">
-                            <xsl:value-of select="/(ENTRY|BIOGRAPHY|WRITING|DOCUMENTATION)/ORLANDOHEADER/FILEDESC/TITLESTMT/DOCTITLE/text()"/>
+                            <xsl:value-of select="(ENTRY|BIOGRAPHY|WRITING|DOCUMENTATION)/ORLANDOHEADER/FILEDESC/TITLESTMT/DOCTITLE/text()"/>
                         </xsl:when>
                         <xsl:when test="EVENT" xml:space="default">
                             <xsl:variable name="TEXT_TO_SUBSTRING" select="normalize-space(/EVENT/CHRONEVENT/CHRONSTRUCT/CHRONPROSE)" xml:space="default"/>
-                            <xsl:value-of select="/EVENT/CHRONEVENT/CHRONSTRUCT/(DATE|DATERANGE|DATESTRUCT)/text()"/>
+                            <xsl:value-of select="CHRONEVENT/CHRONSTRUCT/(DATE|DATERANGE|DATESTRUCT)/text()"/>
                             <xsl:text>: </xsl:text>
                             <!-- <xsl:value-of select="/EVENT/CHRONEVENT/CHRONSTRUCT/CHRONPROSE"></xsl:value-of> -->
                             <!-- build snippet from longer chronprose, break at a "space", and restrict output to a max of "n" characters -->
@@ -83,12 +83,14 @@
                     </role>
                 </name>
                 <!-- might be both bio and writ sections: use first -->
-                <xsl:variable name="date_issued_date" select="/*/(ENTRY|BIOGRAPHY|WRITING)[1]/ORLANDOHEADER/REVISIONDESC/(RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C'])[1]/DATE/text()" />
+                <xsl:variable name="date_issued_date">
+                    <xsl:call-template name="convert_mla_to_iso">
+                        <xsl:with-param name="INPUT_DATE" select="(ENTRY|BIOGRAPHY|WRITING)[1]/ORLANDOHEADER/REVISIONDESC/(RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C'])[1]/DATE/text()" />
+                    </xsl:call-template>
+                </xsl:variable>
                 <originInfo>
                     <dateIssued encoding="w3cdtf">
-                        <xsl:call-template name="convert_mla_to_iso">
-                            <xsl:with-param name="INPUT_DATE" select="$date_issued_date" />
-                        </xsl:call-template>
+                        <xsl:value-of select="$date_issued_date" />
                     </dateIssued>
                     <place>
                         <placeTerm type="text">Cambridge, United Kingdom</placeTerm>
@@ -97,9 +99,7 @@
                 </originInfo>
                 <originInfo>
                     <dateIssued encoding="w3cdtf">
-                        <xsl:call-template name="convert_mla_to_iso">
-                            <xsl:with-param name="INPUT_DATE" select="$date_issued_date" />
-                        </xsl:call-template>
+                        <xsl:value-of select="$date_issued_date" />
                     </dateIssued>
                     <publisher>Canadian Writing Research Collaboratory</publisher>
                 </originInfo>
@@ -130,7 +130,7 @@
             </accessCondition>
 
             <note type="researchNote">
-                <xsl:value-of select="/*/(ENTRY|BIOGRAPHY|WRITING|DOCUMENTATION)[1]/DIV0/STANDARD"/>
+                <xsl:value-of select="(ENTRY|BIOGRAPHY|WRITING|DOCUMENTATION)/DIV0/STANDARD/text()"/>
             </note>
 
 
@@ -174,9 +174,9 @@
                 </languageOfCataloging>
             </recordInfo>
 
-            <xsl:if test="/*/(ENTRY|BIOGRAPHY|WRITING)">
+            <xsl:if test="ENTRY | BIOGRAPHY | WRITING">
               <subject>
-                <xsl:variable name="standard_name_node" select="/*/(ENTRY|BIOGRAPHY|WRITING)[1]/DIV0/STANDARD" />
+                <xsl:variable name="standard_name_node" select="/(ENTRY|BIOGRAPHY|WRITING)[1]/DIV0/STANDARD" />
                 <name type="personal">
                     <xsl:attribute name="type"><xsl:text>personal</xsl:text></xsl:attribute>
                     <xsl:attribute name="valueURI"><xsl:value-of select="$standard_name_node/@REF" /></xsl:attribute>
