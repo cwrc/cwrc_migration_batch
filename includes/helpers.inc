@@ -399,6 +399,18 @@ function add_entity_references_via_xpath(
   );
 }
 
+/**
+ * Build the URI from a given id
+ */
+ function build_uri_from_pid($pid) 
+ {
+    // get the base of the entity uri
+    $base_entity_url = variable_get('islandora_cwrc_writer_repository_base_object_url', '');
+
+    // write the entity uri (base + PID) + remove trailing forward slash and ensure one is added
+    $base_entity_url = rtrim($base_entity_url,'/');
+    return $base_entity_url."/".$pid;
+ }
 
 /**
  * 
@@ -418,8 +430,6 @@ function add_entity_references(
 {
   if($nodes instanceof DOMNodeList)
   {
-    // get the base of the entity uri
-    $base_entity_url = variable_get('islandora_cwrc_writer_repository_base_object_url', '');
 
     foreach($nodes as $domElement)
     {
@@ -458,9 +468,8 @@ function add_entity_references(
         // update XML element node with new attribute
         if (!empty($attr_new) and !empty($pid))
         {
-          // write the entity uri (base + PID) + remove trailing forward slash and ensure one is added
-          $base_entity_url = rtrim($base_entity_url,'/');
-          $domElement->setAttribute($attr_new, $base_entity_url."/".$pid);
+          $uri = build_uri_from_pid($pid);
+          $domElement->setAttribute($attr_new, $uri);
           drush_print("INFO: [$context] found with lookup [$lookup_str] for [$domElement->nodeValue] ref: [$pid]");
         }
         else

@@ -1584,6 +1584,22 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
     $to_mods_xslt_proc->setParameter(
       "param_original_id", $saxonProc->createAtomicValue($file_name) 
       );
+    $to_mods_xslt_proc->setParameter(
+      "param_editor_brown_value_uri"
+      , $saxonProc->createAtomicValue(build_uri_from_pid($entity_mapping['NAME']['Brown, Susan I.'])) 
+      );
+    $to_mods_xslt_proc->setParameter(
+      "param_editor_clements_value_uri"
+      , $saxonProc->createAtomicValue(build_uri_from_pid($entity_mapping['NAME']['Clements, Patricia'])) 
+      );
+    $to_mods_xslt_proc->setParameter(
+      "param_editor_grundy_value_uri"
+      , $saxonProc->createAtomicValue(build_uri_from_pid($entity_mapping['NAME']['Grundy, Isobel'])) 
+      );
+    $to_mods_xslt_proc->setParameter(
+      "param_publisher_cup_value_uri"
+      , $saxonProc->createAtomicValue(build_uri_from_pid($entity_mapping['ORGNAME']['Cambridge University Press'])) 
+      );
     $to_mods_xslt_proc->setSourceFromXdmValue(
       $saxonProc->parseXmlFromString($content_uri_xml)
       );
@@ -2007,6 +2023,22 @@ function drush_cwrc_migration_batch_ingest_orlando_combine_biography_writing ()
             "param_original_writ_filename", $saxonProc->createAtomicValue($entry['writ_xml']) 
             );
     }
+    $to_mods_xslt_proc->setParameter(
+      "param_editor_brown_value_uri"
+      , $saxonProc->createAtomicValue(build_uri_from_pid($entity_mapping['NAME']['Brown, Susan I.'])) 
+      );
+    $to_mods_xslt_proc->setParameter(
+      "param_editor_clements_value_uri"
+      , $saxonProc->createAtomicValue(build_uri_from_pid($entity_mapping['NAME']['Clements, Patricia'])) 
+      );
+    $to_mods_xslt_proc->setParameter(
+      "param_editor_grundy_value_uri"
+      , $saxonProc->createAtomicValue(build_uri_from_pid($entity_mapping['NAME']['Grundy, Isobel'])) 
+      );
+    $to_mods_xslt_proc->setParameter(
+      "param_publisher_cup_value_uri"
+      , $saxonProc->createAtomicValue(build_uri_from_pid($entity_mapping['ORGNAME']['Cambridge University Press'])) 
+      );
     $to_mods_xslt_proc->setSourceFromXdmValue(
       $saxonProc->parseXmlFromString($content_uri_xml)
       );

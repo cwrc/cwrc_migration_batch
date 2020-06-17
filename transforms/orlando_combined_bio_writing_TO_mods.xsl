@@ -20,6 +20,10 @@
     <xsl:param name="param_original_id" select="'xxxxxx'"/>
     <xsl:param name="param_original_bio_filename" select="''"/>
     <xsl:param name="param_original_writ_filename" select="''"/>
+    <xsl:param name="param_editor_brown_value_uri" select="''"/>
+    <xsl:param name="param_editor_clements_value_uri" select="''"/>
+    <xsl:param name="param_editor_grundy_value_uri" select="''"/>
+    <xsl:param name="param_publisher_cup_value_uri" select="''"/>
 
 
     <!-- root element - assumes start with an Orlando bio or writing document -->
@@ -62,6 +66,9 @@
                     <title>Orlando: Women's Writing in the British Isles from the Beginnings to the Present</title>
                 </titleInfo>
                 <name type="personal">
+                    <xsl:if test="$param_editor_brown_value_uri != ''">
+                      <xsl:attribute name="valueURI" select="$param_editor_brown_value_uri" />
+                    </xsl:if>
                     <namePart type="given">Susan</namePart>
                     <namePart type="family">Brown</namePart>
                     <role>
@@ -69,6 +76,9 @@
                     </role>
                 </name>
                 <name type="personal">
+                    <xsl:if test="$param_editor_clements_value_uri != ''">
+                      <xsl:attribute name="valueURI" select="$param_editor_clements_value_uri" />
+                    </xsl:if>
                     <namePart type="given">Patricia</namePart>
                     <namePart type="family">Clements</namePart>
                     <role>
@@ -76,6 +86,9 @@
                     </role>
                 </name>
                 <name type="personal">
+                    <xsl:if test="$param_editor_grundy_value_uri != ''">
+                      <xsl:attribute name="valueURI" select="$param_editor_grundy_value_uri" />
+                    </xsl:if>
                     <namePart type="given">Isobel</namePart>
                     <namePart type="family">Grundy</namePart>
                     <role>
@@ -95,7 +108,12 @@
                     <place>
                         <placeTerm type="text">Cambridge, United Kingdom</placeTerm>
                     </place>
-                    <publisher>Cambridge University Press</publisher>
+                    <publisher>
+                        <xsl:if test="$param_publisher_cup_value_uri != ''">
+                            <xsl:attribute name="valueURI" select="$param_publisher_cup_value_uri" />
+                        </xsl:if>
+                        <xsl:text>Cambridge University Press</xsl:text>
+                    </publisher>
                 </originInfo>
                 <originInfo>
                     <dateIssued encoding="w3cdtf">
@@ -123,9 +141,9 @@
                 <url>http://orlando.cambridge.org/</url>
             </location>
 
-            <accessCondition type="use and reproduction" xlink:href="http://cwrc.ca/license/the-orlando-project-license.html">
+            <accessCondition type="use and reproduction" xlink:href="https://cwrc.ca/license/the-orlando-project-license.html">
                 <xsl:text>Access to this resource is restricted by a </xsl:text>
-                <a rel="license" href="http://cwrc.ca/license/the-orlando-project-license.html">licence</a>
+                <a rel="license" href="https://cwrc.ca/license/the-orlando-project-license.html">licence</a>
                 <xsl:text> between the University of Alberta and Cambridge University Press</xsl:text>
             </accessCondition>
 
@@ -168,7 +186,7 @@
                     <xsl:value-of select="$param_original_id"/>
                 </recordIdentifier>
                 <recordOrigin>
-                    <xsl:text>MODS record has been created from an SGML record using an XSLT stylesheet.</xsl:text>
+                    <xsl:text>MODS record has been created from an XML record using an XSLT stylesheet.</xsl:text>
                 </recordOrigin>
                 <languageOfCataloging>
                     <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
