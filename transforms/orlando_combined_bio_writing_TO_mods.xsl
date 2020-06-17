@@ -38,11 +38,11 @@
                         </xsl:when>
                         <xsl:when test="EVENT" xml:space="default">
                             <xsl:variable name="TEXT_TO_SUBSTRING" select="normalize-space(/EVENT/CHRONEVENT/CHRONSTRUCT/CHRONPROSE)" xml:space="default"/>
-                            <xsl:value-of select="CHRONEVENT/CHRONSTRUCT/(DATE|DATERANGE|DATESTRUCT)/text()"/>
+                            <xsl:value-of select="EVENT/CHRONEVENT/CHRONSTRUCT/(DATE|DATERANGE|DATESTRUCT)/text()"/>
                             <xsl:text>: </xsl:text>
                             <!-- <xsl:value-of select="/EVENT/CHRONEVENT/CHRONSTRUCT/CHRONPROSE"></xsl:value-of> -->
                             <!-- build snippet from longer chronprose, break at a "space", and restrict output to a max of "n" characters -->
-                            <xsl:value-of select="substring($TEXT_TO_SUBSTRING, 1, 80 + string-length(substring-before(substring($TEXT_TO_SUBSTRING, 41),' ')))" xml:space="default"/>
+                            <xsl:value-of select="substring($TEXT_TO_SUBSTRING, 1, 80 + string-length(substring-before(substring($TEXT_TO_SUBSTRING, 81),' ')))" xml:space="default"/>
                             <xsl:text>...</xsl:text>
                         </xsl:when>
                         <xsl:otherwise>
@@ -85,7 +85,7 @@
                 <!-- might be both bio and writ sections: use first -->
                 <xsl:variable name="date_issued_date">
                     <xsl:call-template name="convert_mla_to_iso">
-                        <xsl:with-param name="INPUT_DATE" select="(ENTRY|BIOGRAPHY|WRITING)[1]/ORLANDOHEADER/REVISIONDESC/(RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C'])[1]/DATE/text()" />
+                        <xsl:with-param name="INPUT_DATE" select="(ENTRY|BIOGRAPHY|WRITING|EVENT)[1]/ORLANDOHEADER/REVISIONDESC/(RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C'])[1]/DATE/text()" />
                     </xsl:call-template>
                 </xsl:variable>
                 <originInfo>
@@ -129,9 +129,11 @@
                 <xsl:text> between the University of Alberta and Cambridge University Press</xsl:text>
             </accessCondition>
 
-            <note type="researchNote">
-                <xsl:value-of select="(ENTRY|BIOGRAPHY|WRITING|DOCUMENTATION)/DIV0/STANDARD/text()"/>
-            </note>
+            <xsl:if test="ENTRY | BIOGRAPHY | WRITING">
+                <note type="researchNote">
+                    <xsl:value-of select="(ENTRY|BIOGRAPHY|WRITING|DOCUMENTATION)/DIV0/STANDARD/text()"/>
+                </note>
+            </xsl:if>
 
 
             <!-- 
@@ -179,11 +181,13 @@
                 <xsl:variable name="standard_name_node" select="/(ENTRY|BIOGRAPHY|WRITING)[1]/DIV0/STANDARD" />
                 <name type="personal">
                     <xsl:attribute name="type"><xsl:text>personal</xsl:text></xsl:attribute>
-                    <xsl:attribute name="valueURI"><xsl:value-of select="$standard_name_node/@REF" /></xsl:attribute>
+                        <xsl:if test="$standard_name_node">
+                            <xsl:attribute name="valueURI"><xsl:value-of select="$standard_name_node/@REF" /></xsl:attribute>
+                        </xsl:if>
                     <xsl:value-of select="$standard_name_node/text()"/>
                 </name>
-                </subject>
-              </xsl:if>
+              </subject>
+            </xsl:if>
 
         </mods>
 

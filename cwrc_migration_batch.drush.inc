@@ -1403,6 +1403,7 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
   module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
 
+  $main_ds_id = 'CWRC';
 
   drush_print("Orlando Biography / Writing / Event migration batch version 2.0");
 
@@ -1423,7 +1424,7 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
   );
   $xslt_to_mods = drush_get_option(
     'xslt_to_mods'
-    , $ext_home . 'transforms/orlando_bio_writing_TO_mods.xsl'
+    , $ext_home . 'transforms/orlando_combined_bio_writing_TO_mods.xsl'
   );
   $xslt_mods_to_dc = drush_get_option(
     'xslt_mods_to_dc'
@@ -1573,16 +1574,18 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
         , $content_v2_xml
       );
 
+    $content_uri_xml = cwrc_migration_batch_add_entity_refs_content($content_v2_xml, $main_ds_id, $entity_mapping);
+
     // Build MODS XML.
     //$content_dom = null;
     //$content_dom = new DOMDocument();
     //$content_dom->loadXML($v2_content);
     //$mods_xml = $bio_writ_to_mods_xslt_proc->transformToString($content_dom);
     $to_mods_xslt_proc->setParameter(
-      "param_original_filename", $saxonProc->createAtomicValue($file_name) 
+      "param_original_id", $saxonProc->createAtomicValue($file_name) 
       );
     $to_mods_xslt_proc->setSourceFromXdmValue(
-      $saxonProc->parseXmlFromString($content_v2_xml)
+      $saxonProc->parseXmlFromString($content_uri_xml)
       );
     $mods_xml = $to_mods_xslt_proc->transformToString();
 
@@ -1654,7 +1657,7 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
 
     // create content datastream
     // with the legacy content
-    $cwrc_ds = $object->constructDatastream('CWRC', 'M');
+    $cwrc_ds = $object->constructDatastream($main_ds_id, 'M');
     $cwrc_ds->label = $file_name;
     $cwrc_ds->mimeType = 'text/xml';
     $cwrc_ds->setContentFromString($legacy_content);
@@ -1671,7 +1674,7 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
     // We want to get all of the responsibilitie tags.
     // For each responsibility create a workflow element.
     // Create the MODS datastream.
-    create_DS_workflow_from_Source($content_v2_xml, $object);
+    create_DS_workflow_from_Source($content_uri_xml, $object);
 
     // Create the Policy datastream.
     if ( $policy != null && $policy!="NONE" ) 
@@ -1712,7 +1715,7 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
 
       // update content datastream with version 2.0 of the content
       // UTF-8 and ISO 8601 dates
-      $object['CWRC']->setContentFromString($content_v2_xml);
+      $object[$main_ds_id]->setContentFromString($content_v2_xml);
 
       // add a workflow stamp indicating that the object was ingested
       $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
@@ -1732,9 +1735,10 @@ function drush_cwrc_migration_batch_ingest_orlando_biography_writing ()
       CWRCWorkflowAPI::updateDatastream($workflow, $object);
 
       //update URI's refences in entities
-      if ($object['CWRC'])
+      if ($object[$main_ds_id])
       {
-        cwrc_migration_batch_add_entity_refs($object, "CWRC", $entity_mapping);
+        $object[$main_ds_id]->setContentFromString($content_uri_xml);
+        cwrc_migration_batch_add_entity_refs_workflow($object, $main_ds_id);
       }
     }
     catch (Exception $e) {
@@ -1771,6 +1775,7 @@ function drush_cwrc_migration_batch_ingest_orlando_combine_biography_writing ()
   module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
   module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
 
+  $main_ds_id = 'CWRC';
 
   drush_print("Orlando Biography / Writing / Event migration batch version 2.0");
 
@@ -1985,6 +1990,8 @@ function drush_cwrc_migration_batch_ingest_orlando_combine_biography_writing ()
     $content_v3_xml = $to_v3_xslt_proc->transformToString();
 
     //print ("zzzzzzzzzzzzzzzzzzzz " . $content_v3_xml);
+    
+    $content_uri_xml = cwrc_migration_batch_add_entity_refs_content($content_v3_xml, $main_ds_id, $entity_mapping);
 
     // Build MODS XML.
     $to_mods_xslt_proc->setParameter(
@@ -2001,7 +2008,7 @@ function drush_cwrc_migration_batch_ingest_orlando_combine_biography_writing ()
             );
     }
     $to_mods_xslt_proc->setSourceFromXdmValue(
-      $saxonProc->parseXmlFromString($content_v3_xml)
+      $saxonProc->parseXmlFromString($content_uri_xml)
       );
     $mods_xml = $to_mods_xslt_proc->transformToString();
 
@@ -2217,10 +2224,12 @@ function drush_cwrc_migration_batch_ingest_orlando_combine_biography_writing ()
       CWRCWorkflowAPI::updateDatastream($workflow, $object);
 
       //update URI's refences in entities
-      if ($object['CWRC'])
+      if ($object[$main_ds_id])
       {
-        cwrc_migration_batch_add_entity_refs($object, "CWRC", $entity_mapping);
+        $object[$main_ds_id]->setContentFromString($content_uri_xml);
+        cwrc_migration_batch_add_entity_refs_workflow($object, $main_ds_id);
       }
+
     }
     catch (Exception $e) {
       $file_error_count++;
@@ -2414,16 +2423,16 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
     if ($main_ds_id=='MODS') {
       // update URI's refences in bibliographic entities
       // requires UTF-8 
-      $uri_xml = cwrc_migration_batch_add_entity_refs_content($clean_xml, $main_ds_id, $entity_mapping);
+      $content_uri_xml = cwrc_migration_batch_add_entity_refs_content($clean_xml, $main_ds_id, $entity_mapping);
     }
     else {
       // for other entity 
-      $uri_xml = $clean_xml;
+      $content_uri_xml = $clean_xml;
     }
 
     // build the version 2.0 
     $to_v2_xslt_proc->setSourceFromXdmValue(
-      $saxonProc->parseXmlFromString($uri_xml)
+      $saxonProc->parseXmlFromString($content_uri_xml)
     );
     if ($supplemental_filename)
     {
@@ -2564,26 +2573,12 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
         );
       CWRCWorkflowAPI::updateDatastream($workflow, $object);
 
-      // update URI's refences in entities
-      // requires UTF-8 
-      $object[$main_ds_id]->setContentFromString($uri_xml);
-
-      // add a workflow stamp indicating that the object was ingested
-      $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
-      $workflow->addWorkflowStep(
-        $object->id,
-        new WorkflowItem(WorkflowConst::WORKFLOW, array()),
-        new WorkflowItem(
-          WorkflowConst::ACTIVITY,
-          array(
-            "category" => "machine_processed",
-            'stamp' => 'orlando:PUB',
-            'status' => 'c',
-            "note" => "Add URIs to entities.",
-            )
-          )
-        );
-      CWRCWorkflowAPI::updateDatastream($workflow, $object);
+      //update URI's refences in entities
+      if ($main_ds_id == 'MODS')
+      {
+        $object[$main_ds_id]->setContentFromString($content_uri_xml);
+        cwrc_migration_batch_add_entity_refs_workflow($object, $main_ds_id);
+      }
 
       // update content datastream with version 2.0 of the content
       // UTF-8 and ISO 8601 dates (from previous steps)
@@ -3515,6 +3510,41 @@ function cwrc_migration_batch_add_entity_refs_content($content, $ds_id, $entity_
   return $content;
 
 }
+
+/** 
+ * CWRC migration batch - add @REF attributes to the core entity elements
+ * (name/org/bibcit/textscope/standard/etc.) 
+ *
+ */
+function cwrc_migration_batch_add_entity_refs_workflow($object, $ds_id) 
+{
+
+  module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
+
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/cwrc_workflow');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
+  module_load_include('inc', 'islandora_cwrc_basexdb', 'includes/xmldb_endpoints');
+
+  // add a workflow stamp indicating that the object was ingested
+  $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+  $workflow->addWorkflowStep(
+    $object->id,
+    new WorkflowItem(WorkflowConst::WORKFLOW, array()),
+    new WorkflowItem(
+      WorkflowConst::ACTIVITY,
+      array(
+        "category" => "machine_processed",
+        'stamp' => 'orlando:SUB',
+        'status' => 'c',
+        "note" => "Add URIs to entities references in $ds_id content.",
+        )
+      )
+    );
+  CWRCWorkflowAPI::updateDatastream($workflow, $object);
+}
+
 
 /** 
  * CWRC migration batch - add @REF attributes to the core entity elements

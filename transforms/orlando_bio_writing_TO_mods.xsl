@@ -17,7 +17,7 @@
     -->
 
     <!-- input parameter, the name of the original XML (SGML) file) -->
-    <xsl:param name="param_original_filename" select="'xxxxxx-x.sgm'"/>
+    <xsl:param name="param_original_id" select="'xxxxxx-x.sgm'"/>
 
 
     <!-- root element - assumes start with an Orlando bio or writing document -->
@@ -90,7 +90,7 @@
             </relatedItem>
 
             <identifier type="local">
-                <xsl:value-of select="$param_original_filename"/>
+                <xsl:value-of select="$param_original_id"/>
             </identifier>
 
             <location>
@@ -137,7 +137,7 @@
                     <xsl:value-of select="format-date(current-date(),'[Y0001]-[M01]-[D01]')"/>
                 </recordChangeDate>
                 <recordIdentifier source="The Orlando Project">
-                    <xsl:value-of select="$param_original_filename"/>
+                    <xsl:value-of select="$param_original_id"/>
                 </recordIdentifier>
                 <recordOrigin>
                     <xsl:text>MODS record has been created from an SGML record using an XSLT stylesheet.</xsl:text>
