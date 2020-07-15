@@ -193,8 +193,6 @@ function cwrc_migration_batch_drush_command() {
   );
 
 
-
-
   $items['cwrc_migration_batch_validate'] = array(
     'description' => 'A naive attempt to validate cwrc:documentCModel objects against a schema',
     'options' => array(
@@ -241,6 +239,28 @@ function cwrc_migration_batch_drush_command() {
   );
 
 
+  $items['cwrc_migration_batch_retrieve_members_of_collection'] = array(
+    'description' => 'Given the PID of a collection, return a list of members',
+    'options' => array(
+      'collection_pid' => 'PID of the collection of retrieve members',
+    ),
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_batch_retrieve_members_of_collection',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
+
+
+  $items['cwrc_migration_batch_delete'] = array(
+    'description' => 'Delete a list of objects',
+    'options' => array(
+      'pid_file' => 'PIDs to delete',
+    ),
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_delete',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
 
 
   return $items;
@@ -3871,4 +3891,143 @@ function drush_cwrc_migration_batch_thumbnail_entries()
 
 }
 
+/** 
+ * CWRC migration batch - retrieve all items within a collection 
+ *
+ */
+function drush_cwrc_migration_batch_retrieve_members_of_collection()
+{
 
+  $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
+
+  // Collection PID
+  $collection_pid = drush_get_option(
+    'collection_pid', 'islandora:root'
+  );
+
+  drush_print("Members of collection: $collection_pid");
+
+  $query = <<<EOT
+    PREFIX fre: <info:fedora/fedora-system:def/relations-external#>
+    PREFIX fm: <info:fedora/fedora-system:def/model#>
+    SELECT ?obj
+    FROM <#ri>
+    WHERE {
+      {
+        ?obj fre:isMemberOfCollection ?sub
+      }
+      UNION
+      {
+        ?obj fre:isMemberOf ?sub
+      }
+      ?obj fm:state fm:Active .
+      ?sub fm:state fm:Active
+      FILTER(sameTerm(?sub, <info:fedora/$collection_pid>))
+    }
+EOT;
+
+  drush_print($query);
+
+  // Counter for the number of files.
+  $count = 0;
+  $error_count = 0;
+
+  try
+  {
+    $connection = islandora_get_tuque_connection();
+    $results = $connection->repository->ri->sparqlQuery($query);
+    foreach ($results as $result)
+    {
+      $count++;
+      drush_print($result['obj']['value']);
+    }
+  }
+  catch (Exception $e) {
+     // print exception
+     print $e->getMessage();
+     $error_count++;
+  }
+
+  drush_print('Number of objects: ' . $count);
+  drush_print('Number of errors: ' . $error_count);
+}
+
+
+/** 
+ * CWRC migration batch - delete objects in list 
+ * don't use with collections
+ *
+ */
+function drush_cwrc_migration_batch_delete() 
+{
+
+  drush_print("Delete objects");
+
+  $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
+
+  // input file of PIDs; one per line 
+  $pid_file = drush_get_option(
+    'pid_file'
+  );
+
+  // Include modules.
+  $connection = null;
+  migration_init($connection);
+
+  // Display the user.
+  drush_print("User: " . $connection->connection->username);
+
+  // input file of PIDs
+  drush_print("PID File: $pid_file");
+  $file_handle = fopen($pid_file, "r");
+
+  // Counter for the number of files.
+  $file_count = 0;
+  $file_error_count = 0;
+  while ($file_handle && ($line = fgets($file_handle)) !== false) 
+  {
+    $pid = trim($line);
+
+    if (empty($pid) || $pid == '') {
+      continue;
+    }
+
+    //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
+    // no effect when PHP is running in safe mode
+    // http://php.net/manual/en/function.set-time-limit.php
+    set_time_limit(5);
+
+    drush_print("PID: $pid");
+
+    try {
+      $object = islandora_object_load($pid);
+
+      $collection_models = islandora_basic_collection_get_collection_content_models();
+      $is_a_collection = ( 
+        (count(array_intersect($collection_models, $object->models)) > 0) 
+        && isset($object['COLLECTION_POLICY'])
+        );
+
+      if (!$is_a_collection) {
+        //$objec->delete();
+        $object->repository->purgeObject($pid);
+        $file_count++;
+      } else { 
+        drush_print("PID is a collection - delete failed: $pid");
+        $error_file_count++;
+      }
+
+    } catch (Exception $e) {
+      $file_error_count++;
+      drush_print("pid=$pid title=\"$title\" was not added.");
+      drush_print($e->getMessage());
+    }
+
+  }
+  fclose($file_handle);
+
+  drush_print('Migration Complete');
+  drush_print('Number of objects deleted: ' . $file_count);
+  drush_print('Number of errors: ' . $file_error_count);
+
+}
