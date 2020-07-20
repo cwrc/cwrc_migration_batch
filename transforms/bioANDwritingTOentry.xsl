@@ -80,8 +80,8 @@
                 <WORKSCITED>
                     <SOURCE>Unless otherwise noted, all information is from the FC</SOURCE>
                     <xsl:for-each-group select="(BIOGRAPHY | WRITING)/DIV0/WORKSCITED/SOURCE"
-                        group-by="text()">
-                        <xsl:sort select="text()" order="ascending" data-type="text"/>
+                        group-by="text()[1]">
+                        <xsl:sort select="text()[1]" order="ascending" data-type="text"/>
                         <xsl:element name="{local-name(.)}">
                             <xsl:copy-of select="@*"/>
                             <xsl:copy-of select="node()"/>
