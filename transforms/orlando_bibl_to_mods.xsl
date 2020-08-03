@@ -322,14 +322,7 @@
     <!-- mpo: to do: check whether tei elements can be used to define name types -->
     <xsl:template match="AUTHOR_ROLE" mode="bibliography">
         <name>
-            <xsl:choose>
-                <xsl:when test="@NAME_TYPE='COLLABORATIVE'">
-                    <xsl:attribute name="type">corporate</xsl:attribute>
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:attribute name="type">personal</xsl:attribute>
-                </xsl:otherwise>
-            </xsl:choose>
+            <xsl:attribute name="type">personal</xsl:attribute>
             <xsl:if test="NAME/@REF">
                 <xsl:attribute name="valueURI" select="NAME/@REF" />
             </xsl:if>
