@@ -141,10 +141,10 @@
                 <url>http://orlando.cambridge.org/</url>
             </location>
 
-            <accessCondition type="use and reproduction" xlink:href="https://cwrc.ca/license/the-orlando-project-license.html">
-                <xsl:text>Access to this resource is restricted by a </xsl:text>
-                <a rel="license" href="https://cwrc.ca/license/the-orlando-project-license.html">licence</a>
-                <xsl:text> between the University of Alberta and Cambridge University Press</xsl:text>
+            <accessCondition type="use and reproduction" xlink:href="https://orlando.cambridge.org/license">
+                <xsl:text>Copyright Susan Brown, Patricia Clements, and Isobel Grundy. Access to this resource is restricted by the </xsl:text>
+                <a rel="license" href="https://orlando.cambridge.org/license">Orlando licence</a>
+                <xsl:text>.</xsl:text>
             </accessCondition>
 
             <xsl:if test="ENTRY | BIOGRAPHY | WRITING">
