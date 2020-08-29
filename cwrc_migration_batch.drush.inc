@@ -238,6 +238,22 @@ function cwrc_migration_batch_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
+  $items['cwrc_migration_batch_apply_xslt'] = array(
+    'description' => 'Apply XSLT to each object in the list and add a workflowstamp',
+    'options' => array(
+      'pid_file' => 'PIDs to modify',
+      'ds_id' => 'id of the datastream (where content XML stored)',
+      'xslt_path' => 'path to XSLT to convert entriy to mods',
+      "wf_category" => "workflow category",
+      'wf_stamp' => 'workflow stamp',
+      'wf_status' => 'workflow status',
+      "wf_note" => "workflow note",
+    ),
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_apply_xslt',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
 
   $items['cwrc_migration_batch_retrieve_members_of_collection'] = array(
     'description' => 'Given the PID of a collection, return a list of members',
@@ -3890,6 +3906,128 @@ function drush_cwrc_migration_batch_thumbnail_entries()
   drush_print('Number of errors: ' . $file_error_count);
 
 }
+
+
+/** 
+ * CWRC migration batch - retrieve all items within a collection 
+ *
+ */
+function drush_cwrc_migration_batch_apply_xslt()
+{
+  module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
+
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/cwrc_workflow');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
+
+
+  drush_print("Apply XSLT to list of objects and add a workflow stamp");
+  
+
+  // input file of PIDs; one per line 
+  $pid_file = drush_get_option(
+    'pid_file'
+  );
+
+  // Datastream ID 
+  $ds_id = drush_get_option('ds_id', 'CWRC');
+
+  // XSLT 
+  $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
+  $xslt = drush_get_option(
+    'xslt'
+    , $ext_home . 'transforms/orlando_gender.xsl'
+  );
+
+  $wf_category = drush_get_option('wf_category' , 'machine_processed');
+  $wf_stamp = drush_get_option('wf_stamp' , 'orlando:SUB');
+  $wf_status = drush_get_option('wf_status' , 'c');
+  $wf_note = drush_get_option('wf_note' , 'Apply XSLT: $xslt');
+
+  // Include modules.
+  $connection = null;
+  migration_init($connection);
+
+  // Display the user.
+  drush_print("User: " . $connection->connection->username);
+
+  // setup XSL 
+  // http://www.saxonica.com/saxon-c/index.xml#debug
+  
+  $saxonProc = new Saxon\SaxonProcessor();
+  drush_print("XSLT Version: " . $saxonProc->version());
+  
+  $xslt_proc = $saxonProc->newXsltProcessor();
+  $xslt_proc->compileFromFile($xslt);
+
+  // input file of PIDs
+  drush_print("PID File: $pid_file");
+  $file_handle = fopen($pid_file, "r");
+
+  // Counter for the number of files to migrate.
+  $file_count = 0; 
+  $file_error_count = 0;
+  while ($file_handle && ($line = fgets($file_handle)) !== false) 
+  {
+    $pid = trim($line);
+
+    if (empty($pid) || $pid == '') {
+      continue;
+    }
+
+    //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
+    // no effect when PHP is running in safe mode
+    // http://php.net/manual/en/function.set-time-limit.php
+    set_time_limit(5);
+
+    drush_print("PID: $pid");
+
+    try {
+      $object = islandora_object_load($pid);
+      if (!empty($object[$ds_id])) {
+        // process XSLT
+        $ds_content = $object[$ds_id];
+        $xslt_proc->setSourceFromXdmValue(
+          $saxonProc->parseXmlFromString($ds_content)
+        );
+        $ds_content = $xslt_proc->transformToString();
+        $object[$ds_id]->setContentFromString($ds_content);
+
+        // add a workflow stamp indicating that the object was ingested
+        $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+        $workflow->addWorkflowStep(
+          $object->id,
+          new WorkflowItem(WorkflowConst::WORKFLOW, array()),
+          new WorkflowItem(
+            WorkflowConst::ACTIVITY,
+            array(
+              "category" => $wf_category,
+              'stamp' => $wf_status,
+              'status' => $wf_status,
+              "note" => $wf_note,
+              )
+            )
+          );
+        CWRCWorkflowAPI::updateDatastream($workflow, $object);
+      } else {
+        drush_print("Skipping " . $pid . " as datastream doesn't exist.");
+        $file_error_count++;
+        next;;
+      }
+    } catch (Exception $e) {
+      $file_error_count++;
+      drush_print("pid=$pid title=\"$title\" was not added.");
+      drush_print($e->getMessage());
+    }
+  }
+  fclose($file_handle);
+
+  drush_print('Migration Complete');
+  drush_print('Number of files migrated: ' . $file_count);
+  drush_print('Number of errors: ' . $file_error_count);
+}
+
 
 /** 
  * CWRC migration batch - retrieve all items within a collection 
