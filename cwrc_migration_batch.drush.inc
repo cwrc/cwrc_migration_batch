@@ -4011,7 +4011,7 @@ function drush_cwrc_migration_batch_apply_xslt()
             )
           );
         CWRCWorkflowAPI::updateDatastream($workflow, $object);
-        file_count++;
+        $file_count++;
       } else {
         drush_print("Skipping " . $pid . " as datastream doesn't exist.");
         $file_error_count++;
