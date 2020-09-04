@@ -3935,8 +3935,8 @@ function drush_cwrc_migration_batch_apply_xslt()
 
   // XSLT 
   $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
-  $xslt = drush_get_option(
-    'xslt'
+  $xslt_path = drush_get_option(
+    'xslt_path'
     , $ext_home . 'transforms/orlando_gender.xsl'
   );
 
@@ -3959,7 +3959,7 @@ function drush_cwrc_migration_batch_apply_xslt()
   drush_print("XSLT Version: " . $saxonProc->version());
   
   $xslt_proc = $saxonProc->newXsltProcessor();
-  $xslt_proc->compileFromFile($xslt);
+  $xslt_proc->compileFromFile($xslt_path);
 
   // input file of PIDs
   drush_print("PID File: $pid_file");
@@ -3984,10 +3984,11 @@ function drush_cwrc_migration_batch_apply_xslt()
     drush_print("PID: $pid");
 
     try {
+
       $object = islandora_object_load($pid);
-      if (!empty($object[$ds_id])) {
+      if (!empty($object[$ds_id]->content)) {
         // process XSLT
-        $ds_content = $object[$ds_id];
+        $ds_content = $object[$ds_id]->content;
         $xslt_proc->setSourceFromXdmValue(
           $saxonProc->parseXmlFromString($ds_content)
         );
@@ -4003,21 +4004,23 @@ function drush_cwrc_migration_batch_apply_xslt()
             WorkflowConst::ACTIVITY,
             array(
               "category" => $wf_category,
-              'stamp' => $wf_status,
+              'stamp' => $wf_stamp,
               'status' => $wf_status,
               "note" => $wf_note,
               )
             )
           );
         CWRCWorkflowAPI::updateDatastream($workflow, $object);
+        file_count++;
       } else {
         drush_print("Skipping " . $pid . " as datastream doesn't exist.");
         $file_error_count++;
-        next;;
+        next;
       }
+
     } catch (Exception $e) {
       $file_error_count++;
-      drush_print("pid=$pid title=\"$title\" was not added.");
+      drush_print("pid=$pid DS=\"$ds_id\" was not updated.");
       drush_print($e->getMessage());
     }
   }
