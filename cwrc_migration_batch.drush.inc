@@ -238,6 +238,21 @@ function cwrc_migration_batch_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
+
+  $items['cwrc_migration_batch_retrieve_content'] = array(
+    'description' => 'Given a PID retrieve the content of a specific datastream and store in a given directory',
+    'options' => array(
+      'pid_file' => 'PIDs to modify',
+      'ds_id' => 'id of the datastream (where content XML stored)',
+      'dest_path' => 'destination directory',
+    ),
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_retrieve_content',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
+
+
   $items['cwrc_migration_batch_apply_xslt'] = array(
     'description' => 'Apply XSLT to each object in the list and add a workflowstamp',
     'options' => array(
@@ -3909,7 +3924,105 @@ function drush_cwrc_migration_batch_thumbnail_entries()
 
 
 /** 
- * CWRC migration batch - retrieve all items within a collection 
+ * CWRC migration batch - retrieve content of specified item 
+ *
+ */
+function drush_cwrc_migration_batch_retrieve_content()
+{
+  module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
+
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/cwrc_workflow');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
+
+
+  drush_print("Apply XSLT to list of objects and add a workflow stamp");
+  
+
+  // input file of PIDs; one per line 
+  $pid_file = drush_get_option(
+    'pid_file'
+  );
+
+  // Datastream ID 
+  $ds_id = drush_get_option('ds_id', 'CWRC');
+
+  // Destination directory 
+  $dest_dir = drush_get_option('dest_dir', '/tmp/'.'z_'.uniqid(rand(), true));
+
+
+  // Include modules.
+  $connection = null;
+  migration_init($connection);
+
+  // Display the user.
+  drush_print("User: " . $connection->connection->username);
+
+  // input file of PIDs
+  drush_print("PID File: $pid_file");
+  $file_handle = fopen($pid_file, "r");
+
+
+  // Destination path 
+  $dest_dir = rtrim($dest_dir, '/\\');
+  drush_print("Destination directory: $dest_dir");
+  if (!file_exists($dest_dir)) {
+    mkdir($dest_dir, 0744, true);
+  }
+
+
+  // Counter for the number of files to migrate.
+  $file_count = 0; 
+  $file_error_count = 0;
+  while ($file_handle && ($line = fgets($file_handle)) !== false) 
+  {
+    $pid = trim($line);
+
+    if (empty($pid) || $pid == '') {
+      continue;
+    }
+
+    //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
+    // no effect when PHP is running in safe mode
+    // http://php.net/manual/en/function.set-time-limit.php
+    set_time_limit(5);
+
+    drush_print("PID: $pid");
+
+    try {
+
+      $object = islandora_object_load($pid);
+      if (!empty($object[$ds_id]->content)) {
+
+        $ds_content = $object[$ds_id]->content;
+        $fh = fopen($dest_dir.'/'.$pid.'_'.$ds_id, 'w+');
+        fwrite($fh, $ds_content);
+        fclose($fh);
+
+        $file_count++;
+      } else {
+        drush_print("Skipping " . $pid . " as datastream doesn't exist.");
+        $file_error_count++;
+        next;
+      }
+
+    } catch (Exception $e) {
+      $file_error_count++;
+      drush_print("pid=$pid DS=\"$ds_id\" was not updated.");
+      drush_print($e->getMessage());
+    }
+  }
+  fclose($file_handle);
+
+  drush_print('Migration Complete');
+  drush_print('Number of files migrated: ' . $file_count);
+  drush_print('Number of errors: ' . $file_error_count);
+}
+
+
+/** 
+ * CWRC migration batch - apply specified XSLT to the specified set of PIDs 
  *
  */
 function drush_cwrc_migration_batch_apply_xslt()
@@ -4033,7 +4146,7 @@ function drush_cwrc_migration_batch_apply_xslt()
 
 
 /** 
- * CWRC migration batch - retrieve all items within a collection 
+ * CWRC migration batch - list PIDs of all items within a collection 
  *
  */
 function drush_cwrc_migration_batch_retrieve_members_of_collection()
