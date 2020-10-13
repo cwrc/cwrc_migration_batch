@@ -4346,6 +4346,7 @@ function drush_cwrc_migration_batch_test()
 
     try {
       $object = islandora_object_load($pid);
+      $file_count++;
     } catch (Exception $e) {
       $file_error_count++;
       drush_print("pid=$pid title=\"$title\" was not added.");
