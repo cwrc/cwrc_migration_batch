@@ -27,8 +27,8 @@
             <titleInfo>
                 <title>
                     <xsl:choose>
-                        <xsl:when test="BIOGRAPHY | WRITING | DOCUMENTATION">
-                            <xsl:value-of select="/(BIOGRAPHY|WRITING|DOCUMENTATION)/ORLANDOHEADER/FILEDESC/TITLESTMT/DOCTITLE/text()"/>
+                        <xsl:when test="BIOGRAPHY | WRITING | DOCUMENTATION | TOPICS">
+                            <xsl:value-of select="/(BIOGRAPHY|WRITING|DOCUMENTATION|TOPICS)/ORLANDOHEADER/FILEDESC/TITLESTMT/DOCTITLE/text()"/>
                         </xsl:when>
                         <xsl:when test="EVENT" xml:space="default">
                             <xsl:variable name="TEXT_TO_SUBSTRING" select="normalize-space(/EVENT/CHRONEVENT/CHRONSTRUCT/CHRONPROSE)" xml:space="default"/>
@@ -79,7 +79,7 @@
                 <originInfo>
                     <dateIssued encoding="w3cdtf">
                         <xsl:call-template name="convert_mla_to_iso">
-                            <xsl:with-param name="INPUT_DATE" select="/(BIOGRAPHY|WRITING|DOCUMENTATION)/ORLANDOHEADER/REVISIONDESC/(RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C'])[1]/DATE/text()"/>
+                            <xsl:with-param name="INPUT_DATE" select="/(BIOGRAPHY|WRITING|DOCUMENTATION|TOPICS)/ORLANDOHEADER/REVISIONDESC/(RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C'])[1]/DATE/text()"/>
                         </xsl:call-template>
                     </dateIssued>
                     <place>
@@ -104,7 +104,7 @@
             </accessCondition>
 
             <note type="researchNote">
-                <xsl:value-of select="/(BIOGRAPHY|WRITING|DOCUMENTATION)/DIV0/STANDARD"/>
+                <xsl:value-of select="/(BIOGRAPHY|WRITING|DOCUMENTATION|TOPICS)/DIV0/STANDARD"/>
             </note>
 
 

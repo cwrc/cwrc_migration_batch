@@ -11,8 +11,7 @@ CONTENTS OF THIS FILE
 SUMMARY
 -------
 
-This drush script migrates orlando objects to cwrc objects and injests them into fedora.
-
+This drush script helps with various migrations or batch jobs directly interfacing with the Tuque API. One example is to help with the Orlando Project migration by converting orlando objects to cwrc objects and injesting into fedora.
 
 REQUIREMENTS
 ------------
@@ -44,5 +43,6 @@ drush -u 1 cwrc_migration_batch_ingest path_to_directory name_of_mods_directory 
 USAGE
 -----
 
-use the entity_to_DC.xslt from the cwrc_entities module
+See cwrc_migration_batch.drush.inc for details.
 
+use the entity_to_DC.xslt from the cwrc_entities module
