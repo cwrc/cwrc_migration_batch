@@ -293,6 +293,18 @@ function cwrc_migration_batch_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
+  $items['cwrc_migration_batch_test'] = array(
+    'description' => 'Test a list of objects',
+    'options' => array(
+      'pid_file' => 'list PIDs to process',
+    ),
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_test',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
+
+
 
   return $items;
 }
@@ -4282,6 +4294,69 @@ function drush_cwrc_migration_batch_delete()
 
   drush_print('Migration Complete');
   drush_print('Number of objects deleted: ' . $file_count);
+  drush_print('Number of errors: ' . $file_error_count);
+
+}
+
+/** 
+ * CWRC migration batch - test objects in list 
+ * don't use with collections
+ *
+ */
+function drush_cwrc_migration_batch_test() 
+{
+
+  drush_print("Test objects");
+
+  $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
+
+  // input file of PIDs; one per line 
+  $pid_file = drush_get_option(
+    'pid_file'
+  );
+
+  // Include modules.
+  $connection = null;
+  migration_init($connection);
+
+  // Display the user.
+  drush_print("User: " . $connection->connection->username);
+
+  // input file of PIDs
+  drush_print("PID File: $pid_file");
+  $file_handle = fopen($pid_file, "r");
+
+  // Counter for the number of files.
+  $file_count = 0;
+  $file_error_count = 0;
+  while ($file_handle && ($line = fgets($file_handle)) !== false) 
+  {
+    $pid = trim($line);
+
+    if (empty($pid) || $pid == '') {
+      continue;
+    }
+
+    //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
+    // no effect when PHP is running in safe mode
+    // http://php.net/manual/en/function.set-time-limit.php
+    set_time_limit(5);
+
+    drush_print("PID: $pid");
+
+    try {
+      $object = islandora_object_load($pid);
+    } catch (Exception $e) {
+      $file_error_count++;
+      drush_print("pid=$pid title=\"$title\" was not added.");
+      drush_print($e->getMessage());
+    }
+
+  }
+  fclose($file_handle);
+
+  drush_print('Migration Complete');
+  drush_print('Number of objects tested: ' . $file_count);
   drush_print('Number of errors: ' . $file_error_count);
 
 }
