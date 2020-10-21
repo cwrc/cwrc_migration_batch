@@ -2,17 +2,17 @@
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:xs="http://www.w3.org/2001/XMLSchema" exclude-result-prefixes="xs" version="2.0">
-
+    
     <xsl:output encoding="UTF-8" method="xml" indent="yes"/>
     <xsl:strip-space elements="*"/>
-
-
+    
+    
     <xsl:template match="@* | node()">
         <xsl:copy>
             <xsl:apply-templates select="@* | node()"/>
         </xsl:copy>
     </xsl:template>
-
+    
     <xsl:template match="AUTHORSUMMARY">
         <xsl:copy-of select="."/>
         <xsl:if test="not(//BIOGRAPHY)">
@@ -53,7 +53,7 @@
             </xsl:element></xsl:element>
         </xsl:if>
     </xsl:template>
-
+    
     <xsl:template match="DIV1[BIRTH]">
         <xsl:copy-of select="."/>
         <xsl:if test="not(//CULTURALFORMATION)">
@@ -94,8 +94,8 @@
             </xsl:element>
         </xsl:if>
     </xsl:template>
-
-
+    
+    
     <xsl:template match="//CULTURALFORMATION[not(preceding::CULTURALFORMATION)]">
         <xsl:element name="{local-name(.)}">
             <xsl:choose>
@@ -133,8 +133,18 @@
             <xsl:copy-of select="node()"/>
         </xsl:element>
     </xsl:template>
-
-
+    
+    <xsl:template match="@GENDEROFAUTHOR">
+        <xsl:choose>
+            <xsl:when test=".='FEMALE'">
+                <xsl:attribute name="GENDEROFAUTHOR"><xsl:text>WOMAN</xsl:text></xsl:attribute>
+            </xsl:when>
+            <xsl:when test=".='MALE'">
+                <xsl:attribute name="GENDEROFAUTHOR"><xsl:text>MAN</xsl:text></xsl:attribute>
+            </xsl:when>
+        </xsl:choose>
+    </xsl:template>
+    
     <xsl:template match="attribute::SEX"/>
-
+    
 </xsl:stylesheet>
