@@ -722,46 +722,29 @@ another for dateIssued -->
                 
             </xsl:when>
             <xsl:when test="orl:is_date_season($datetext)">
+
                 <xsl:variable name="date_year">
                     <xsl:analyze-string select="$datetext" regex="(\d{{4}})">
                         <xsl:matching-substring><xsl:value-of select="regex-group(1)"/></xsl:matching-substring>
                     </xsl:analyze-string>
                 </xsl:variable>
                 <xsl:variable name="date_season">
-                    <xsl:analyze-string select="$datetext" regex="(\w+)">
+                    <xsl:analyze-string select="$datetext" regex="([A-Za-z]+)">
                         <xsl:matching-substring><xsl:value-of select="regex-group(1)"/></xsl:matching-substring>
                     </xsl:analyze-string>
                 </xsl:variable>
-                <xsl:variable name="start_date_mm_dd">
-                    <xsl:choose>
-                        <xsl:when test="$date_season='Spring'">-03-01</xsl:when>
-                        <xsl:when test="$date_season='Summer'">-06-01</xsl:when>
-                        <xsl:when test="$date_season='Autumn'">-09-01</xsl:when>
-                        <xsl:when test="$date_season='Fall'">-09-01</xsl:when>
-                        <xsl:when test="$date_season='Winter'">-12-01</xsl:when>
-                    </xsl:choose>
-                </xsl:variable>
-                <xsl:variable name="end_date_mm_dd">
-                    <xsl:choose>
-                        <xsl:when test="$date_season='Spring'">-05-31</xsl:when>
-                        <xsl:when test="$date_season='Summer'">-08-31-</xsl:when>
-                        <xsl:when test="$date_season='Autumn'">-11-30</xsl:when>
-                        <xsl:when test="$date_season='Fall'">-11-30</xsl:when>
-                        <xsl:when test="$date_season='Winter'">-02-28</xsl:when>
-                    </xsl:choose>
-                </xsl:variable>
-                <xsl:variable name="start_date" select="concat($date_year,$start_date_mm_dd)"/>
-                <xsl:variable name="end_date">
-                    <xsl:choose>
-                        <xsl:when test="Winter">
-                            <xsl:value-of select="concat(number($date_year)+1, $end_date_mm_dd)"/>
-                        </xsl:when>
-                        <xsl:otherwise>
-                            <xsl:value-of select="concat($date_year, $end_date_mm_dd)"/>
-                        </xsl:otherwise>
-                    </xsl:choose>
-                    
-                </xsl:variable>
+                
+                <xsl:variable name="start_date" select="orl:get_start_date_from_date_text_season($date_season, $date_year)"/>
+                <xsl:variable name="end_date" select="orl:get_end_date_from_date_text_season($date_season, $date_year)"/>                   
+
+                <xsl:call-template name="add_range_date">
+                    <xsl:with-param name="start_date" select="$start_date" />
+                    <xsl:with-param name="end_date" select="$end_date" />
+                    <xsl:with-param name="date_text" select="$datetext" />
+                    <xsl:with-param name="is_emended" select="$is_emended" />
+                    <xsl:with-param name="date_element_name" select="'dateIssued'" />
+                </xsl:call-template>
+
             </xsl:when>
             
           
@@ -771,6 +754,50 @@ another for dateIssued -->
         </xsl:choose>
         
     </xsl:template>
+    
+    <xsl:function name="orl:get_start_date_from_date_text_season">
+        <xsl:param name="date_season" />
+        <xsl:param name="date_year" />      
+
+        <xsl:variable name="start_date_mm_dd">
+            <xsl:choose>
+                <xsl:when test="$date_season='Spring'">-03-01</xsl:when>
+                <xsl:when test="$date_season='Summer'">-06-01</xsl:when>
+                <xsl:when test="$date_season='Autumn'">-09-01</xsl:when>
+                <xsl:when test="$date_season='Fall'">-09-01</xsl:when>
+                <xsl:when test="$date_season='Winter'">-12-01</xsl:when>
+            </xsl:choose>
+        </xsl:variable>
+
+        <xsl:value-of select="concat($date_year,$start_date_mm_dd)"/>
+
+    </xsl:function>
+    
+    <xsl:function name="orl:get_end_date_from_date_text_season">
+        <xsl:param name="date_season" />
+        <xsl:param name="date_year" />
+  
+                
+        <xsl:variable name="end_date_mm_dd">
+            <xsl:choose>
+                <xsl:when test="$date_season='Spring'">-05-31</xsl:when>
+                <xsl:when test="$date_season='Summer'">-08-31-</xsl:when>
+                <xsl:when test="$date_season='Autumn'">-11-30</xsl:when>
+                <xsl:when test="$date_season='Fall'">-11-30</xsl:when>
+                <xsl:when test="$date_season='Winter'">-02-28</xsl:when>
+            </xsl:choose>
+        </xsl:variable>
+
+        <xsl:choose>
+            <xsl:when test="$date_season='Winter'">
+                <xsl:value-of select="concat(number($date_year)+1, $end_date_mm_dd)"/>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:value-of select="concat($date_year, $end_date_mm_dd)"/>
+            </xsl:otherwise>
+        </xsl:choose>
+            
+    </xsl:function>
     
     
     <xsl:template match="DATE_OF_ACCESS">
@@ -806,6 +833,46 @@ another for dateIssued -->
     </xsl:template>
 
 
+    <xsl:template name="add_range_date">
+        
+        <xsl:param name="start_date" />
+        <xsl:param name="end_date" />
+        <xsl:param name="date_text" />
+        <xsl:param name="is_emended" />
+        <xsl:param name="date_element_name" />
+        
+        <xsl:if test="$start_date">
+            <xsl:call-template name="add_mods_date_text_and_iso8601">
+                <xsl:with-param name="date_value" select="$start_date" />
+                <xsl:with-param name="date_text" />
+                <xsl:with-param name="date_element_name" select="$date_element_name"/>
+                <xsl:with-param name="is_emended" select="$is_emended"/>
+                <xsl:with-param name="date_type" />
+                <xsl:with-param name="point" select="'start'"/>
+            </xsl:call-template>
+        </xsl:if>
+        <xsl:if test="$end_date">
+            <xsl:call-template name="add_mods_date_text_and_iso8601">
+                <xsl:with-param name="date_value" select="$end_date" />
+                <xsl:with-param name="date_text" />
+                <xsl:with-param name="date_element_name" select="$date_element_name"/>
+                <xsl:with-param name="is_emended" select="$is_emended"/>
+                <xsl:with-param name="date_type" />
+                <xsl:with-param name="point" select="'end'"/>
+            </xsl:call-template>
+        </xsl:if>
+        <!-- output text date; no value added so only text output -->
+        <xsl:call-template name="add_mods_date_text_and_iso8601">
+            <xsl:with-param name="date_value" />
+            <xsl:with-param name="date_text" select="$date_text" />
+            <xsl:with-param name="date_element_name" select="$date_element_name"/>
+            <xsl:with-param name="is_emended" select="$is_emended"/>
+            <xsl:with-param name="date_type" />
+            <xsl:with-param name="point" />
+        </xsl:call-template>
+        
+    </xsl:template>
+
     <xsl:template name="add_mods_date_text_and_iso8601">
         <xsl:param name="date_value" />
         <xsl:param name="date_text" />
@@ -824,7 +891,7 @@ another for dateIssued -->
             </xsl:call-template>
         </xsl:if>
         
-        <xsl:if test="not($date_value=$date_text and $date_text)">
+        <xsl:if test="not($date_value=$date_text) and $date_text">
             <xsl:call-template name="add_mods_date">
                 <xsl:with-param name="date_string" select="$date_text" />
                 <xsl:with-param name="date_element_name" select="$date_element_name"/>
