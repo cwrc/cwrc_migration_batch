@@ -2889,6 +2889,7 @@ function drush_cwrc_migration_batch_ingest_orlando_entities_reuse_pids()
   while (FALSE !== ($file_name = readdir($src_dir_handle))) 
   {
     $pid = null;
+    $legacy_id = null;
 
     //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
     // no effect when PHP is running in safe mode
@@ -2900,20 +2901,7 @@ function drush_cwrc_migration_batch_ingest_orlando_entities_reuse_pids()
     if (is_dir($file_name)) {
       continue;
     }
-
-    // get id for object from entity mapping
-    $pid =  entity_mapping_lookup($entity_mapping, $legacy_id, "BIBCIT");
-    if (isset($pid) or !empty($pid)) {
-      drush_print("ERROR: $legacy_id not found in entity_mapping");
-      continue;
-    }
-
-    // If the object already exists then continue to next file.
-    if (islandora_object_load($pid)) {
-      drush_print("ERROR: object $pid is already in fedora");
-      continue;
-    }
-    
+   
     $content_datastream_label = preg_replace('/(\.sgm)$/','.xml', $file_name); 
 
     // Load xml from a file.
@@ -2925,9 +2913,23 @@ function drush_cwrc_migration_batch_ingest_orlando_entities_reuse_pids()
     );
     $clean_xml = $to_clean_xslt_proc->transformToString();
 
+    $legacy_id = entity_mapping_extract_id($clean_xml);
+    
+    // get id for object from entity mapping
+    $pid =  entity_mapping_lookup($entity_mapping, $legacy_id, "BIBCIT");
+    if (!isset($pid) or empty($pid)) {
+      drush_print("ERROR: $legacy_id not found in entity_mapping");
+      continue;
+    }
+
+    // If the object already exists then continue to next file.
+    if (islandora_object_load($pid)) {
+      drush_print("ERROR: object legacy[$legacy_id] with pid [$pid] is already in fedora");
+      continue;
+    }
+ 
     // add ID and PID to the entity mapping
     // ToDo: assumption - use UTF-8 version
-    $legacy_id = entity_mapping_extract_id($clean_xml);
     if ( isset($pid) && isset($legacy_id) ) {
       entity_mapping_add($entity_mapping, $legacy_id, $pid, $entity_type);
       drush_print("Entity ID [$legacy_id] added with value [$pid]");
