@@ -141,6 +141,31 @@ function cwrc_migration_batch_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
+  # 2020-10-23: bibl - reingest bibl reuse existing pids - DON'T use without entity mapping file
+  $items['cwrc_migration_batch_ingest_orlando_entities_reuse_pids'] = array(
+    'description' => 'Ingest Orlando Entity objects into CWRC reusing PIDs',
+    'options' => array(
+      'legacy_dir' => 'path to directory of legacy source material',
+      'entity_mapping_file' => 'path to the JSON PID to standard name entity mapping file used to add URIs to bio/writing/event',
+      'xslt_to_v2' => 'convert legacy Orlando docs to version 2 (convert dates, utf-8)',
+      'xslt_to_dc' => 'path to XSLT to convert mods to DC',
+      'main_ds_id' => 'Id of the main datastream (where content XML stored)',
+      'collection_pid_pub_c' => 'add object to the given collection if PUC-C workflow',
+      'collection_pid_non_pub_c' => 'add object to the given collection if no PUB-C workflow',
+      'cModel_pid' => 'cModel pid assigments',
+      'XACML_policy' => 'path to the default XACML policy',
+      'namespace' => 'pid namespace',
+      'supplemental_filename' => 'supplemental content used to augment content',
+      'add_pub_c_workflow' => 'add an additional workflow activity - pub-c',
+      'entity_type' => 'define the entity type (based on XML element name)',
+    ),
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_ingest_orlando_entities_reuse_pids',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
+
+
   $items['cwrc_migration_batch_ingest_ceww_entries'] = array(
     'description' => 'Ingest CEWW Entry objects into CWRC',
     'options' => array(
@@ -2734,6 +2759,403 @@ function drush_cwrc_migration_batch_ingest_orlando_entities()
   drush_print('Number of files migrated: ' . $file_count);
   drush_print('Number of errors: ' . $file_error_count);
 }
+
+/** 
+ * CWRC migration batch - Entities to Orlando version 3 - 2020-10-23 - reuse PIDs 
+ * workflow is pulled from the legacy Orlando format stored in subdir
+ *
+ */
+function drush_cwrc_migration_batch_ingest_orlando_entities_reuse_pids() 
+{
+  module_load_include('inc', 'islandora_cwrc_writer', 'includes/utilities');
+
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/cwrc_workflow');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
+
+
+  drush_print("Orlando entity migration batch version 2.0");
+
+  // path to the input document files 
+  $legacy_dir = drush_get_option(
+    'legacy_dir'
+    , '/tmp/orlando/bio_writ'
+    );
+
+  // path to entity mapping file
+  $entity_mapping_file = drush_get_option(
+    'entity_mapping_file'
+    , '/tmp/orlando/entity_mapping.json'
+    );
+
+  // 
+  $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
+  $xslt_to_clean = drush_get_option(
+    'xslt_to_clean'
+    , $ext_home . 'transforms/orlando_legacy_to_v2_bio_writing.xsl'
+  );
+  $xslt_to_v2 = drush_get_option(
+    'xslt_to_v2'
+    , $ext_home . ''
+  );
+  $xslt_to_dc = drush_get_option(
+    'xslt_to_dc'
+    , libraries_get_path('islandora_cwrc_xslt_library') . '/xslt/mods_to_dc.xsl'
+  );
+  
+  $main_ds_id = drush_get_option(
+    'main_ds_id'
+    , 'MODS'
+  );
+  $entity_type = drush_get_option(
+    'entity_type'
+    , 'BIBCIT'
+  );
+  $collection_pid_pub_c = drush_get_option(
+    'collection_pid_pub_c'
+    , 'cwrc:fc271c04-7fd1-46b4-9462-339dbe917c46'
+  );
+  $collection_pid_non_pub_c = drush_get_option(
+    'collection_pid_non_pub_c'
+    , 'cwrc:bf8ba2b7-dbed-440b-9000-88860be1bcc9'
+  );
+  $cModel_pid = drush_get_option(
+    'cModel_pid' , 'cwrc:documentCModel'
+  );
+  $policy = drush_get_option(
+    'XACML_policy', $ext_home . 'xml/orlando_default_XACML_Policy_Stream.xml'
+  );
+  $namespace = drush_get_option(
+    'namespace', 'orlando'
+  );
+  $supplemental_filename = drush_get_option(
+    'supplemental_filename', ''
+  );
+  $add_pub_c_workflow = drush_get_option(
+    'add_pub_c_workflow', 'no'
+  );
+
+
+  // Include modules.
+  $connection = null;
+  migration_init($connection);
+
+  // Display the user.
+  drush_print("User: " . $connection->connection->username);
+
+  
+  // setup XSL 
+  // http://www.saxonica.com/saxon-c/index.xml#debug
+  
+  $saxonProc = new Saxon\SaxonProcessor();
+  drush_print("XSLT Version: " . $saxonProc->version());
+  
+  $to_clean_xslt_proc = $saxonProc->newXsltProcessor();
+  $to_v2_xslt_proc = $saxonProc->newXsltProcessor();
+  $to_dc_xslt_proc = $saxonProc->newXsltProcessor();
+
+  $to_clean_xslt_proc->compileFromFile($xslt_to_clean);
+  $to_v2_xslt_proc->compileFromFile($xslt_to_v2);
+  $to_dc_xslt_proc->compileFromFile($xslt_to_dc);
+
+  // Initialize entity mapping: a JSON file ofPID to standard name 
+  // entity mapping file used to add URI's to bio/writing/event',
+  try {
+    drush_print("Entity mapping file: " . $entity_mapping_file);
+    entity_mapping_load($entity_mapping, $entity_mapping_file);
+    drush_print("person: " . count($entity_mapping["NAME"]));
+    drush_print("org: " . count($entity_mapping["ORGNAME"]));
+    drush_print("bibl: " . count($entity_mapping["BIBCIT"]));
+    // write the entity mapping file
+    entity_mapping_write_to_file($entity_mapping, $entity_mapping_file);
+  } catch (Exception $e) {
+    drush_print($e);
+    exit();
+  }
+
+  // xpath to determine if PUB-C Orlando document -  BIBL Legacy XPath
+  $xpathStrPub = "//RESPONSIBILITY[@WORKSTATUS='PUB' and @WORKVALUE='C']";
+
+  // Set source directory for the legacy Orlando content
+  // Open the source direcotry and iterate through every file in the 
+  // directory - one file maps to one Fedora 
+  drush_print("Input: " . $legacy_dir);
+  $src_dir_handle = opendir($legacy_dir);
+
+  // Counter for the number of files to migrate.
+  $file_count = 0;
+  $file_error_count = 0;
+  while (FALSE !== ($file_name = readdir($src_dir_handle))) 
+  {
+    $pid = null;
+
+    //PHP Fatal error:  Maximum execution time of 300 seconds exceeded
+    // no effect when PHP is running in safe mode
+    // http://php.net/manual/en/function.set-time-limit.php
+    set_time_limit(5);
+
+    drush_print($file_name);
+    // If the file is a directory then continue to next file.
+    if (is_dir($file_name)) {
+      continue;
+    }
+
+    // get id for object from entity mapping
+    $pid =  entity_mapping_lookup($entity_mapping, $legacy_id, "BIBCIT");
+    if (isset($pid) or !empty($pid)) {
+      drush_print("ERROR: $legacy_id not found in entity_mapping");
+      continue;
+    }
+
+    // If the object already exists then continue to next file.
+    if (islandora_object_load($pid)) {
+      drush_print("ERROR: object $pid is already in fedora");
+      continue;
+    }
+    
+    $content_datastream_label = preg_replace('/(\.sgm)$/','.xml', $file_name); 
+
+    // Load xml from a file.
+    $legacy_content = file_get_contents($legacy_dir.$file_name);
+
+    // build the UTF-8 version with conversion of Orlando dates
+    $to_clean_xslt_proc->setSourceFromXdmValue(
+      $saxonProc->parseXmlFromString($legacy_content)
+    );
+    $clean_xml = $to_clean_xslt_proc->transformToString();
+
+    // add ID and PID to the entity mapping
+    // ToDo: assumption - use UTF-8 version
+    $legacy_id = entity_mapping_extract_id($clean_xml);
+    if ( isset($pid) && isset($legacy_id) ) {
+      entity_mapping_add($entity_mapping, $legacy_id, $pid, $entity_type);
+      drush_print("Entity ID [$legacy_id] added with value [$pid]");
+    }
+    else {
+      drush_print("Entity ID [$legacy_id] not found");
+    }
+
+    if ($main_ds_id=='MODS') {
+      // update URI's refences in bibliographic entities
+      // requires UTF-8 
+      $content_uri_xml = cwrc_migration_batch_add_entity_refs_content($clean_xml, $main_ds_id, $entity_mapping);
+    }
+    else {
+      // for other entity 
+      $content_uri_xml = $clean_xml;
+    }
+
+    // build the version 2.0 
+    $to_v2_xslt_proc->setSourceFromXdmValue(
+      $saxonProc->parseXmlFromString($content_uri_xml)
+    );
+    if ($supplemental_filename)
+    {
+      $to_v2_xslt_proc->setParameter(
+        "supplemental_filename"
+         , $saxonProc->createAtomicValue($supplemental_filename) 
+      );
+    }
+    $content_v2_xml = $to_v2_xslt_proc->transformToString();
+
+    //drush_print($content_v2_xml);
+
+    // delete doctype
+    $content_v2_xml = str_replace(
+        '<!DOCTYPE ORLANDO [ <!ENTITY % character_entities SYSTEM "http://cwrc.ca/schemas/character_entities.dtd"> %character_entities; ]>\n' 
+        , ""
+        , $content_v2_xml
+      );
+
+    // build DC 
+    $to_dc_xslt_proc->setSourceFromXdmValue(
+      $saxonProc->parseXmlFromString($content_v2_xml)
+    );
+    $to_dc_xslt_proc->setParameter(
+        "PID_PARAM"
+         , $saxonProc->createAtomicValue($pid) 
+      );
+    $dc_xml = $to_dc_xslt_proc->transformToString();
+
+    // set object title
+    $title = get_dcTitle_from_dc($dc_xml);
+
+    // determine collection based on workflow
+    $legacy_dom = new DOMDocument();
+    $legacy_dom->resolveExternals = true;
+    $legacy_dom->loadXML($legacy_content);
+    $xpathObj = new DOMXpath($legacy_dom); 
+    $pubCRes = $xpathObj->query($xpathStrPub);
+    $collection_pid = $collection_pid_non_pub_c;
+    if (!is_null($pubCRes) and $pubCRes->length>0)
+    {
+      $collection_pid = $collection_pid_pub_c;
+      drush_print("pub-c");
+    } 
+
+    // prepare a new Fedora object.
+    $object
+      = islandora_prepare_new_object(
+        $pid 
+        , $title
+        , array()
+        , array($cModel_pid)
+        , array(
+          array(
+            'relationship' => 'isMemberOfCollection'
+            , 'pid' => "$collection_pid"
+          )
+        )
+      );
+
+
+    // create content datastream
+    // with the legacy content
+    $cwrc_ds = $object->constructDatastream($main_ds_id, 'M');
+    $cwrc_ds->label = $file_name;
+    $cwrc_ds->mimeType = 'text/xml';
+    $cwrc_ds->setContentFromString($legacy_content);
+    $object->ingestDatastream($cwrc_ds);
+ 
+    // create LEGACY_ENTITY datastream from Doc Archive contents <=2019
+    $legacy_ds = $object->constructDatastream('LEGACY_'.$main_ds_id, 'M');
+    $legacy_ds->label = "legacy_" . $file_name;
+    $legacy_ds->mimeType = 'text/xml';
+    $legacy_ds->setContentFromString($legacy_content);
+    $object->ingestDatastream($legacy_ds);
+    
+    // create DC datastream
+    create_DS_DC($dc_xml, $object);
+
+    // Workflow Datastream.
+    // We want to get all of the responsibilitie tags.
+    // For each responsibility create a workflow element.
+    // Create the MODS datastream.
+    create_DS_workflow_from_Source($clean_xml, $object);
+
+    // Create the Policy datastream.
+    if ( $policy != null && $policy!="NONE" ) 
+    {
+      //create_DS_POLICY($policy, $object);
+      $policy_ds
+          = new IslandoraXacml(
+              $object
+              , file_get_contents($policy)
+              );
+      $policy_ds->writeBackToFedora();
+    }
+
+    try {
+      // Store the object.
+      islandora_add_object($object);
+      $file_count++;
+      drush_print("pid=$pid title=\"$title\" was added. #{$file_count} file migrated.");
+
+      // add a workflow stamp indicating that the object was ingested
+      $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+      $workflow->addWorkflowStep(
+        $object->id, 
+        new WorkflowItem(WorkflowConst::WORKFLOW, array()),
+        new WorkflowItem(
+          WorkflowConst::ACTIVITY,
+          array(
+            "category" => "machine_processed",
+            'stamp' => 'orlando:SUB',
+            'status' => 'c',
+            "note" => "Initial ingest into the CWRC repository.",
+            )
+          )
+        );
+      CWRCWorkflowAPI::updateDatastream($workflow, $object);
+
+      // update content datastream: UTF-8 and ISO 8601 dates
+      $object[$main_ds_id]->setContentFromString($clean_xml);
+
+      // add a workflow stamp indicating that the object was ingested
+      $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+      $workflow->addWorkflowStep(
+        $object->id, 
+        new WorkflowItem(WorkflowConst::WORKFLOW, array()),
+        new WorkflowItem(
+          WorkflowConst::ACTIVITY,
+          array(
+            "category" => "machine_processed",
+            'stamp' => 'orlando:SUB',
+            'status' => 'c',
+            "note" => "UTF-8 and ISO 8601 dates.",
+            )
+          )
+        );
+      CWRCWorkflowAPI::updateDatastream($workflow, $object);
+
+      //update URI's refences in entities
+      if ($main_ds_id == 'MODS')
+      {
+        $object[$main_ds_id]->setContentFromString($content_uri_xml);
+        cwrc_migration_batch_add_entity_refs_workflow($object, $main_ds_id);
+      }
+
+      // update content datastream with version 2.0 of the content
+      // UTF-8 and ISO 8601 dates (from previous steps)
+      $object[$main_ds_id]->setContentFromString($content_v2_xml);
+
+      // add a workflow stamp indicating that the object was ingested
+      $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+      $workflow->addWorkflowStep(
+        $object->id, 
+        new WorkflowItem(WorkflowConst::WORKFLOW, array()),
+        new WorkflowItem(
+          WorkflowConst::ACTIVITY,
+          array(
+            "category" => "machine_processed",
+            'stamp' => 'orlando:SUB',
+            'status' => 'c',
+            "note" => "Conversion to version 2.0 of the Orlando format.",
+            )
+          )
+        );
+      CWRCWorkflowAPI::updateDatastream($workflow, $object);
+
+      if ($add_pub_c_workflow==='yes')
+      {
+        // ToDo: assume all name and org are pub-c as input authority lists don't contain workflow
+        // add a workflow stamp indicating that the object was ingested
+        $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+        $workflow->addWorkflowStep(
+          $object->id, 
+          new WorkflowItem(WorkflowConst::WORKFLOW, array()),
+          new WorkflowItem(
+            WorkflowConst::ACTIVITY,
+            array(
+              "category" => "machine_processed",
+              'stamp' => 'orlando:PUB',
+              'status' => 'c',
+              "note" => "Update workflow to PUB-C.",
+              )
+            )
+          );
+        CWRCWorkflowAPI::updateDatastream($workflow, $object);
+      }
+    }
+    catch (Exception $e) {
+      $file_error_count++;
+      drush_print("pid=$pid title=\"$title\" was not added.");
+      drush_print($e->getMessage());
+    }
+
+  }
+
+  drush_print("person: " . count($entity_mapping["NAME"]));
+  drush_print("org: " . count($entity_mapping["ORGNAME"]));
+  drush_print("bibl: " . count($entity_mapping["BIBCIT"]));
+  entity_mapping_write_to_file($entity_mapping, $entity_mapping_file);
+
+  drush_print('Migration Complete');
+  drush_print('Number of files migrated: ' . $file_count);
+  drush_print('Number of errors: ' . $file_error_count);
+}
+
 
 
 /** 
