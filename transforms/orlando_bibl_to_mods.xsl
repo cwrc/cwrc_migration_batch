@@ -650,6 +650,26 @@ another for dateIssued -->
                 </xsl:choose>
             </xsl:otherwise>
         </xsl:choose>
+        
+        <xsl:choose>
+            <xsl:when test="../DATE_OF_PUBLICATION or DATE_OF_ACCESS">
+                <xsl:call-template name="publication_date">
+                    <xsl:with-param name="date_element_name">dateOther</xsl:with-param>
+                    <xsl:with-param name="date_type">original</xsl:with-param>
+                </xsl:call-template>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:call-template name="publication_date">
+                    <xsl:with-param name="date_element_name">dateIssued</xsl:with-param>
+                    <xsl:with-param name="date_type"></xsl:with-param>
+                </xsl:call-template>
+            </xsl:otherwise>
+        </xsl:choose>
+        <xsl:call-template name="publication_date">
+            <xsl:with-param name="date_element_name">dateIssued</xsl:with-param>
+            <xsl:with-param name="date_type"></xsl:with-param>
+        </xsl:call-template>
+        
     </xsl:template>
 
     <xsl:template match="DATE_OF_PUBLICATION" mode="bibliography">
@@ -683,6 +703,23 @@ another for dateIssued -->
                     </xsl:otherwise>
                 </xsl:choose>
         
+        <xsl:call-template name="publication_date">
+            <xsl:with-param name="date_element_name">dateIssued</xsl:with-param>
+            <xsl:with-param name="date_type"></xsl:with-param>
+        </xsl:call-template>
+        
+    </xsl:template>
+    
+    
+    <xsl:template name="publication_date">
+        
+        <xsl:param name="date_element_name" />
+        <xsl:param name="date_type" />
+        
+        <xsl:variable name="datevalue"><xsl:value-of select="DATE/@VALUE"/></xsl:variable>
+        
+        <xsl:variable name="datetext"><xsl:value-of select="DATE/text()"/></xsl:variable>
+        
         <xsl:variable name="is_emended">
             <xsl:choose>
                 <xsl:when test="@EMENDED='1'">
@@ -695,31 +732,35 @@ another for dateIssued -->
         </xsl:variable>
         
         <xsl:choose>
+        
             <xsl:when test="orl:is_ISO8601_date($datetext)=true() or orl:is_MLA_date($datetext)=true()">
                 <xsl:call-template name="add_mods_date_text_and_iso8601">
                     <xsl:with-param name="date_value" select="$datevalue" />
                     <xsl:with-param name="date_text" select="$datetext" />
-                    <xsl:with-param name="date_element_name" select="'dateIssued'"/>
+                    <xsl:with-param name="date_element_name" select="$date_element_name"/>
                     <xsl:with-param name="is_emended" select="$is_emended"/>
-                    <xsl:with-param name="date_type" />
+                    <xsl:with-param name="date_type" select="$date_type"/>
                     <xsl:with-param name="point" />
                 </xsl:call-template>
             </xsl:when>
+        
             <xsl:when test="orl:is_date_range_year($datetext)=true()">
                 <!-- split date text into start and end, output start, end (both ISO8601 and original text date, if open ended date  1999- then no end date -->
                 <xsl:variable name="start_date" select="substring-before($datetext,'-')"/>
                 <xsl:variable name="end_date" select="substring-after($datetext,'-')"/>
-
+                
                 <xsl:call-template name="add_range_date">
                     <xsl:with-param name="start_date" select="$start_date" />
                     <xsl:with-param name="end_date" select="$end_date" />
                     <xsl:with-param name="date_text" select="$datetext" />
+                    <xsl:with-param name="date_element_name" select="$date_element_name" />
                     <xsl:with-param name="is_emended" select="$is_emended" />
-                    <xsl:with-param name="date_element_name" select="'dateIssued'" />
+                    <xsl:with-param name="date_type" select="$date_type"/>
                 </xsl:call-template>
             </xsl:when>
+            
             <xsl:when test="orl:is_date_season($datetext)=true()">
-
+                
                 <xsl:variable name="date_year">
                     <xsl:analyze-string select="$datetext" regex="(\d{{4}})">
                         <xsl:matching-substring><xsl:value-of select="regex-group(1)"/></xsl:matching-substring>
@@ -733,16 +774,18 @@ another for dateIssued -->
                 
                 <xsl:variable name="start_date" select="orl:get_start_date_from_date_text_season($date_season, $date_year)"/>
                 <xsl:variable name="end_date" select="orl:get_end_date_from_date_text_season($date_season, $date_year)"/>                   
-
+                
                 <xsl:call-template name="add_range_date">
                     <xsl:with-param name="start_date" select="$start_date" />
                     <xsl:with-param name="end_date" select="$end_date" />
                     <xsl:with-param name="date_text" select="$datetext" />
+                    <xsl:with-param name="date_element_name" select="$date_element_name" />
                     <xsl:with-param name="is_emended" select="$is_emended" />
-                    <xsl:with-param name="date_element_name" select="'dateIssued'" />
+                    <xsl:with-param name="date_type" select="$date_type"/>
                 </xsl:call-template>
-
+                
             </xsl:when>
+            
             <xsl:when test="orl:is_date_range_mla($datetext)=true()">
                 <xsl:variable name="start_date" select="orl:get_start_date_from_mla_range($datetext)"/>
                 <xsl:variable name="end_date" select="orl:get_end_date_from_mla_range($datetext)"/>                   
@@ -751,8 +794,9 @@ another for dateIssued -->
                     <xsl:with-param name="start_date" select="$start_date" />
                     <xsl:with-param name="end_date" select="$end_date" />
                     <xsl:with-param name="date_text" select="$datetext" />
+                    <xsl:with-param name="date_element_name" select="$date_element_name" />
                     <xsl:with-param name="is_emended" select="$is_emended" />
-                    <xsl:with-param name="date_element_name" select="'dateIssued'" />
+                    <xsl:with-param name="date_type" select="$date_type"/>
                 </xsl:call-template>
                 
             </xsl:when>
@@ -762,13 +806,15 @@ another for dateIssued -->
                 <xsl:call-template name="add_mods_date_text_and_iso8601">
                     <xsl:with-param name="date_value" select="$datevalue" />
                     <xsl:with-param name="date_text" select="$datetext" />
-                    <xsl:with-param name="date_element_name" select="'dateIssued'"/>
+                    <xsl:with-param name="date_element_name" select="$date_element_name"/>
                     <xsl:with-param name="is_emended" select="$is_emended"/>
-                    <xsl:with-param name="date_type" />
+                    <xsl:with-param name="date_type"  select="$date_type"/>
                     <xsl:with-param name="point" />
                 </xsl:call-template>
             </xsl:otherwise>
+        
         </xsl:choose>
+        
         
     </xsl:template>
     
@@ -925,6 +971,7 @@ another for dateIssued -->
         <xsl:param name="date_text" />
         <xsl:param name="is_emended" />
         <xsl:param name="date_element_name" />
+        <xsl:param name="date_type" />
         
         <xsl:if test="$start_date">
             <xsl:call-template name="add_mods_date_text_and_iso8601">
@@ -932,7 +979,7 @@ another for dateIssued -->
                 <xsl:with-param name="date_text" />
                 <xsl:with-param name="date_element_name" select="$date_element_name"/>
                 <xsl:with-param name="is_emended" select="$is_emended"/>
-                <xsl:with-param name="date_type" />
+                <xsl:with-param name="date_type" select="$date_type"/>
                 <xsl:with-param name="point" select="'start'"/>
             </xsl:call-template>
         </xsl:if>
@@ -942,7 +989,7 @@ another for dateIssued -->
                 <xsl:with-param name="date_text" />
                 <xsl:with-param name="date_element_name" select="$date_element_name"/>
                 <xsl:with-param name="is_emended" select="$is_emended"/>
-                <xsl:with-param name="date_type" />
+                <xsl:with-param name="date_type" select="$date_type"/>
                 <xsl:with-param name="point" select="'end'"/>
             </xsl:call-template>
         </xsl:if>
@@ -952,7 +999,7 @@ another for dateIssued -->
             <xsl:with-param name="date_text" select="$date_text" />
             <xsl:with-param name="date_element_name" select="$date_element_name"/>
             <xsl:with-param name="is_emended" select="$is_emended"/>
-            <xsl:with-param name="date_type" />
+            <xsl:with-param name="date_type" select="$date_type"/>            
             <xsl:with-param name="point" />
         </xsl:call-template>
         
