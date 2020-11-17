@@ -711,6 +711,38 @@ another for dateIssued -->
     </xsl:template>
     
     
+    <xsl:template match="DATE_OF_ACCESS">
+        <xsl:variable name="datevalue"><xsl:value-of select="@REG"/></xsl:variable>
+        <xsl:variable name="datetext"><xsl:value-of select="text()"/></xsl:variable>
+        <xsl:variable name="is_emended">
+            <xsl:choose>
+                <xsl:when test="@EMENDED='1'">
+                    <xsl:value-of select="true()"/>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:value-of select="false()"/>
+                </xsl:otherwise>
+            </xsl:choose>
+        </xsl:variable>
+        
+        <xsl:choose>
+            <xsl:when test="orl:is_ISO8601_date($datetext)=true() or orl:is_MLA_date($datetext)=true()">
+                <xsl:call-template name="add_mods_date_text_and_iso8601">
+                    <xsl:with-param name="date_value" select="$datevalue" />
+                    <xsl:with-param name="date_text" select="$datetext" />
+                    <xsl:with-param name="date_element_name" select="'dateOther'"/>
+                    <xsl:with-param name="is_emended" select="$is_emended"/>
+                    <xsl:with-param name="date_type" select="'dateAccessed'"/>
+                    <xsl:with-param name="point" />
+                </xsl:call-template>
+            </xsl:when>
+            <!-- DATE_OF_ACCESS doesn't have a date range in existing content -->  
+            <xsl:otherwise>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+    
+    
     <xsl:template name="publication_date">
         
         <xsl:param name="date_element_name" />
@@ -930,40 +962,7 @@ another for dateIssued -->
             
     </xsl:function>
     
-    
-    <xsl:template match="DATE_OF_ACCESS">
-        <xsl:variable name="datevalue"><xsl:value-of select="@REG"/></xsl:variable>
-        <xsl:variable name="datetext"><xsl:value-of select="text()"/></xsl:variable>
-        <xsl:variable name="is_emended">
-            <xsl:choose>
-                <xsl:when test="@EMENDED='1'">
-                    <xsl:value-of select="true()"/>
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:value-of select="false()"/>
-                </xsl:otherwise>
-            </xsl:choose>
-        </xsl:variable>
-        
-        <xsl:choose>
-            <xsl:when test="orl:is_ISO8601_date($datetext)=true() or orl:is_MLA_date($datetext)=true()">
-                <xsl:call-template name="add_mods_date_text_and_iso8601">
-                    <xsl:with-param name="date_value" select="$datevalue" />
-                    <xsl:with-param name="date_text" select="$datetext" />
-                    <xsl:with-param name="date_element_name" select="'dateOther'"/>
-                    <xsl:with-param name="is_emended" select="$is_emended"/>
-                    <xsl:with-param name="date_type" select="'dateAccessed'"/>
-                    <xsl:with-param name="point" />
-                </xsl:call-template>
-            </xsl:when>
-            <!-- DATE_OF_ACCESS doesn't have a date range in existing content -->  
-            <xsl:otherwise>
-                <zzzzzzzzzzzzz>ERROR</zzzzzzzzzzzzz>
-            </xsl:otherwise>
-        </xsl:choose>
-    </xsl:template>
-
-
+  
     <xsl:template name="add_range_date">
         
         <xsl:param name="start_date" />
