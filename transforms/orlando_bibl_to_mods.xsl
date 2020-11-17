@@ -764,7 +764,10 @@ another for dateIssued -->
         </xsl:variable>
         
         <xsl:choose>
-        
+
+            <!-- if no date attribute specified then add no mods date -->
+            <xsl:when test="@NO_DATE='1'" />            
+            
             <xsl:when test="orl:is_ISO8601_date($datetext)=true() or orl:is_MLA_date($datetext)=true()">
                 <xsl:call-template name="add_mods_date_text_and_iso8601">
                     <xsl:with-param name="date_value" select="$datevalue" />
