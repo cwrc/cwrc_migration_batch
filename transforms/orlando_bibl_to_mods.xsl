@@ -553,6 +553,25 @@
     </xsl:function>
     
     
+    <xsl:variable name="regex_date_month_list">(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)</xsl:variable>
+    <xsl:variable name="regex_date_year">\d{4}</xsl:variable>
+    
+    <xsl:function name="orl:is_date_day_range">
+        <xsl:param name="date_string" />
+        <xsl:variable name="regex" select="concat('^\d{1,2}-\d{1,2}', ' ', $regex_date_month_list, ' ', $regex_date_year, '$')" />
+        
+        <xsl:choose>
+            <xsl:when test="matches($date_string, $regex)">
+                <xsl:value-of select="true()" />
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:value-of select="false()" />
+            </xsl:otherwise>
+        </xsl:choose>
+        
+    </xsl:function>
+    
+
     
     <!-- mpo: to do: date templates to be restructured for output (a template for dateOther, and
 another for dateIssued -->
@@ -836,6 +855,21 @@ another for dateIssued -->
                 
             </xsl:when>
             
+            <xsl:when test="orl:is_date_day_range($datetext)=true()">
+                <xsl:variable name="start_date" select="orl:get_start_date_from_day_range($datetext)"/>
+                <xsl:variable name="end_date" select="orl:get_end_date_from_day_range($datetext)"/>                   
+                
+                <xsl:call-template name="add_range_date">
+                    <xsl:with-param name="start_date" select="$start_date" />
+                    <xsl:with-param name="end_date" select="$end_date" />
+                    <xsl:with-param name="date_text" select="$datetext" />
+                    <xsl:with-param name="date_element_name" select="$date_element_name" />
+                    <xsl:with-param name="is_emended" select="$is_emended" />
+                    <xsl:with-param name="date_type" select="$date_type"/>
+                </xsl:call-template>
+                
+            </xsl:when>
+            
             <xsl:otherwise>
                 <!-- date text not one of the explicit checks: output value and text -->
                 <xsl:call-template name="add_mods_date_text_and_iso8601">
@@ -852,7 +886,34 @@ another for dateIssued -->
         
         
     </xsl:template>
+ 
+ 
+    <xsl:function name="orl:get_start_date_from_day_range">
+        <xsl:param name="date_text" />
+        <!--  18-24 November 1999 -->
+        <xsl:variable name="start_day" select="normalize-space(substring-before($date_text,'-'))"/>
+        <xsl:variable name="end_date" select="normalize-space(substring-after($date_text,'-'))"/>
+        <xsl:variable name="end_month_year" select="normalize-space(substring-after($date_text,' '))"/>
+        <xsl:variable name="start_date" select="concat($start_day, ' ', $end_month_year)"/>
+        
+        <xsl:if test="orl:is_MLA_date($start_date)">
+            <xsl:value-of select="orl:mla_to_iso8601_conversion($start_date)"/>
+        </xsl:if>
+        
+    </xsl:function>
     
+    <xsl:function name="orl:get_end_date_from_day_range">
+        <xsl:param name="date_text" />
+        <!--  18-24 November 1999 -->
+        <xsl:variable name="end_date" select="normalize-space(substring-after($date_text,'-'))"/>
+                
+        <xsl:if test="orl:is_MLA_date($end_date)">
+            <xsl:value-of select="orl:mla_to_iso8601_conversion($end_date)"/>
+        </xsl:if>
+        
+    </xsl:function>
+    
+ 
     <xsl:function name="orl:get_start_date_from_mla_range">
         <xsl:param name="date_text" />
         <!--  January 2000 - March 2000 -->
