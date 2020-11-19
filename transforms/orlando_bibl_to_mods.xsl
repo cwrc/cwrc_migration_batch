@@ -2,7 +2,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:xs="http://www.w3.org/2001/XMLSchema"
     xmlns:xd="http://www.oxygenxml.com/ns/doc/xsl"
-    exclude-result-prefixes="xs xd"    
+    exclude-result-prefixes="xs xd"
     xmlns:xlink="http://www.w3.org/1999/xlink"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     version="2.0"
@@ -51,15 +51,15 @@
             </xd:ul>
         </xd:desc>
     </xd:doc>
-    
+
     <xsl:output method="xml" encoding="UTF-8" indent="yes" />
     <xsl:strip-space elements="tei:*"/>
-    
+
     <xsl:variable name="newline">
 <xsl:text>
 </xsl:text>
 	</xsl:variable>
-    
+
     <xsl:template match="/">
         <modsCollection xmlns="http://www.loc.gov/mods/v3" xmlns:tei="http://www.tei-c.org/ns/1.0">
             <xsl:attribute name="xsi:schemaLocation">http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-4.xsd</xsl:attribute>
@@ -81,13 +81,13 @@
                     <xsl:choose>
                         <xsl:when test="ANALYTIC"><xsl:apply-templates select="." mode="Part" /></xsl:when>
                         <xsl:otherwise><xsl:apply-templates select="." mode="Whole" /></xsl:otherwise>
-                    </xsl:choose>                    
+                    </xsl:choose>
                 </xsl:when>
-                
+
             </xsl:choose>
         </mods>
     </xsl:template>
-    
+
     <xsl:template match="BIBLIOGRAPHY_ENTRY" mode="Whole">
         <!--<xsl:variable name="workform">
             <xsl:value-of select="@WORKFORM"/>
@@ -103,7 +103,7 @@
         <xsl:apply-templates select="IMPRINT/COVER_TITLE" mode="bibliography" />
         <!-- author(s) and role(s) -->
         <xsl:apply-templates select="AUTHOR_ROLES/AUTHOR_ROLE[@LINK_TYPE='MONOGRAPHIC']" mode="bibliography" />
-        <xsl:apply-templates select="AUTHOR_ROLES/AUTHOR_ROLE[@LINK_TYPE='SUBSIDIARY']" mode="bibliography" />        
+        <xsl:apply-templates select="AUTHOR_ROLES/AUTHOR_ROLE[@LINK_TYPE='SUBSIDIARY']" mode="bibliography" />
         <!-- series -->
         <xsl:apply-templates select="SERIES" mode="bibliography" />
         <!-- constituent(s) -->
@@ -130,7 +130,7 @@
         <!-- recordinfo -->
         <xsl:apply-templates select="." mode="recordInfo"/>
     </xsl:template>
-    
+
     <xsl:template match="BIBLIOGRAPHY_ENTRY" mode="Part">
         <!--<xsl:variable name="workform">
             <xsl:value-of select="@WORKFORM"/>
@@ -145,7 +145,7 @@
         <xsl:apply-templates select="ANALYTIC/ALTERNATE" mode="bibliography" />
         <!-- author(s) and role(s) -->
         <xsl:apply-templates select="AUTHOR_ROLES/AUTHOR_ROLE[@LINK_TYPE='ANALYTIC']" mode="bibliography" />
-        <xsl:apply-templates select="AUTHOR_ROLES/AUTHOR_ROLE[@LINK_TYPE='SUBSIDIARY']" mode="bibliography" />      
+        <xsl:apply-templates select="AUTHOR_ROLES/AUTHOR_ROLE[@LINK_TYPE='SUBSIDIARY']" mode="bibliography" />
         <xsl:apply-templates select="ANALYTIC/RECIPIENT"/>
         <!-- check for host(s) -->
         <xsl:choose>
@@ -178,8 +178,7 @@
         <xsl:apply-templates select="KEYWORD"/>
         <!-- recordInfo -->
         <xsl:apply-templates select="." mode="recordInfo"/>
-    </xsl:template>    
-    
+    </xsl:template>
     <!-- relatedItem/series template -->
     <xsl:template match="SERIES" mode="bibliography">
         <relatedItem type="series">
@@ -195,7 +194,7 @@
             </xsl:if>
         </relatedItem>
     </xsl:template>
-    
+
     <!-- relatedItem/constituent (analytic) template -->
     <xsl:template match="BIBLIOGRAPHY_ENTRY" mode="constituent" >
         <xsl:if test="ANALYTIC/STANDARD or ANALYTIC/ALTERNATE or AUTHOR_ROLES/AUTHOR_ROLE[@LINK_TYPE='ANALYTIC']">
@@ -206,7 +205,7 @@
             </relatedItem>
         </xsl:if>
     </xsl:template>
-    
+
     <!-- relatedItem/host template -->
     <xsl:template match="BIBLIOGRAPHY_ENTRY" mode="host" >
         <relatedItem type="host">
@@ -225,7 +224,7 @@
             <xsl:apply-templates select="KEYWORD"/>
         </relatedItem>
     </xsl:template>
-    
+
     <!-- titleInfo templates -->
     <!-- templates are modularized since location of titleinfo varies depending on whether title is
         top element or related item -->
@@ -235,7 +234,7 @@
             <title><xsl:apply-templates select="TITLE/node()"/></title>
         </titleInfo>
     </xsl:template>
-    
+
     <!-- mpo: to do: alternative titles are divided by ';' in Orlando. Each title to be in a separate
         title type="alternative" tag (except when "; or, ") -->
     <xsl:template match="MONOGRAPHIC/ALTERNATE" mode="bibliography">
@@ -243,42 +242,41 @@
             <title><xsl:apply-templates select="TITLE/node()"/></title>
         </titleInfo>
     </xsl:template>
-    
+
     <xsl:template match="IMPRINT/COVER_TITLE" mode="bibliography">
         <titleInfo type="alternative">
             <title><xsl:apply-templates select="TITLE/node()"/></title>
         </titleInfo>
     </xsl:template>
-    
+
     <xsl:template match="ANALYTIC/STANDARD" mode="bibliography">
         <titleInfo usage="primary">
             <title><xsl:apply-templates select="TITLE/node()"/></title>
         </titleInfo>
     </xsl:template>
-    
+
     <xsl:template match="ANALYTIC/ALTERNATE" mode="bibliography">
         <titleInfo type="alternative">
             <title><xsl:apply-templates select="TITLE/node()"/></title>
         </titleInfo>
     </xsl:template>
-    
+
     <xsl:template match="SERIES/STANDARD">
         <titleInfo type="uniform" usage="primary">
             <title><xsl:apply-templates select="TITLE/node()"/></title>
         </titleInfo>
-    </xsl:template> 
-    
+    </xsl:template>
     <xsl:template match="SERIES/ALTERNATE">
         <titleInfo type="alternative">
             <title><xsl:apply-templates select="TITLE/node()"/></title>
         </titleInfo>
     </xsl:template>
-    
+
     <!-- converts orlando nested title elements into tei, adds tei's namespace and prefix -->
     <xsl:template match="TITLE/*" >
         <extension xmlns:tei="http://www.tei-c.org/ns/1.0"><xsl:element name="tei:{lower-case(name())}"><xsl:apply-templates select="@*|node()" mode="teiatt"/></xsl:element></extension>
     </xsl:template>
-    
+
     <!-- maps orlando attributes and values to TEI's -->
     <!-- prints lowercase attribute names from the output (except reg, lang, direct, corr, and
         titletype) -->
@@ -316,7 +314,7 @@
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
-    
+
     <!-- name templates -->
     <!-- mpo: pending issue: determine URI for role types authority, and names authority -->
     <!-- mpo: to do: check whether tei elements can be used to define name types -->
@@ -332,13 +330,13 @@
             <xsl:variable name="nameStr">
                 <xsl:apply-templates select='NAME' mode="bibliography" />
             </xsl:variable>
-            
+
             <namePart>
                 <xsl:value-of select="$nameStr" />
             </namePart>
-            
+
             <xsl:apply-templates select='@PUBLISHED_AS_NAME' mode="bibliography" />
-            
+
             <!-- mpo: future work: either assign roles authority URI and map orlando roles to vocabulary, or
                 map orlando roles to strings that match CWRC terms -->
             <xsl:if test="@ROLE">
@@ -348,10 +346,10 @@
                     </roleTerm>
                 </role>
             </xsl:if>
-            
+
         </name>
     </xsl:template>
-    
+
     <xsl:template match="RECIPIENT/NAME">
         <name>
             <namePart><xsl:value-of select="@STANDARD"></xsl:value-of></namePart>
@@ -361,22 +359,22 @@
             </role>
         </name>
     </xsl:template>
-    
+
     <!-- exclude NAME because want hyperlinked -->
     <xsl:template match="ORGNAME | PLACE" mode="bibliography">
         <xsl:apply-templates mode="bibliography" />
     </xsl:template>
-    
+
     <xsl:template match="NAME" mode="bibliography">
         <xsl:call-template name="name_comma_removal"/>
     </xsl:template>
-    
+
     <xsl:template name="name_comma_removal">
         <xsl:call-template name="name_comma_removal_with_param">
             <xsl:with-param name="standard_name" select="@STANDARD" />
         </xsl:call-template>
     </xsl:template>
-    
+
     <xsl:template name="name_comma_removal_with_param">
         <xsl:param name="standard_name" />
         <xsl:choose>
@@ -395,7 +393,7 @@
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
-    
+
     <!-- mpo: pending issue: how to express publishedAs best has not been determined, for the
         moment, this information is captured in a <displayForm> element  -->
     <xsl:template match="@PUBLISHED_AS_NAME" mode="bibliography">
@@ -439,14 +437,14 @@
                 </xsl:if>
             </originInfo>
     </xsl:template>
-    
+
     <!-- originInfo: dates templates -->
-    
+
     <!--<xsl:function name="orl:attribute" as="element()?">
         <xsl:param name="elements" as="element()*"/> 
         <xsl:param name="attrNames" as="xs:QName*"/> 
         <xsl:param name="attrValues" as="xs:anyAtomicType*"/>
-        
+
         <xsl:for-each select="$elements">
             <xsl:variable name="element" select="."/>
             <xsl:copy>
@@ -460,11 +458,9 @@
                 </xsl:for-each>
                 <xsl:copy-of select="@*|node()"/>
             </xsl:copy>
-        </xsl:for-each>        
+        </xsl:for-each>
     </xsl:function>-->
-    
-    
-    
+
     <xd:doc>
         <xd:desc> Test if ISO860 date: YYYY, or YYYY-MM, or, YYYY-MM-DD </xd:desc>
         <xd:param name="date_string"/>
@@ -472,7 +468,7 @@
     <xsl:function name="orl:is_ISO8601_date">
         <xsl:param name="date_string" />
         <xsl:variable name="regex_ISO6801_date">^\d{4}(-\d{2}(-\d{2})?)?$</xsl:variable>
-        
+
         <xsl:choose>
             <xsl:when test="matches($date_string, $regex_ISO6801_date)">
                 <xsl:value-of select="true()" />
@@ -481,9 +477,9 @@
                 <xsl:value-of select="false()" />
             </xsl:otherwise>
         </xsl:choose>
-        
+
     </xsl:function>
-    
+
     <xd:doc>
         <xd:desc>Test if a MLA date: September 1999, or 11 September 19999</xd:desc>
         <xd:param name="date_string"/>
@@ -491,7 +487,7 @@
     <xsl:function name="orl:is_MLA_date">
         <xsl:param name="date_string" />
         <xsl:variable name="regex_mla_date">^((\d{1,2}\s)?(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{4})$</xsl:variable>
-        
+
         <xsl:choose>
             <xsl:when test="matches($date_string, $regex_mla_date)">
                 <xsl:value-of select="true()" />
@@ -500,15 +496,13 @@
                 <xsl:value-of select="false()" />
             </xsl:otherwise>
         </xsl:choose>
-        
+
     </xsl:function>
-    
-    
-    
+
     <xsl:function name="orl:is_date_range_year">
         <xsl:param name="date_string" />
         <xsl:variable name="regex">^\d{4}-(\d{4})?$</xsl:variable>
-        
+
         <xsl:choose>
             <xsl:when test="matches($date_string, $regex)">
                 <xsl:value-of select="true()" />
@@ -517,14 +511,14 @@
                 <xsl:value-of select="false()" />
             </xsl:otherwise>
         </xsl:choose>
-        
+
     </xsl:function>
-    
+
     <xsl:function name="orl:is_date_range_mla">
         <xsl:param name="date_string" />
-        
+
         <xsl:variable name="regex_mla_date">((\d{1,2}\s)?(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{4})</xsl:variable>
-        
+
         <xsl:choose>
             <xsl:when test="matches($date_string, concat('^',$regex_mla_date, '\s?-', '(\s?', $regex_mla_date, ')?$'))">
                 <xsl:value-of select="true()" />
@@ -533,14 +527,13 @@
                 <xsl:value-of select="false()" />
             </xsl:otherwise>
         </xsl:choose>
-                
+
     </xsl:function>
-    
-    
+
     <xsl:function name="orl:is_date_season">
         <xsl:param name="date_string" />
         <xsl:variable name="regex">^(Spring|Summer|Fall|Autumn|Winter)\s\d{4}$</xsl:variable>
-        
+
         <xsl:choose>
             <xsl:when test="matches($date_string, $regex)">
                 <xsl:value-of select="true()" />
@@ -549,18 +542,17 @@
                 <xsl:value-of select="false()" />
             </xsl:otherwise>
         </xsl:choose>
-        
+
     </xsl:function>
-        
-    
+
     <xsl:variable name="regex_date_month_list">(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)</xsl:variable>
     <xsl:variable name="regex_date_year">\d{4}</xsl:variable>
     <xsl:variable name="regex_date_season_list">(Spring|Summer|Fall|Autumn|Winter)</xsl:variable>
-    
+
     <xsl:function name="orl:is_date_day_range">
         <xsl:param name="date_string" />
         <xsl:variable name="regex" select="concat('^\d{1,2}-\d{1,2}', ' ', $regex_date_month_list, ' ', $regex_date_year, '$')" />
-        
+
         <xsl:choose>
             <xsl:when test="matches($date_string, $regex)">
                 <xsl:value-of select="true()" />
@@ -569,13 +561,13 @@
                 <xsl:value-of select="false()" />
             </xsl:otherwise>
         </xsl:choose>
-        
+
     </xsl:function>
-    
+
     <xsl:function name="orl:is_date_month_dd_yyyy">
         <xsl:param name="date_string" />
         <xsl:variable name="regex" select="concat('^', $regex_date_month_list, ' ', '\d{1,2}[,]?', ' ', $regex_date_year, '$')" />
-        
+
         <xsl:choose>
             <xsl:when test="matches($date_string, $regex)">
                 <xsl:value-of select="true()" />
@@ -584,13 +576,13 @@
                 <xsl:value-of select="false()" />
             </xsl:otherwise>
         </xsl:choose>
-        
+
     </xsl:function>
-    
+
     <xsl:function name="orl:is_ext_year_with_uncertainty">
         <xsl:param name="date_string" />
         <xsl:variable name="regex" select="concat('^', '[?\[]?', $regex_date_year, '[?\]]?', '$')" />
-        
+
         <xsl:choose>
             <xsl:when test="matches($date_string, $regex)">
                 <xsl:value-of select="true()" />
@@ -599,14 +591,14 @@
                 <xsl:value-of select="false()" />
             </xsl:otherwise>
         </xsl:choose>
-        
+
     </xsl:function>
-    
+
     <xsl:variable name="regex_date_month_range" select="concat('^', $regex_date_month_list, '[-/]' , $regex_date_month_list, ' (', $regex_date_year,')$')" />
     <xsl:function name="orl:is_date_month_range">
         <xsl:param name="date_string" />
         <xsl:variable name="regex" select="$regex_date_month_range" />
-        
+
         <xsl:choose>
             <xsl:when test="matches($date_string, $regex)">
                 <xsl:value-of select="true()" />
@@ -615,14 +607,13 @@
                 <xsl:value-of select="false()" />
             </xsl:otherwise>
         </xsl:choose>
-        
-    </xsl:function>    
-    
+
+    </xsl:function>
     <xsl:variable name="regex_date_season_range" select="concat('^', $regex_date_season_list, '[-/]' , $regex_date_season_list, ' (', $regex_date_year,')$')" />
     <xsl:function name="orl:is_date_season_range">
         <xsl:param name="date_string" />
         <xsl:variable name="regex" select="$regex_date_season_range" />
-        
+
         <xsl:choose>
             <xsl:when test="matches($date_string, $regex)">
                 <xsl:value-of select="true()" />
@@ -631,106 +622,19 @@
                 <xsl:value-of select="false()" />
             </xsl:otherwise>
         </xsl:choose>
-        
-    </xsl:function>  
-    
+
+    </xsl:function>
     <!-- mpo: to do: date templates to be restructured for output (a template for dateOther, and
 another for dateIssued -->
     <xsl:template match="DATE_OF_ORIGINAL_PUBLICATION">
         <xsl:variable name="datevalue"><xsl:value-of select="DATE/@VALUE"/></xsl:variable>
         <xsl:variable name="datetext"><xsl:value-of select="DATE/text()"/></xsl:variable>
-        <xsl:variable name="regexiso">^\d{4}-(\d{2}-(\d{2})?|-)$</xsl:variable>
-        <!--<xsl:variable
-            name="regexrange">^((\d{1,2}\s)?([a-zA-Z]+\s)?(\d{2}\s)?\d{4}|\d{4})\s*[-]\s*((\d{1,2}\s)?([a-zA-Z]+\s)?(\d{2}\s)?\d{4}|\d{4})?$
-        </xsl:variable>-->
-        <!--horrible regex matching
-            12 Nov 1234 - 12 Nov 1234
-            12 Nov 1234 - Nov 1234
-            12 Nov 1234 - 12 Nov 1234
-            12 Nov 1234 - Nov 2345
-            12 Nov 1233 - 1234
-            Nov 12 1234 - Nov 23 1234
-            Nov 12 1234 - Nov 1234
-            Nov 12 1234 - 1234
-            Nov 1234 - Nov 12 1234
-            1234 - Nov 12 1234
-            Nov 1234 - 12 Nov 1234
-            1234 - 12 Nov 1234
-            Nov 1234 - 12 Nov 1234
-            Nov 1234 - Nov 1234
-            Nov 1234 - 1234
-            1234 - 12 Nov 1234
-            1234 - Nov 1223
-            1236 - 1236
-            1234 - Nov 12 1234
-            1234-1234
-            1234 - 1234
-            >1245- <
-            >1254 - <
-            >12 November 1234 - <
-            >12 November 1234- <
-            >November 1234-<
-            >November 1234 -<        -->
+ 
         <!-- original date of publication: captured in dateOther if there is no
             date_of_publication present, otherwise captured in dateIssued-->
         <!-- date of publication: captured in dateIssued -->
         <!-- date of access: captured in location/url/@dateLastAccessed -->
-        <!-- regex tests for:
-            * date ranges (numerical and MLA formats) -> use point="start" and point="end" attributes
-            * ongoing publications with only start date in ISO or MLA format (e.g. yyyy- or yyyy-mm- or November 2000-) -> use point="start" point="start" and point="end" attributes
-            * dates in ISO format
-            * dates in MLA format -->
-        
-        <xsl:choose> <!-- prose date range -->
-            <xsl:when test="matches($datetext, '^((\d{1,2}\s)?([a-zA-Z]+\s)?(\d{2}\s)?\d{4}|\d{4})\s*[-]\s*((\d{1,2}\s)?([a-zA-Z]+\s)?(\d{2}\s)?\d{4}|\d{4})?$')">
-                <xsl:choose>
-                    <xsl:when test="../DATE_OF_PUBLICATION or ../DATE_OF_ACCESS">
-                        <dateOther point="start" type="original">
-                            <xsl:apply-templates select="@EMENDED"/>
-                            <xsl:value-of select="substring-before($datetext,'-')"/>
-                        </dateOther>
-                        <dateOther point="end" type="original">
-                            <xsl:apply-templates select="@EMENDED"/>
-                            <xsl:value-of select="substring-after($datetext,'-')"/>
-                        </dateOther>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        <dateIssued point="start">
-                            <xsl:apply-templates select="@EMENDED"/>
-                            <xsl:value-of select="substring-before($datetext,'-')"/>
-                        </dateIssued>
-                        <dateIssued point="end">
-                            <xsl:apply-templates select="@EMENDED"/>
-                            <xsl:value-of select="substring-after($datetext,'-')"/>
-                        </dateIssued>
-                    </xsl:otherwise>
-                </xsl:choose>
-            </xsl:when>
-            <xsl:otherwise> <!-- reg date --> <!-- mpo: when not daterange, only reg is
-                captured, not the prose (check) -->
-                <xsl:choose>
-                    <xsl:when test="../DATE_OF_PUBLICATION or DATE_OF_ACCESS">
-                        <dateOther type="original">
-                            <xsl:if test="matches($datevalue, $regexiso)">
-                                <xsl:attribute name="encoding">iso8601</xsl:attribute>
-                            </xsl:if>
-                            <xsl:apply-templates select="@EMENDED"/>
-                            <xsl:value-of select="$datevalue"/>
-                        </dateOther>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        <dateIssued>
-                            <xsl:if test="matches($datevalue, $regexiso)">
-                                <xsl:attribute name="encoding">iso8601</xsl:attribute>
-                            </xsl:if>
-                            <xsl:apply-templates select="@EMENDED"/>
-                            <xsl:value-of select="$datevalue"/>
-                        </dateIssued>
-                    </xsl:otherwise>
-                </xsl:choose>
-            </xsl:otherwise>
-        </xsl:choose>
-        
+
         <xsl:choose>
             <xsl:when test="../DATE_OF_PUBLICATION or DATE_OF_ACCESS">
                 <xsl:call-template name="add_publication_date">
@@ -749,48 +653,19 @@ another for dateIssued -->
             <xsl:with-param name="date_element_name">dateIssued</xsl:with-param>
             <xsl:with-param name="date_type"></xsl:with-param>
         </xsl:call-template>
-        
+
     </xsl:template>
 
     <xsl:template match="DATE_OF_PUBLICATION" mode="bibliography">
         <xsl:variable name="datevalue"><xsl:value-of select="DATE/@VALUE"/></xsl:variable>
         <xsl:variable name="datetext"><xsl:value-of select="DATE/text()"/></xsl:variable>
-        <xsl:variable name="regexiso">^\d{4}-(\d{2}-(\d{2})?|-)$</xsl:variable>
-        <!--<xsl:variable
-            name="regexrange">^((\d{1,2}\s)?([a-zA-Z]+\s)?(\d{2}\s)?\d{4}|\d{4})\s*[-]\s*((\d{1,2}\s)?([a-zA-Z]+\s)?(\d{2}\s)?\d{4}|\d{4})?$
-        </xsl:variable>-->
-                <xsl:choose><!-- when range, date is captured from prose since Orlando's reg date contains only
-                    start date -->
-                    <xsl:when test="matches($datetext, '^((\d{1,2}\s)?([a-zA-Z]+\s)?(\d{2}\s)?\d{4}|\d{4})\s*[-]\s*((\d{1,2}\s)?([a-zA-Z]+\s)?(\d{2}\s)?\d{4}|\d{4})?$')">
-                        <dateIssued point="start">
-                            <xsl:apply-templates select="@EMENDED"/>
-                            <xsl:value-of select="substring-before($datetext,'-')"/>
-                        </dateIssued>
-                        <dateIssued point="end">
-                            <xsl:apply-templates select="@EMENDED"/>
-                            <xsl:value-of select="substring-after($datetext,'-')"/>
-                        </dateIssued>
-                    </xsl:when>
-                    <xsl:otherwise> <!-- reg date --> <!-- when not a range, only reg is
-                        captured, not the prose -->
-                        <dateIssued>
-                            <xsl:apply-templates select="@EMENDED"/>
-                            <xsl:if test="matches($datevalue, $regexiso)">
-                                <xsl:attribute name="encoding">iso8601</xsl:attribute>
-                            </xsl:if>
-                            <xsl:value-of select="$datevalue"/>
-                        </dateIssued>
-                    </xsl:otherwise>
-                </xsl:choose>
-        
         <xsl:call-template name="add_publication_date">
             <xsl:with-param name="date_element_name">dateIssued</xsl:with-param>
             <xsl:with-param name="date_type"></xsl:with-param>
         </xsl:call-template>
-        
+
     </xsl:template>
-    
-    
+
     <xsl:template match="DATE_OF_ACCESS">
         <xsl:variable name="datevalue"><xsl:value-of select="@REG"/></xsl:variable>
         <xsl:variable name="datetext"><xsl:value-of select="text()"/></xsl:variable>
@@ -804,7 +679,7 @@ another for dateIssued -->
                 </xsl:otherwise>
             </xsl:choose>
         </xsl:variable>
-        
+
         <xsl:choose>
             <xsl:when test="orl:is_ISO8601_date($datetext)=true() or orl:is_MLA_date($datetext)=true()">
                 <xsl:call-template name="add_mods_date_text_and_iso8601">
@@ -816,22 +691,21 @@ another for dateIssued -->
                     <xsl:with-param name="point" />
                 </xsl:call-template>
             </xsl:when>
-            <!-- DATE_OF_ACCESS doesn't have a date range in existing content -->  
+            <!-- DATE_OF_ACCESS doesn't have a date range in existing content -->
             <xsl:otherwise>
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
-    
-    
+
     <xsl:template name="add_publication_date">
-        
+
         <xsl:param name="date_element_name" />
         <xsl:param name="date_type" />
-        
+
         <xsl:variable name="datevalue"><xsl:value-of select="DATE/@VALUE"/></xsl:variable>
-        
+
         <xsl:variable name="datetext"><xsl:value-of select="normalize-space(DATE/text())"/></xsl:variable>
-        
+
         <xsl:variable name="is_emended">
             <xsl:choose>
                 <xsl:when test="@EMENDED='1'">
@@ -842,12 +716,11 @@ another for dateIssued -->
                 </xsl:otherwise>
             </xsl:choose>
         </xsl:variable>
-        
+
         <xsl:choose>
 
             <!-- if no date attribute specified then add no mods date -->
-            <xsl:when test="@NO_DATE='1'" />            
-            
+            <xsl:when test="@NO_DATE='1'" />
             <xsl:when test="orl:is_ISO8601_date($datetext)=true() or orl:is_MLA_date($datetext)=true()">
                 <xsl:call-template name="add_mods_date_text_and_iso8601">
                     <xsl:with-param name="date_value" select="$datevalue" />
@@ -858,12 +731,12 @@ another for dateIssued -->
                     <xsl:with-param name="point" />
                 </xsl:call-template>
             </xsl:when>
-        
+
             <xsl:when test="orl:is_date_range_year($datetext)=true()">
                 <!-- split date text into start and end, output start, end (both ISO8601 and original text date, if open ended date  1999- then no end date -->
                 <xsl:variable name="start_date" select="substring-before($datetext,'-')"/>
                 <xsl:variable name="end_date" select="substring-after($datetext,'-')"/>
-                
+
                 <xsl:call-template name="add_range_date">
                     <xsl:with-param name="start_date" select="$start_date" />
                     <xsl:with-param name="end_date" select="$end_date" />
@@ -873,9 +746,9 @@ another for dateIssued -->
                     <xsl:with-param name="date_type" select="$date_type"/>
                 </xsl:call-template>
             </xsl:when>
-            
+
             <xsl:when test="orl:is_date_season($datetext)=true()">
-                
+
                 <xsl:variable name="date_year">
                     <xsl:analyze-string select="$datetext" regex="(\d{{4}})">
                         <xsl:matching-substring><xsl:value-of select="regex-group(1)"/></xsl:matching-substring>
@@ -886,10 +759,9 @@ another for dateIssued -->
                         <xsl:matching-substring><xsl:value-of select="regex-group(1)"/></xsl:matching-substring>
                     </xsl:analyze-string>
                 </xsl:variable>
-                
+
                 <xsl:variable name="start_date" select="orl:get_start_date_from_date_text_season($date_season, $date_year)"/>
-                <xsl:variable name="end_date" select="orl:get_end_date_from_date_text_season($date_season, $date_year)"/>                   
-                
+                <xsl:variable name="end_date" select="orl:get_end_date_from_date_text_season($date_season, $date_year)"/>
                 <xsl:call-template name="add_range_date">
                     <xsl:with-param name="start_date" select="$start_date" />
                     <xsl:with-param name="end_date" select="$end_date" />
@@ -898,13 +770,12 @@ another for dateIssued -->
                     <xsl:with-param name="is_emended" select="$is_emended" />
                     <xsl:with-param name="date_type" select="$date_type"/>
                 </xsl:call-template>
-                
+
             </xsl:when>
-            
+
             <xsl:when test="orl:is_date_range_mla($datetext)=true()">
                 <xsl:variable name="start_date" select="orl:get_start_date_from_mla_range($datetext)"/>
-                <xsl:variable name="end_date" select="orl:get_end_date_from_mla_range($datetext)"/>                   
-                
+                <xsl:variable name="end_date" select="orl:get_end_date_from_mla_range($datetext)"/>
                 <xsl:call-template name="add_range_date">
                     <xsl:with-param name="start_date" select="$start_date" />
                     <xsl:with-param name="end_date" select="$end_date" />
@@ -913,13 +784,12 @@ another for dateIssued -->
                     <xsl:with-param name="is_emended" select="$is_emended" />
                     <xsl:with-param name="date_type" select="$date_type"/>
                 </xsl:call-template>
-                
+
             </xsl:when>
-            
+
             <xsl:when test="orl:is_date_day_range($datetext)=true()">
                 <xsl:variable name="start_date" select="orl:get_start_date_from_day_range($datetext)"/>
-                <xsl:variable name="end_date" select="orl:get_end_date_from_day_range($datetext)"/>                   
-                
+                <xsl:variable name="end_date" select="orl:get_end_date_from_day_range($datetext)"/>
                 <xsl:call-template name="add_range_date">
                     <xsl:with-param name="start_date" select="$start_date" />
                     <xsl:with-param name="end_date" select="$end_date" />
@@ -928,13 +798,13 @@ another for dateIssued -->
                     <xsl:with-param name="is_emended" select="$is_emended" />
                     <xsl:with-param name="date_type" select="$date_type"/>
                 </xsl:call-template>
-                 
+
             </xsl:when>
-         
+
             <xsl:when test="orl:is_date_month_range($datetext)=true()">
                 <xsl:variable name="start_date" select="orl:get_start_date_from_month_range($datetext)"/>
                 <xsl:variable name="end_date" select="orl:get_end_date_from_month_range($datetext)"/>
-                
+
                 <xsl:call-template name="add_range_date">
                     <xsl:with-param name="start_date" select="$start_date" />
                     <xsl:with-param name="end_date" select="$end_date" />
@@ -947,8 +817,7 @@ another for dateIssued -->
 
             <xsl:when test="orl:is_date_season_range($datetext)=true()">
                 <xsl:variable name="start_date" select="orl:get_start_date_from_season_range($datetext)"/>
-                <xsl:variable name="end_date" select="orl:get_end_date_from_season_range($datetext)"/>                   
-                
+                <xsl:variable name="end_date" select="orl:get_end_date_from_season_range($datetext)"/>
                 <xsl:call-template name="add_range_date">
                     <xsl:with-param name="start_date" select="$start_date" />
                     <xsl:with-param name="end_date" select="$end_date" />
@@ -957,7 +826,7 @@ another for dateIssued -->
                     <xsl:with-param name="is_emended" select="$is_emended" />
                     <xsl:with-param name="date_type" select="$date_type"/>
                 </xsl:call-template>
-                
+
             </xsl:when>
 
             <xsl:when test="
@@ -975,7 +844,7 @@ another for dateIssued -->
                     <xsl:with-param name="point" />
                 </xsl:call-template>
             </xsl:when>
-            
+
             <xsl:otherwise>
                 <!-- date text not one of the explicit checks: output value and text -->
                 <xsl:call-template name="add_mods_date_text_and_iso8601">
@@ -986,29 +855,27 @@ another for dateIssued -->
                     <xsl:with-param name="date_type"  select="$date_type"/>
                     <xsl:with-param name="point" />
                 </xsl:call-template>
-                
+
             </xsl:otherwise>
-                 
+
         </xsl:choose>
-        
-        
+
     </xsl:template>
- 
 
     <xsl:function name="orl:get_start_date_from_month_range">
         <xsl:param name="date_text" />
-        
+
         <!-- <xsl:analyze-string select="$date_text" regex="$regex_date_month_range"> -->
         <xsl:analyze-string select="$date_text" regex="^([a-zA-Z]+)[-/]([a-zA-Z]+) ([0-9]{{4}})$">
             <xsl:matching-substring>
                 <xsl:value-of select="concat(regex-group(3),'-',orl:month_string_to_num(regex-group(1)))"/>
             </xsl:matching-substring>
             <xsl:non-matching-substring />
-            
+
         </xsl:analyze-string>
  
     </xsl:function>
-    
+
     <xsl:function name="orl:get_end_date_from_month_range">
         <xsl:param name="date_text" />
 
@@ -1017,15 +884,14 @@ another for dateIssued -->
                 <xsl:value-of select="concat(regex-group(3),'-',orl:month_string_to_num(regex-group(2)))"/>
             </xsl:matching-substring>
             <xsl:non-matching-substring />
-            
+
         </xsl:analyze-string>
-        
 
     </xsl:function>
  
     <xsl:function name="orl:get_start_date_from_season_range">
         <xsl:param name="date_text" />
-        
+
         <!-- <xsl:analyze-string select="$date_text" regex="$regex_date_season_range"> -->
         <xsl:analyze-string select="$date_text" regex="^{$regex_date_season_list}[-/]{$regex_date_season_list} ({$regex_date_year})$">
             <xsl:matching-substring>
@@ -1034,12 +900,12 @@ another for dateIssued -->
             <xsl:non-matching-substring>
             </xsl:non-matching-substring>
         </xsl:analyze-string>
-        
+
     </xsl:function>
-    
+
     <xsl:function name="orl:get_end_date_from_season_range">
         <xsl:param name="date_text" />
-        
+
         <xsl:analyze-string select="$date_text" regex="^{$regex_date_season_list}[-/]{$regex_date_season_list} ({$regex_date_year})$">
             <xsl:matching-substring>
                 <xsl:value-of select="orl:get_end_date_from_date_text_season(regex-group(2),regex-group(3))"/>
@@ -1047,10 +913,8 @@ another for dateIssued -->
             <xsl:non-matching-substring>
             </xsl:non-matching-substring>
         </xsl:analyze-string>
-        
+
     </xsl:function>
-    
- 
 
     <xsl:function name="orl:get_start_date_from_day_range">
         <xsl:param name="date_text" />
@@ -1059,30 +923,29 @@ another for dateIssued -->
         <xsl:variable name="end_date" select="normalize-space(substring-after($date_text,'-'))"/>
         <xsl:variable name="end_month_year" select="normalize-space(substring-after($date_text,' '))"/>
         <xsl:variable name="start_date" select="concat($start_day, ' ', $end_month_year)"/>
-        
+
         <xsl:if test="orl:is_MLA_date($start_date)">
             <xsl:value-of select="orl:mla_to_iso8601_conversion($start_date)"/>
         </xsl:if>
-        
+
     </xsl:function>
-    
+
     <xsl:function name="orl:get_end_date_from_day_range">
         <xsl:param name="date_text" />
         <!--  18-24 November 1999 -->
         <xsl:variable name="end_date" select="normalize-space(substring-after($date_text,'-'))"/>
-                
+
         <xsl:if test="orl:is_MLA_date($end_date)">
             <xsl:value-of select="orl:mla_to_iso8601_conversion($end_date)"/>
         </xsl:if>
-        
+
     </xsl:function>
-    
- 
+
     <xsl:function name="orl:get_start_date_from_mla_range">
         <xsl:param name="date_text" />
         <!--  January 2000 - March 2000 -->
         <xsl:variable name="start_date" select="normalize-space(substring-before($date_text,'-'))"/>
-        
+
         <xsl:if test="orl:is_MLA_date($start_date)">
             <xsl:value-of select="orl:mla_to_iso8601_conversion($start_date)"/>
         </xsl:if>
@@ -1092,18 +955,18 @@ another for dateIssued -->
 
     <xsl:function name="orl:get_end_date_from_mla_range">
         <xsl:param name="date_text" />
-        
+
         <xsl:variable name="end_date" select="substring-after($date_text,'-')"/>
 
         <xsl:if test="orl:is_MLA_date($end_date)">
             <xsl:value-of select="orl:mla_to_iso8601_conversion($end_date)"/>
         </xsl:if>
-        
+
     </xsl:function>
-    
+
     <xsl:function name="orl:month_dd_yyyy_to_iso8601_conversion">
         <xsl:param name="date_string" />
-        
+
         <xsl:analyze-string select="$date_string" regex="^([a-zA-Z]+) ([0-9]{{1,2}})?[,]? ([0-9]{{4}})">
             <xsl:matching-substring>
                 <xsl:value-of select="regex-group(3)"/>
@@ -1114,21 +977,21 @@ another for dateIssued -->
                             <xsl:value-of select="concat('-','0',regex-group(1))"/>
                         </xsl:when>
                         <xsl:otherwise>
-                            <xsl:value-of select="concat('-',regex-group(1))"/>        
+                            <xsl:value-of select="concat('-',regex-group(1))"/>
                         </xsl:otherwise>
                     </xsl:choose>
                 </xsl:if>
             </xsl:matching-substring>
             <xsl:non-matching-substring>
             </xsl:non-matching-substring>
-            
+
         </xsl:analyze-string>
-        
+
     </xsl:function>
-    
+
     <xsl:function name="orl:mla_to_iso8601_conversion">
         <xsl:param name="date_string" />
-        
+
         <xsl:analyze-string select="$date_string" regex="^([0-9]{{1,2}})? ([a-zA-Z]+) ([0-9]{{4}})">
             <xsl:matching-substring>
                 <xsl:value-of select="regex-group(3)"/>
@@ -1139,21 +1002,21 @@ another for dateIssued -->
                             <xsl:value-of select="concat('-','0',regex-group(1))"/>
                         </xsl:when>
                         <xsl:otherwise>
-                            <xsl:value-of select="concat('-',regex-group(1))"/>        
+                            <xsl:value-of select="concat('-',regex-group(1))"/>
                         </xsl:otherwise>
                     </xsl:choose>
                 </xsl:if>
             </xsl:matching-substring>
             <xsl:non-matching-substring>
             </xsl:non-matching-substring>
-            
+
         </xsl:analyze-string>
-        
+
     </xsl:function>
-    
+
     <xsl:function name="orl:month_string_to_num">
         <xsl:param name="month_string" />
-        
+
         <xsl:choose>
             <xsl:when test="$month_string=('January','Jan')">01</xsl:when>
             <xsl:when test="$month_string=('February','Feb')">02</xsl:when>
@@ -1168,13 +1031,12 @@ another for dateIssued -->
             <xsl:when test="$month_string=('November','Nov')">11</xsl:when>
             <xsl:when test="$month_string=('December','Dec')">12</xsl:when>
         </xsl:choose>
-        
+
     </xsl:function>
-    
+
     <xsl:function name="orl:get_start_date_from_date_text_season">
         <xsl:param name="date_season" />
-        <xsl:param name="date_year" />      
-
+        <xsl:param name="date_year" />
         <xsl:variable name="start_date_mm_dd">
             <xsl:choose>
                 <xsl:when test="$date_season='Spring'">-03-01</xsl:when>
@@ -1188,12 +1050,11 @@ another for dateIssued -->
         <xsl:value-of select="concat($date_year,$start_date_mm_dd)"/>
 
     </xsl:function>
-    
+
     <xsl:function name="orl:get_end_date_from_date_text_season">
         <xsl:param name="date_season" />
         <xsl:param name="date_year" />
-  
-                
+
         <xsl:variable name="end_date_mm_dd">
             <xsl:choose>
                 <xsl:when test="$date_season='Spring'">-05-31</xsl:when>
@@ -1212,19 +1073,18 @@ another for dateIssued -->
                 <xsl:value-of select="concat($date_year, $end_date_mm_dd)"/>
             </xsl:otherwise>
         </xsl:choose>
-            
+
     </xsl:function>
-    
-  
+
     <xsl:template name="add_range_date">
-        
+
         <xsl:param name="start_date" />
         <xsl:param name="end_date" />
         <xsl:param name="date_text" />
         <xsl:param name="is_emended" />
         <xsl:param name="date_element_name" />
         <xsl:param name="date_type" />
-        
+
         <xsl:if test="$start_date">
             <xsl:call-template name="add_mods_date_text_and_iso8601">
                 <xsl:with-param name="date_value" select="$start_date" />
@@ -1251,10 +1111,10 @@ another for dateIssued -->
             <xsl:with-param name="date_text" select="$date_text" />
             <xsl:with-param name="date_element_name" select="$date_element_name"/>
             <xsl:with-param name="is_emended" select="$is_emended"/>
-            <xsl:with-param name="date_type" select="$date_type"/>            
+            <xsl:with-param name="date_type" select="$date_type"/>
             <xsl:with-param name="point" />
         </xsl:call-template>
-        
+
     </xsl:template>
 
     <xsl:template name="add_mods_date_text_and_iso8601">
@@ -1274,7 +1134,7 @@ another for dateIssued -->
                 <xsl:with-param name="point" select="$point"/>
             </xsl:call-template>
         </xsl:if>
-        
+
         <xsl:if test="not($date_value=$date_text) and $date_text">
             <xsl:call-template name="add_mods_date">
                 <xsl:with-param name="date_string" select="$date_text" />
@@ -1284,9 +1144,8 @@ another for dateIssued -->
                 <xsl:with-param name="point" select="$point"/>
             </xsl:call-template>
         </xsl:if>
-        
+
     </xsl:template>
-    
 
     <xsl:template name="add_mods_date">
         <xsl:param name="date_string" />
@@ -1295,7 +1154,7 @@ another for dateIssued -->
         <xsl:param name="is_emended" />
         <xsl:param name="date_type" />
         <xsl:param name="point" />
-        
+
         <xsl:element name="{$date_element_name}">
             <xsl:if test="$is_emended=true()">
                 <xsl:attribute name="qualifier">inferred</xsl:attribute>
@@ -1312,20 +1171,19 @@ another for dateIssued -->
             <xsl:value-of select="$date_string" />
         </xsl:element>
     </xsl:template>
-    
-    
+
     <xsl:template match="DATE_OF_PUBLICATION/@EMENDED">
         <xsl:if test=".='1'">
             <xsl:attribute name="qualifier">inferred</xsl:attribute>
         </xsl:if>
     </xsl:template>
-    
+
     <xsl:template match="DATE_OF_ORIGINAL_PUBLICATION/@EMENDED">
         <xsl:if test=".='1'">
             <xsl:attribute name="qualifier">inferred</xsl:attribute>
         </xsl:if>
     </xsl:template>
-    
+
     <!-- location/dateLastAccessed template -->
     <xsl:template match="LOCATION">
         <!-- this template captures DATE_OF_ACCESS' REG date if present, otherwise selects text of
@@ -1351,7 +1209,7 @@ another for dateIssued -->
             </xsl:if>
         </location>
     </xsl:template>
-    
+
     <!-- typeOfResource template -->
     <xsl:template match="BIBLIOGRAPHY_ENTRY" mode="typeofresource">
         <xsl:variable name="workform">
@@ -1360,7 +1218,7 @@ another for dateIssued -->
         <xsl:variable name="typeofresource">
             <xsl:value-of select="SCOPE/MEDIUM"/>
         </xsl:variable>
-        
+
         <xsl:choose>
             <xsl:when test="matches($typeofresource, 'sound|audio|radio|voice')">
                 <typeOfResource>sound recording</typeOfResource>
@@ -1380,12 +1238,12 @@ another for dateIssued -->
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
-    
+
     <!-- genre template -->
     <xsl:template match="BIBLIOGRAPHY_ENTRY" mode="genre">
         <xsl:variable name="genrestr"><xsl:value-of select="SCOPE/MEDIUM"/></xsl:variable>
         <xsl:variable name="genretoken" select="tokenize($genrestr,';\s*')" xml:space="default"/>
-        
+
         <xsl:choose>
             <xsl:when test="@WORKFORM='Manuscript'">
                 <genre xsl:use-attribute-sets="genre marcgt">script</genre>
@@ -1420,16 +1278,16 @@ another for dateIssued -->
             </xsl:for-each>
         </xsl:if>
     </xsl:template>
-    
+
     <!-- note templates -->
     <xsl:template match="SCHOLARNOTES/SCHOLARNOTE">
         <note type="public_note"><xsl:value-of select="."/></note>
     </xsl:template>
-    
+
     <xsl:template match="RESEARCHNOTES/RESEARCHNOTE">
         <note type="internal_note"><xsl:value-of select="."/></note>
     </xsl:template>
-    
+
     <!-- part and physicalDescription templates -->
     <xsl:template match="SCOPE" mode="bibliography">
         <!-- mpo: cleanup: many bibl entries have the page range information entered in
@@ -1443,19 +1301,19 @@ another for dateIssued -->
         </xsl:if>
         <xsl:apply-templates select="VOLUME_COUNT"/>
     </xsl:template>
-    
+
     <xsl:template match="VOLUME_ID">
         <detail type="volume">
             <number><xsl:value-of select="."/></number>
         </detail>
     </xsl:template>
-    
+
     <xsl:template match="ISSUE_ID">
         <detail type="issue">
             <number><xsl:value-of select="."/></number>
-        </detail>            
+        </detail>
     </xsl:template>
-    
+
     <xsl:template match="PAGES">
         <xsl:variable name="pagestr">
             <xsl:value-of select="."/>
@@ -1472,13 +1330,13 @@ another for dateIssued -->
             </xsl:choose>
         </extent>
     </xsl:template>
-    
+
     <xsl:template match="VOLUME_COUNT">
         <physicalDescription>
             <extent><xsl:value-of select="."/></extent>
         </physicalDescription>
     </xsl:template>
-    
+
     <!-- language template -->
     <!-- mpo: to do: other languages to be mapped -->
     <xsl:template match="BIBLIOGRAPHY_ENTRY" mode="language">
@@ -1487,7 +1345,7 @@ another for dateIssued -->
         </xsl:variable>
         <xsl:choose>
             <xsl:when test="SCOPE/LANGUAGE">
-                <language>                    
+                <language>
                     <languageTerm type="text"><xsl:value-of select="SCOPE/LANGUAGE"/></languageTerm>
                     <xsl:if test="contains($langstr, 'French')"><languageTerm authority="iso639-2b" type="code">fre</languageTerm></xsl:if>
                     <xsl:if test="contains($langstr, 'Latin')"><languageTerm authority="iso639-2b" type="code">lat</languageTerm></xsl:if>
@@ -1504,12 +1362,12 @@ another for dateIssued -->
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
-    
+
     <!-- subject template -->
     <xsl:template match="KEYWORD">
         <subject><topic><xsl:value-of select="."/></topic></subject>
     </xsl:template>
-    
+
     <!-- recordInfo templates -->
     <xsl:template match="BIBLIOGRAPHY_ENTRY" mode="recordInfo">
         <recordInfo>
@@ -1526,7 +1384,7 @@ another for dateIssued -->
             <recordOrigin>Record has been transformed into MODS from an XML Orlando record using an XSLT stylesheet. Metadata originally created in Orlando Document Archive's bibliographic database available at nifflheim.ualberta.ca/wwp.</recordOrigin>
         </recordInfo>
     </xsl:template>
-    
+
     <!-- Orlando responsibility notes don't have equivalent in recordInfo; notes are captured in
     extension element with recordChange date -->
     <!-- "Initial entry" notes in recordCreationDate are ommited: mods element captures initial date    -->
@@ -1546,12 +1404,12 @@ another for dateIssued -->
             </xsl:if>
         </xsl:if>
     </xsl:template>
-    
+
     <xsl:template match="BIBLIOGRAPHY_ENTRY" mode="recordId">
         <!-- mpo: will another record identifier be added by CWRC? -->
         <recordIdentifier source="Orlando"><xsl:value-of select="@BI_ID"/></recordIdentifier>
     </xsl:template>
-    
+
     <!-- attribute sets -->
     <xsl:attribute-set name="genre">
         <xsl:attribute name="displayLabel">Item Type</xsl:attribute>
@@ -1628,5 +1486,5 @@ another for dateIssued -->
     <xsl:attribute-set name="subject">
         <xsl:attribute name="displayLabel">Subject Keyword</xsl:attribute>
     </xsl:attribute-set>
-    
+
 </xsl:stylesheet>
