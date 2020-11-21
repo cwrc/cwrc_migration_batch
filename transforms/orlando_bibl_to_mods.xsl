@@ -2,13 +2,13 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:xs="http://www.w3.org/2001/XMLSchema"
     xmlns:xd="http://www.oxygenxml.com/ns/doc/xsl"
-    exclude-result-prefixes="xs xd"
     xmlns:xlink="http://www.w3.org/1999/xlink"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    version="2.0"
-    xmlns="http://www.loc.gov/mods/v3"
     xmlns:orl="http://ualberta.ca/orlando"
     xmlns:tei="http://www.tei-c.org/ns/1.0"
+    xmlns="http://www.loc.gov/mods/v3"
+    version="2.0"
+    exclude-result-prefixes="xs xd"
     >
 
     <xd:doc scope="stylesheet">
@@ -626,7 +626,7 @@
     </xsl:function>
     <!-- mpo: to do: date templates to be restructured for output (a template for dateOther, and
 another for dateIssued -->
-    <xsl:template match="DATE_OF_ORIGINAL_PUBLICATION">
+    <xsl:template match="DATE_OF_ORIGINAL_PUBLICATION" mode="bibliography">
         <xsl:variable name="datevalue"><xsl:value-of select="DATE/@VALUE"/></xsl:variable>
         <xsl:variable name="datetext"><xsl:value-of select="DATE/text()"/></xsl:variable>
  
@@ -649,10 +649,6 @@ another for dateIssued -->
                 </xsl:call-template>
             </xsl:otherwise>
         </xsl:choose>
-        <xsl:call-template name="add_publication_date">
-            <xsl:with-param name="date_element_name">dateIssued</xsl:with-param>
-            <xsl:with-param name="date_type"></xsl:with-param>
-        </xsl:call-template>
 
     </xsl:template>
 
