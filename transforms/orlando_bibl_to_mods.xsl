@@ -430,7 +430,7 @@
                 </xsl:if>
                 <!-- dates -->
                 <xsl:apply-templates select="DATE_OF_PUBLICATION" mode="bibliography" />
-                <xsl:apply-templates select="DATE_OF_ORIGINAL_PUBLICATION"/>
+                <xsl:apply-templates select="DATE_OF_ORIGINAL_PUBLICATION" mode="bibliography"/>
                 <xsl:apply-templates select="DATE_OF_ACCESS"/>
                 <xsl:if test="EDITION">
                     <edition><xsl:value-of select="EDITION"/></edition>
