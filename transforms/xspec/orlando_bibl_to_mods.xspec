@@ -114,7 +114,7 @@
         </x:expect>
     </x:scenario>
     
-    <x:scenario label="Date of Publication: month range (Month/Month 2012">
+    <x:scenario label="Date of Publication: month range (Month/Month YYYY)">
         <x:context mode="bibliography">
             <DATE_OF_PUBLICATION REG="2012-11-" NO_DATE="0" EMENDED="0"><DATE VALUE="2012-11-"> November/December 2012</DATE></DATE_OF_PUBLICATION>
         </x:context>
@@ -182,8 +182,81 @@
             <dateOther type="original" encoding="iso8601">1573</dateOther>
         </x:expect>
     </x:scenario>
-    
-
+ 
+    <x:scenario label="Test whole legacy bibliography item (date of publication and original date of publication (BI_ID=467)">
+        <x:context href="sample/467.xml" />
+        <x:expect label="it should produce a full mods record from the original legacy bibl (after dates converted and uri's added)">
+            <modsCollection xmlns="http://www.loc.gov/mods/v3"
+                xmlns:tei="http://www.tei-c.org/ns/1.0"
+                xmlns:xlink="http://www.w3.org/1999/xlink"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xmlns:orl="http://ualberta.ca/orlando"
+                xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-4.xsd">
+                <mods version="3.4">
+                    <titleInfo usage="primary">
+                        <title>A Sweet Nosegay, or Pleasant Posy</title>
+                    </titleInfo>
+                    <titleInfo type="alternative">
+                        <title>A Sweet Nosgay, Or Pleasant Posye</title>
+                    </titleInfo>
+                    <titleInfo type="alternative">
+                        <title>A Sweet Nosegay, or Pleasant Posy. Containing a hundred and ten philosophical Flowers</title>
+                    </titleInfo>
+                    <name type="personal"
+                        valueURI="https://dev-02.cwrc.ca/islandora/object/orlando:35ac6c09-f5c8-40b6-9b00-64bf104f578b">
+                        <namePart>Whitney, Isabella</namePart>
+                    </name>
+                    <name type="personal"
+                        valueURI="https://dev-02.cwrc.ca/islandora/object/orlando:5802c1ea-3301-40ad-b6d2-45c59aff9dcb">
+                        <namePart>Students of Sara Jayne Steen</namePart>
+                        <role>
+                            <roleTerm type="text">editor</roleTerm>
+                        </role>
+                    </name>
+                    <typeOfResource>text</typeOfResource>
+                    <genre displayLabel="Item Type" authority="marcgt">book</genre>
+                    <originInfo>
+                        <place>
+                            <placeTerm type="text">Bozeman, MT</placeTerm>
+                        </place>
+                        <publisher valueURI="https://dev-02.cwrc.ca/islandora/object/orlando:f503b9de-4a0b-4e73-aa3d-8ede962b6d81">Montana State University</publisher>
+                        <dateIssued type="start"
+                            encoding="iso8601">1995-09-01</dateIssued>
+                        <dateIssued type="end"
+                            encoding="iso8601">1995-11-30</dateIssued>
+                        <dateIssued>Fall 1995</dateIssued>
+                        <dateOther type="original"
+                            encoding="iso8601">1573</dateOther>
+                        <edition>An Academic Edition</edition>
+                    </originInfo>
+                    <language>
+                        <languageTerm authority="iso639-2b" type="code">eng</languageTerm>
+                        <languageTerm type="text">English</languageTerm>
+                    </language>
+                    <recordInfo>
+                        <recordContentSource>Orlando: Women's Writing in the British Isles from the Beginnings to the Present</recordContentSource>
+                        <recordContentSource>Orlando Document Archive</recordContentSource>
+                        <recordContentSource authority="marcorg">CaAEU</recordContentSource>
+                        <recordContentSource authority="oclcorg">UAB</recordContentSource>
+                        <recordContentSource authority="oclcorg">U3G</recordContentSource>
+                        <languageOfCataloging>
+                            <languageTerm authority="iso639-2b">eng</languageTerm>
+                        </languageOfCataloging>
+                        <recordCreationDate encoding="iso8601">1999-04-08</recordCreationDate>
+                        <recordChangeDate encoding="iso8601">1999-04-08</recordChangeDate>
+                        <recordChangeDate encoding="iso8601">1999-06-05</recordChangeDate>
+                        <recordChangeDate encoding="iso8601">1999-06-07</recordChangeDate>
+                        <recordChangeDate encoding="iso8601">1999-08-11</recordChangeDate>
+                        <recordChangeDate encoding="iso8601">2003-10-31</recordChangeDate>
+                        <recordChangeDate encoding="iso8601">2005-07-10</recordChangeDate>
+                        <recordChangeDate encoding="iso8601">2005-07-10</recordChangeDate>
+                        <recordIdentifier source="Orlando">467</recordIdentifier>
+                        <recordOrigin>Record has been transformed into MODS from an XML Orlando record using an XSLT stylesheet. Metadata originally created in Orlando Document Archive's bibliographic database available at nifflheim.ualberta.ca/wwp.</recordOrigin>
+                    </recordInfo>
+                </mods>
+            </modsCollection>
+        </x:expect>
+    </x:scenario>
 
     <!--
     <x:scenario label="Scenario for testing a function">
