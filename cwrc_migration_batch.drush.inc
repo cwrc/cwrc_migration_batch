@@ -2923,9 +2923,9 @@ function drush_cwrc_migration_batch_ingest_orlando_entities_reuse_pids()
     }
 
     // If the object already exists then continue to next file.
-    if (islandora_object_load($pid)) {
-      drush_print("ERROR: object legacy[$legacy_id] with pid [$pid] is already in fedora");
-      continue;
+    if ( $object = islandora_object_load($pid)) {
+      drush_print("INFO: object legacy[$legacy_id] with pid [$pid] is already in fedora - DELETING");
+      $object->repository->purgeObject($pid);
     }
  
     // add ID and PID to the entity mapping
