@@ -9,8 +9,8 @@
             <DATE_OF_ACCESS REG="1999-04-08" NO_DATE="0" EMENDED="0">8 April 1999</DATE_OF_ACCESS>
         </x:context>
         <x:expect label="it should produce mods:dateOther" xmlns="http://www.loc.gov/mods/v3">
-            <dateOther type="dateAccessed" encoding="iso8601">1999-04-08</dateOther>
             <dateOther type="dateAccessed">8 April 1999</dateOther>
+            <dateOther type="dateAccessed" encoding="iso8601">1999-04-08</dateOther>
         </x:expect>
     </x:scenario>
     
@@ -19,7 +19,6 @@
             <DATE_OF_PUBLICATION REG="1886" NO_DATE="1" EMENDED="0"><DATE VALUE="1886--"/></DATE_OF_PUBLICATION>
         </x:context>
         <x:expect label="it should produce no mods:dateIssued or other mods date" />
-        
     </x:scenario>
 
     <x:scenario label="Date of Publication: extended date with '?'">
@@ -27,8 +26,8 @@
             <DATE_OF_PUBLICATION REG="1752" NO_DATE="0" EMENDED="0"><DATE VALUE="1752">1752?</DATE></DATE_OF_PUBLICATION>
         </x:context>
         <x:expect label="it should produce an ISO 8601 and text date: use default" xmlns="http://www.loc.gov/mods/v3">
-            <dateIssued encoding="iso8601">1752</dateIssued>
             <dateIssued>1752?</dateIssued>
+            <dateIssued encoding="iso8601">1752</dateIssued>
         </x:expect>
     </x:scenario>    
 
@@ -37,8 +36,8 @@
             <DATE_OF_PUBLICATION REG="1584" NO_DATE="0"><DATE VALUE="1584">Late 1584 - early 1585</DATE></DATE_OF_PUBLICATION>
         </x:context>
         <x:expect label="it should produce an ISO 8601 start and text date: use default no special late/early translation" xmlns="http://www.loc.gov/mods/v3">
-            <dateIssued encoding="iso8601">1584</dateIssued>
             <dateIssued>Late 1584 - early 1585</dateIssued>
+            <dateIssued encoding="iso8601">1584</dateIssued>
         </x:expect>
     </x:scenario>
 
@@ -56,8 +55,8 @@
             <DATE_OF_PUBLICATION REG="1848-12" NO_DATE="0" EMENDED="0"><DATE VALUE="1848-12">December 1848</DATE></DATE_OF_PUBLICATION>
         </x:context>
         <x:expect label="it should produce an ISO 8601 and text date" xmlns="http://www.loc.gov/mods/v3">
-            <dateIssued encoding="iso8601">1848-12</dateIssued>
             <dateIssued>December 1848</dateIssued>
+            <dateIssued encoding="iso8601">1848-12</dateIssued>
         </x:expect>
     </x:scenario>
 
@@ -66,8 +65,8 @@
             <DATE_OF_PUBLICATION REG="1994-06-20" NO_DATE="0" EMENDED="0"><DATE VALUE="1994-06-20">Monday 20 June 1994</DATE></DATE_OF_PUBLICATION>
         </x:context>
         <x:expect label="it should produce an ISO 8601 and text date (skip Monday and handle as default)" xmlns="http://www.loc.gov/mods/v3">
-            <dateIssued encoding="iso8601">1994-06-20</dateIssued>
             <dateIssued>Monday 20 June 1994</dateIssued>
+            <dateIssued encoding="iso8601">1994-06-20</dateIssued>
         </x:expect>
     </x:scenario>
     
@@ -76,8 +75,8 @@
             <DATE_OF_PUBLICATION REG="2001-01-20" NO_DATE="0" EMENDED="0"><DATE VALUE="2001-01-20">20 January 2001</DATE></DATE_OF_PUBLICATION>
         </x:context>
         <x:expect label="it should produce an ISO 8601 and text date (default handling)" xmlns="http://www.loc.gov/mods/v3">
-            <dateIssued encoding="iso8601">2001-01-20</dateIssued>
             <dateIssued>20 January 2001</dateIssued>
+            <dateIssued encoding="iso8601">2001-01-20</dateIssued>
         </x:expect>
     </x:scenario>
 
@@ -86,8 +85,8 @@
             <DATE_OF_PUBLICATION REG="1899-04-22" NO_DATE="0" EMENDED="0"><DATE VALUE="1899-04-22">April 22, 1899</DATE></DATE_OF_PUBLICATION>
         </x:context>
         <x:expect label="it should produce an ISO 8601 and text date (default handling)" xmlns="http://www.loc.gov/mods/v3">
-            <dateIssued encoding="iso8601">1899-04-22</dateIssued>
             <dateIssued>April 22, 1899</dateIssued>            
+            <dateIssued encoding="iso8601">1899-04-22</dateIssued>
         </x:expect>
     </x:scenario>
     
@@ -97,9 +96,9 @@
             <DATE_OF_PUBLICATION REG="1959--" NO_DATE="0" EMENDED="0"><DATE VALUE="1959--">1959-1962</DATE></DATE_OF_PUBLICATION>
         </x:context>
         <x:expect label="it should produce begin/end ISO 8601 date and text date" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>1959-1962</dateIssued>
             <dateIssued type="start" encoding="iso8601">1959</dateIssued>
             <dateIssued type="end" encoding="iso8601">1962</dateIssued>
-            <dateIssued>1959-1962</dateIssued>
         </x:expect>
     </x:scenario>
     
@@ -108,9 +107,9 @@
             <DATE_OF_PUBLICATION REG="1997--" NO_DATE="0" EMENDED="0"><DATE VALUE="1997--">Spring-Autumn 1997</DATE></DATE_OF_PUBLICATION>
         </x:context>
         <x:expect label="it should produce a begin/end ISO 8601 date and text date" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>Spring-Autumn 1997</dateIssued>
             <dateIssued type="start" encoding="iso8601">1997-03-01</dateIssued>
             <dateIssued type="end" encoding="iso8601">1997-11-30</dateIssued>
-            <dateIssued>Spring-Autumn 1997</dateIssued>
         </x:expect>
     </x:scenario>
     
@@ -119,9 +118,9 @@
             <DATE_OF_PUBLICATION REG="2012-11-" NO_DATE="0" EMENDED="0"><DATE VALUE="2012-11-"> November/December 2012</DATE></DATE_OF_PUBLICATION>
         </x:context>
         <x:expect label="it should produce a begin/end ISO 8601 date and text date" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>November/December 2012</dateIssued>
             <dateIssued type="start" encoding="iso8601">2012-11</dateIssued>
             <dateIssued type="end" encoding="iso8601">2012-12</dateIssued>
-            <dateIssued>November/December 2012</dateIssued>
         </x:expect>
     </x:scenario>
     
@@ -130,8 +129,8 @@
             <DATE_OF_PUBLICATION REG="2019-03-21" NO_DATE="0" EMENDED="0"><DATE VALUE="2019-03-21">21 March - 1 April 2019</DATE></DATE_OF_PUBLICATION>
         </x:context>
         <x:expect label="it should produce a begin/end ISO 8601 date and text date" xmlns="http://www.loc.gov/mods/v3">
-            <dateIssued encoding="iso8601">2019-03-21</dateIssued>
             <dateIssued>21 March - 1 April 2019</dateIssued>
+            <dateIssued encoding="iso8601">2019-03-21</dateIssued>
         </x:expect>
     </x:scenario>
     
@@ -140,45 +139,43 @@
             <DATE_OF_PUBLICATION REG="1756--" NO_DATE="0" EMENDED="0"><DATE VALUE="1756--">6 January 1756-17 February 1756</DATE></DATE_OF_PUBLICATION>
         </x:context>
         <x:expect label="it should produce a begin/end ISO 8601 date and text date" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>6 January 1756-17 February 1756</dateIssued>
             <dateIssued type="start" encoding="iso8601">1756-01-06</dateIssued>
             <dateIssued type="end" encoding="iso8601">1756-02-17</dateIssued>
-            <dateIssued>6 January 1756-17 February 1756</dateIssued>
         </x:expect>
     </x:scenario>
-    
-    
 
     <x:scenario label="Date of Publication: day-day Month YYYY (DD-DD Month YYYY)">
         <x:context mode="bibliography">
             <DATE_OF_PUBLICATION REG="1999-11-18" NO_DATE="0" EMENDED="0"><DATE VALUE="1999-11-18">18-24 November 1999</DATE></DATE_OF_PUBLICATION>
         </x:context>
         <x:expect label="it should produce an begin/end ISO 8601 date with a text date" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>18-24 November 1999</dateIssued>
             <dateIssued type="start" encoding="iso8601">1999-11-18</dateIssued>
             <dateIssued type="end" encoding="iso8601">1999-11-24</dateIssued>
-            <dateIssued>18-24 November 1999</dateIssued>
         </x:expect>
     </x:scenario>
-    
+
     <x:scenario label="Date of Publication: day-day Month YYYY (DD-DD Month YYYY) single digit day">
         <x:context mode="bibliography">
             <DATE_OF_PUBLICATION REG="1999-12-02" NO_DATE="0" EMENDED="0"><DATE VALUE="1999-12-02">2-8 December 1999</DATE></DATE_OF_PUBLICATION>
         </x:context>
         <x:expect label="it should produce an ISO 8601 start and end with a text date" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>2-8 December 1999</dateIssued>
             <dateIssued type="start" encoding="iso8601">1999-12-02</dateIssued>
             <dateIssued type="end" encoding="iso8601">1999-12-08</dateIssued>
-            <dateIssued>2-8 December 1999</dateIssued>
         </x:expect>
     </x:scenario>
-    
+
     <x:scenario label="Date of Publication with date of original publication">
         <x:context mode="bibliography">
             <DATE_OF_PUBLICATION REG="1995" NO_DATE="0" EMENDED="0"><DATE VALUE="1995">Fall 1995</DATE></DATE_OF_PUBLICATION>
             <DATE_OF_ORIGINAL_PUBLICATION REG="1573" NO_DATE="0" EMENDED="0"><DATE VALUE="1573">1573</DATE></DATE_OF_ORIGINAL_PUBLICATION>     
         </x:context>
         <x:expect label="it should produce both a dateIssued and dateOther" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>Fall 1995</dateIssued>
             <dateIssued type="start" encoding="iso8601">1995-09-01</dateIssued>
             <dateIssued type="end" encoding="iso8601">1995-11-30</dateIssued>
-            <dateIssued>Fall 1995</dateIssued>
             <dateOther type="original" encoding="iso8601">1573</dateOther>
         </x:expect>
     </x:scenario>
@@ -220,13 +217,10 @@
                             <placeTerm type="text">Bozeman, MT</placeTerm>
                         </place>
                         <publisher valueURI="https://dev-02.cwrc.ca/islandora/object/orlando:f503b9de-4a0b-4e73-aa3d-8ede962b6d81">Montana State University</publisher>
-                        <dateIssued type="start"
-                            encoding="iso8601">1995-09-01</dateIssued>
-                        <dateIssued type="end"
-                            encoding="iso8601">1995-11-30</dateIssued>
                         <dateIssued>Fall 1995</dateIssued>
-                        <dateOther type="original"
-                            encoding="iso8601">1573</dateOther>
+                        <dateIssued type="start" encoding="iso8601">1995-09-01</dateIssued>
+                        <dateIssued type="end" encoding="iso8601">1995-11-30</dateIssued>
+                        <dateOther type="original" encoding="iso8601">1573</dateOther>
                         <edition>An Academic Edition</edition>
                     </originInfo>
                     <language>
