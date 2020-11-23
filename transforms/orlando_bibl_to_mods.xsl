@@ -1081,6 +1081,18 @@ another for dateIssued -->
         <xsl:param name="date_element_name" />
         <xsl:param name="date_type" />
 
+        <!-- output text date; no value added so only text output -->
+        <!-- add text date first (display date) for Islandora 7 display -->
+        <xsl:call-template name="add_mods_date_text_and_iso8601">
+            <xsl:with-param name="date_value" />
+            <xsl:with-param name="date_text" select="$date_text" />
+            <xsl:with-param name="date_element_name" select="$date_element_name"/>
+            <xsl:with-param name="is_emended" select="$is_emended"/>
+            <xsl:with-param name="date_type" select="$date_type"/>
+            <xsl:with-param name="point" />
+        </xsl:call-template>
+
+        <!-- add ISO6801 date after text so Islandora 7 does not display -->
         <xsl:if test="$start_date">
             <xsl:call-template name="add_mods_date_text_and_iso8601">
                 <xsl:with-param name="date_value" select="$start_date" />
@@ -1101,15 +1113,6 @@ another for dateIssued -->
                 <xsl:with-param name="point" select="'end'"/>
             </xsl:call-template>
         </xsl:if>
-        <!-- output text date; no value added so only text output -->
-        <xsl:call-template name="add_mods_date_text_and_iso8601">
-            <xsl:with-param name="date_value" />
-            <xsl:with-param name="date_text" select="$date_text" />
-            <xsl:with-param name="date_element_name" select="$date_element_name"/>
-            <xsl:with-param name="is_emended" select="$is_emended"/>
-            <xsl:with-param name="date_type" select="$date_type"/>
-            <xsl:with-param name="point" />
-        </xsl:call-template>
 
     </xsl:template>
 
@@ -1121,9 +1124,10 @@ another for dateIssued -->
         <xsl:param name="date_type" />
         <xsl:param name="point" />
 
-        <xsl:if test="$date_value">
+        <!-- add text date first (display date) for Islandora 7 display -->
+        <xsl:if test="not($date_value=$date_text) and $date_text">
             <xsl:call-template name="add_mods_date">
-                <xsl:with-param name="date_string" select="$date_value" />
+                <xsl:with-param name="date_string" select="$date_text" />
                 <xsl:with-param name="date_element_name" select="$date_element_name"/>
                 <xsl:with-param name="is_emended" select="$is_emended"/>
                 <xsl:with-param name="date_type" select="$date_type"/>
@@ -1131,9 +1135,10 @@ another for dateIssued -->
             </xsl:call-template>
         </xsl:if>
 
-        <xsl:if test="not($date_value=$date_text) and $date_text">
+        <!-- add ISO6801 date after text so Islandora 7 does not display -->
+        <xsl:if test="$date_value">
             <xsl:call-template name="add_mods_date">
-                <xsl:with-param name="date_string" select="$date_text" />
+                <xsl:with-param name="date_string" select="$date_value" />
                 <xsl:with-param name="date_element_name" select="$date_element_name"/>
                 <xsl:with-param name="is_emended" select="$is_emended"/>
                 <xsl:with-param name="date_type" select="$date_type"/>
