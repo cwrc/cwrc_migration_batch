@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<x:description 
+    xmlns:x="http://www.jenitennison.com/xslt/xspec" 
+    stylesheet="../orlando_bibl_to_mods.xsl"
+    >
+    
+    <x:scenario label="Date of Access: yyyy-mm-yy">
+        <x:context>
+            <DATE_OF_ACCESS REG="1999-04-08" NO_DATE="0" EMENDED="0">8 April 1999</DATE_OF_ACCESS>
+        </x:context>
+        <x:expect label="it should produce mods:dateOther" xmlns="http://www.loc.gov/mods/v3">
+            <dateOther type="dateAccessed">8 April 1999</dateOther>
+            <dateOther type="dateAccessed" encoding="iso8601">1999-04-08</dateOther>
+        </x:expect>
+    </x:scenario>
+    
+    <x:scenario label="No date">
+        <x:context mode="bibliography">
+            <DATE_OF_PUBLICATION REG="1886" NO_DATE="1" EMENDED="0"><DATE VALUE="1886--"/></DATE_OF_PUBLICATION>
+        </x:context>
+        <x:expect label="it should produce no mods:dateIssued or other mods date" />
+    </x:scenario>
+
+    <x:scenario label="Date of Publication: extended date with '?'">
+        <x:context mode="bibliography">
+            <DATE_OF_PUBLICATION REG="1752" NO_DATE="0" EMENDED="0"><DATE VALUE="1752">1752?</DATE></DATE_OF_PUBLICATION>
+        </x:context>
+        <x:expect label="it should produce an ISO 8601 and text date: use default" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>1752?</dateIssued>
+            <dateIssued encoding="iso8601">1752</dateIssued>
+        </x:expect>
+    </x:scenario>    
+
+    <x:scenario label="Date of Publication: late/early year range - use default processing">
+        <x:context mode="bibliography">
+            <DATE_OF_PUBLICATION REG="1584" NO_DATE="0"><DATE VALUE="1584">Late 1584 - early 1585</DATE></DATE_OF_PUBLICATION>
+        </x:context>
+        <x:expect label="it should produce an ISO 8601 start and text date: use default no special late/early translation" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>Late 1584 - early 1585</dateIssued>
+            <dateIssued encoding="iso8601">1584</dateIssued>
+        </x:expect>
+    </x:scenario>
+
+    <x:scenario label="Date of Publication: Year only (YYYY)">
+        <x:context mode="bibliography">
+            <DATE_OF_PUBLICATION REG="1996" NO_DATE="0" EMENDED="0"><DATE VALUE="1996">1996</DATE></DATE_OF_PUBLICATION>
+        </x:context>
+        <x:expect label="it should produce only an ISO 8601 (as text date is the same)" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued encoding="iso8601">1996</dateIssued>
+        </x:expect>
+    </x:scenario>
+
+    <x:scenario label="Date of Publication: Month YYYY">
+        <x:context mode="bibliography">
+            <DATE_OF_PUBLICATION REG="1848-12" NO_DATE="0" EMENDED="0"><DATE VALUE="1848-12">December 1848</DATE></DATE_OF_PUBLICATION>
+        </x:context>
+        <x:expect label="it should produce an ISO 8601 and text date" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>December 1848</dateIssued>
+            <dateIssued encoding="iso8601">1848-12</dateIssued>
+        </x:expect>
+    </x:scenario>
+
+    <x:scenario label="Date of Publication: atypical DD Month YYYY - use default">
+        <x:context mode="bibliography">
+            <DATE_OF_PUBLICATION REG="1994-06-20" NO_DATE="0" EMENDED="0"><DATE VALUE="1994-06-20">Monday 20 June 1994</DATE></DATE_OF_PUBLICATION>
+        </x:context>
+        <x:expect label="it should produce an ISO 8601 and text date (skip Monday and handle as default)" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>Monday 20 June 1994</dateIssued>
+            <dateIssued encoding="iso8601">1994-06-20</dateIssued>
+        </x:expect>
+    </x:scenario>
+    
+    <x:scenario label="Date of Publication: DD Month Year">
+        <x:context mode="bibliography">
+            <DATE_OF_PUBLICATION REG="2001-01-20" NO_DATE="0" EMENDED="0"><DATE VALUE="2001-01-20">20 January 2001</DATE></DATE_OF_PUBLICATION>
+        </x:context>
+        <x:expect label="it should produce an ISO 8601 and text date (default handling)" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>20 January 2001</dateIssued>
+            <dateIssued encoding="iso8601">2001-01-20</dateIssued>
+        </x:expect>
+    </x:scenario>
+
+    <x:scenario label="Date of Publication: Month DD, YYYY">
+        <x:context mode="bibliography">
+            <DATE_OF_PUBLICATION REG="1899-04-22" NO_DATE="0" EMENDED="0"><DATE VALUE="1899-04-22">April 22, 1899</DATE></DATE_OF_PUBLICATION>
+        </x:context>
+        <x:expect label="it should produce an ISO 8601 and text date (default handling)" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>April 22, 1899</dateIssued>            
+            <dateIssued encoding="iso8601">1899-04-22</dateIssued>
+        </x:expect>
+    </x:scenario>
+    
+
+    <x:scenario label="Date of Publication: year range (YYYY-YYYY)">
+        <x:context mode="bibliography">
+            <DATE_OF_PUBLICATION REG="1959--" NO_DATE="0" EMENDED="0"><DATE VALUE="1959--">1959-1962</DATE></DATE_OF_PUBLICATION>
+        </x:context>
+        <x:expect label="it should produce begin/end ISO 8601 date and text date" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>1959-1962</dateIssued>
+            <dateIssued type="start" encoding="iso8601">1959</dateIssued>
+            <dateIssued type="end" encoding="iso8601">1962</dateIssued>
+        </x:expect>
+    </x:scenario>
+    
+    <x:scenario label="Date of Publication: season range (Season-Season YYYY)">
+        <x:context mode="bibliography">
+            <DATE_OF_PUBLICATION REG="1997--" NO_DATE="0" EMENDED="0"><DATE VALUE="1997--">Spring-Autumn 1997</DATE></DATE_OF_PUBLICATION>
+        </x:context>
+        <x:expect label="it should produce a begin/end ISO 8601 date and text date" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>Spring-Autumn 1997</dateIssued>
+            <dateIssued type="start" encoding="iso8601">1997-03-01</dateIssued>
+            <dateIssued type="end" encoding="iso8601">1997-11-30</dateIssued>
+        </x:expect>
+    </x:scenario>
+    
+    <x:scenario label="Date of Publication: month range (Month/Month YYYY)">
+        <x:context mode="bibliography">
+            <DATE_OF_PUBLICATION REG="2012-11-" NO_DATE="0" EMENDED="0"><DATE VALUE="2012-11-"> November/December 2012</DATE></DATE_OF_PUBLICATION>
+        </x:context>
+        <x:expect label="it should produce a begin/end ISO 8601 date and text date" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>November/December 2012</dateIssued>
+            <dateIssued type="start" encoding="iso8601">2012-11</dateIssued>
+            <dateIssued type="end" encoding="iso8601">2012-12</dateIssued>
+        </x:expect>
+    </x:scenario>
+    
+    <x:scenario label="Date of Publication: day month range ( DD Month - DD Month YYYY) - does not try to determine begin/end in this format">
+        <x:context mode="bibliography">
+            <DATE_OF_PUBLICATION REG="2019-03-21" NO_DATE="0" EMENDED="0"><DATE VALUE="2019-03-21">21 March - 1 April 2019</DATE></DATE_OF_PUBLICATION>
+        </x:context>
+        <x:expect label="it should produce a begin/end ISO 8601 date and text date" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>21 March - 1 April 2019</dateIssued>
+            <dateIssued encoding="iso8601">2019-03-21</dateIssued>
+        </x:expect>
+    </x:scenario>
+    
+    <x:scenario label="Date of Publication: day month year range (DD Month YYYY-DD Month YYYY)">
+        <x:context mode="bibliography">
+            <DATE_OF_PUBLICATION REG="1756--" NO_DATE="0" EMENDED="0"><DATE VALUE="1756--">6 January 1756-17 February 1756</DATE></DATE_OF_PUBLICATION>
+        </x:context>
+        <x:expect label="it should produce a begin/end ISO 8601 date and text date" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>6 January 1756-17 February 1756</dateIssued>
+            <dateIssued type="start" encoding="iso8601">1756-01-06</dateIssued>
+            <dateIssued type="end" encoding="iso8601">1756-02-17</dateIssued>
+        </x:expect>
+    </x:scenario>
+
+    <x:scenario label="Date of Publication: day-day Month YYYY (DD-DD Month YYYY)">
+        <x:context mode="bibliography">
+            <DATE_OF_PUBLICATION REG="1999-11-18" NO_DATE="0" EMENDED="0"><DATE VALUE="1999-11-18">18-24 November 1999</DATE></DATE_OF_PUBLICATION>
+        </x:context>
+        <x:expect label="it should produce an begin/end ISO 8601 date with a text date" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>18-24 November 1999</dateIssued>
+            <dateIssued type="start" encoding="iso8601">1999-11-18</dateIssued>
+            <dateIssued type="end" encoding="iso8601">1999-11-24</dateIssued>
+        </x:expect>
+    </x:scenario>
+
+    <x:scenario label="Date of Publication: day-day Month YYYY (DD-DD Month YYYY) single digit day">
+        <x:context mode="bibliography">
+            <DATE_OF_PUBLICATION REG="1999-12-02" NO_DATE="0" EMENDED="0"><DATE VALUE="1999-12-02">2-8 December 1999</DATE></DATE_OF_PUBLICATION>
+        </x:context>
+        <x:expect label="it should produce an ISO 8601 start and end with a text date" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>2-8 December 1999</dateIssued>
+            <dateIssued type="start" encoding="iso8601">1999-12-02</dateIssued>
+            <dateIssued type="end" encoding="iso8601">1999-12-08</dateIssued>
+        </x:expect>
+    </x:scenario>
+
+    <x:scenario label="Date of Publication with date of original publication">
+        <x:context mode="bibliography">
+            <DATE_OF_PUBLICATION REG="1995" NO_DATE="0" EMENDED="0"><DATE VALUE="1995">Fall 1995</DATE></DATE_OF_PUBLICATION>
+            <DATE_OF_ORIGINAL_PUBLICATION REG="1573" NO_DATE="0" EMENDED="0"><DATE VALUE="1573">1573</DATE></DATE_OF_ORIGINAL_PUBLICATION>     
+        </x:context>
+        <x:expect label="it should produce both a dateIssued and dateOther" xmlns="http://www.loc.gov/mods/v3">
+            <dateIssued>Fall 1995</dateIssued>
+            <dateIssued type="start" encoding="iso8601">1995-09-01</dateIssued>
+            <dateIssued type="end" encoding="iso8601">1995-11-30</dateIssued>
+            <dateOther type="original" encoding="iso8601">1573</dateOther>
+        </x:expect>
+    </x:scenario>
+ 
+    <x:scenario label="Test whole legacy bibliography item (date of publication and original date of publication (BI_ID=467)">
+        <x:context href="sample/467.xml" />
+        <x:expect label="it should produce a full mods record from the original legacy bibl (after dates converted and uri's added)">
+            <modsCollection xmlns="http://www.loc.gov/mods/v3"
+                xmlns:tei="http://www.tei-c.org/ns/1.0"
+                xmlns:xlink="http://www.w3.org/1999/xlink"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xmlns:orl="http://ualberta.ca/orlando"
+                xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-4.xsd">
+                <mods version="3.4">
+                    <titleInfo usage="primary">
+                        <title>A Sweet Nosegay, or Pleasant Posy</title>
+                    </titleInfo>
+                    <titleInfo type="alternative">
+                        <title>A Sweet Nosgay, Or Pleasant Posye</title>
+                    </titleInfo>
+                    <titleInfo type="alternative">
+                        <title>A Sweet Nosegay, or Pleasant Posy. Containing a hundred and ten philosophical Flowers</title>
+                    </titleInfo>
+                    <name type="personal"
+                        valueURI="https://dev-02.cwrc.ca/islandora/object/orlando:35ac6c09-f5c8-40b6-9b00-64bf104f578b">
+                        <namePart>Whitney, Isabella</namePart>
+                    </name>
+                    <name type="personal"
+                        valueURI="https://dev-02.cwrc.ca/islandora/object/orlando:5802c1ea-3301-40ad-b6d2-45c59aff9dcb">
+                        <namePart>Students of Sara Jayne Steen</namePart>
+                        <role>
+                            <roleTerm type="text">editor</roleTerm>
+                        </role>
+                    </name>
+                    <typeOfResource>text</typeOfResource>
+                    <genre displayLabel="Item Type" authority="marcgt">book</genre>
+                    <originInfo>
+                        <place>
+                            <placeTerm type="text">Bozeman, MT</placeTerm>
+                        </place>
+                        <publisher valueURI="https://dev-02.cwrc.ca/islandora/object/orlando:f503b9de-4a0b-4e73-aa3d-8ede962b6d81">Montana State University</publisher>
+                        <dateIssued>Fall 1995</dateIssued>
+                        <dateIssued type="start" encoding="iso8601">1995-09-01</dateIssued>
+                        <dateIssued type="end" encoding="iso8601">1995-11-30</dateIssued>
+                        <dateOther type="original" encoding="iso8601">1573</dateOther>
+                        <edition>An Academic Edition</edition>
+                    </originInfo>
+                    <language>
+                        <languageTerm authority="iso639-2b" type="code">eng</languageTerm>
+                        <languageTerm type="text">English</languageTerm>
+                    </language>
+                    <recordInfo>
+                        <recordContentSource>Orlando: Women's Writing in the British Isles from the Beginnings to the Present</recordContentSource>
+                        <recordContentSource>Orlando Document Archive</recordContentSource>
+                        <recordContentSource authority="marcorg">CaAEU</recordContentSource>
+                        <recordContentSource authority="oclcorg">UAB</recordContentSource>
+                        <recordContentSource authority="oclcorg">U3G</recordContentSource>
+                        <languageOfCataloging>
+                            <languageTerm authority="iso639-2b">eng</languageTerm>
+                        </languageOfCataloging>
+                        <recordCreationDate encoding="iso8601">1999-04-08</recordCreationDate>
+                        <recordChangeDate encoding="iso8601">1999-04-08</recordChangeDate>
+                        <recordChangeDate encoding="iso8601">1999-06-05</recordChangeDate>
+                        <recordChangeDate encoding="iso8601">1999-06-07</recordChangeDate>
+                        <recordChangeDate encoding="iso8601">1999-08-11</recordChangeDate>
+                        <recordChangeDate encoding="iso8601">2003-10-31</recordChangeDate>
+                        <recordChangeDate encoding="iso8601">2005-07-10</recordChangeDate>
+                        <recordChangeDate encoding="iso8601">2005-07-10</recordChangeDate>
+                        <recordIdentifier source="Orlando">467</recordIdentifier>
+                        <recordOrigin>Record has been transformed into MODS from an XML Orlando record using an XSLT stylesheet. Metadata originally created in Orlando Document Archive's bibliographic database available at nifflheim.ualberta.ca/wwp.</recordOrigin>
+                    </recordInfo>
+                </mods>
+            </modsCollection>
+        </x:expect>
+    </x:scenario>
+
+    <!--
+    <x:scenario label="Scenario for testing a function">
+        <x:call function="function-name">
+            <x:param></x:param>
+        </x:call>
+
+        <x:expect label="" select=""/>
+    </x:scenario>
+    -->
+    
+</x:description>
