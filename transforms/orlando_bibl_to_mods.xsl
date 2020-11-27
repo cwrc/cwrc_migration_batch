@@ -1382,7 +1382,7 @@ another for dateIssued -->
             </languageOfCataloging>
             <xsl:apply-templates select="RESPONSIBILITY"/>
             <xsl:apply-templates select="." mode="recordId"/>
-            <recordOrigin>Record has been transformed into MODS from an XML Orlando record using an XSLT stylesheet. Metadata originally created in Orlando Document Archive's bibliographic database available at nifflheim.ualberta.ca/wwp.</recordOrigin>
+            <recordOrigin>Record has been transformed into MODS from an XML Orlando record using an XSLT stylesheet. Metadata originally created in Orlando Document Archive's bibliographic database formerly available at nifflheim.arts.ualberta.ca/wwp.</recordOrigin>
         </recordInfo>
     </xsl:template>
 
