@@ -98,6 +98,7 @@
     
     <xsl:template match="//CULTURALFORMATION[not(preceding::CULTURALFORMATION)]">
         <xsl:element name="{local-name(.)}">
+            <xsl:copy-of select="@*"/>
             <xsl:choose>
                 <xsl:when test="ancestor::ENTRY[@SEX = 'MALE']">
                     <xsl:element name="GENDER">
@@ -129,7 +130,6 @@
                     <xsl:text/>
                 </xsl:when>
             </xsl:choose>
-            <xsl:copy-of select="@*"/>
             <xsl:copy-of select="node()"/>
         </xsl:element>
     </xsl:template>
