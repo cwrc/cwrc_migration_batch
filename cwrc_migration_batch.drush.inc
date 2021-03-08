@@ -21,8 +21,21 @@ function cwrc_migration_batch_drush_command() {
 
   $items['cwrc_migration_batch_ingest_entities'] = array(
     'description' => 'Ingest objects CWRC',
-    'examples' => array(
-      'drush -u 1 cwrc_migration_batch_ingest_entities path_to_directory name_of_default_workflow_file collection_pid cModel_pid content_datascream_dsid content_datascream_label entity_to_dc_xslt_path',
+     'options' => array(
+      'input_dir' => 'path to directory of source material',
+      'collection_pid' => 'cModel pid assigments',
+      'cModel_pid' => 'cModel pid assigments',
+      'namespace' => 'pid namespace',
+      'content_datastream_dsid' => 'content datastream id',
+      'content_datastream_label' => 'content datastream name',
+      'entity_to_dc_xslt_path' => 'convert entity to DC',
+      "wf_category" => "workflow category",
+      'wf_stamp' => 'workflow stamp',
+      'wf_status' => 'workflow status',
+      "wf_note" => "workflow note",
+    ),
+   'examples' => array(
+      'drush -u 1 cwrc_migration_batch_ingest_entities path_to_directory name_of_default_workflow_file collection_pid cModel_pid content_datastream_dsid content_datastream_label entity_to_dc_xslt_path',
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
@@ -31,7 +44,7 @@ function cwrc_migration_batch_drush_command() {
   $items['cwrc_migration_batch_ingest_cwrc_documents'] = array(
     'description' => 'Ingest objects - CWRC Documents',
     'examples' => array(
-      'drush -u 1 cwrc_migration_batch_ingest_cwrc_documents path_to_directory name_of_default_workflow_file collection_pid cModel_pid content_datascream_dsid content_datascream_label content_to_mods_xslt_path mods_to_dc_xslt_path',
+      'drush -u 1 cwrc_migration_batch_ingest_cwrc_documents path_to_directory name_of_default_workflow_file collection_pid cModel_pid content_datastream_dsid content_datastream_label content_to_mods_xslt_path mods_to_dc_xslt_path',
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
@@ -400,33 +413,66 @@ function rels_setup (
 
 
 /** 
- * CWRC migration batch - entities Orlando
- *
- * @param string $path_to_file
- *   path to directory where migrated files are located.
- * @param string $collection_pid
- *   pid of the collection to add the object to 
- * @param string $cModel_pid
- *   pid of the cModel the object belongs to 
- * @param string $content_datastream_dsid
- *   id of the content datastream (dsid)
- * @param string $content_datastream_label
- *   label of the content datastream
- * @param string $entity_to_dc_xslt_path
- *   path to the cwrc_entities to DC XSLT file
+ * CWRC migration batch - entities 
  */
-function drush_cwrc_migration_batch_ingest_entities(
-    $path_to_file
-    , $workflow_file
-    , $collection_pid
-    , $cModel_pid
-    , $content_datastream_dsid
-    , $content_datastream_label
-    , $entity_to_dc_xslt_path
-  ) 
+function drush_cwrc_migration_batch_ingest_entities() 
 {
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/cwrc_workflow');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/basic_enum');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/workflow_item');
+  module_load_include('inc', 'islandora_workflow_rest', 'includes/utilities');
 
+  // path to the input document files
+  $input_dir = drush_get_option(
+    'input_dir'
+    , '/tmp/entities_ingest'
+    );
+
+  $XACML_policy = drush_get_option(
+    'XACML_policy'
+    , '/tmp/xacml_policy.xml'
+    );
+
+  // pid of the collection to add the object to 
+  $collection_pid = drush_get_option(
+    'collection_pid'
+    , 'cwrc:delete_me'
+  );
+
+  // pid of the cModel the object belongs to 
+  $cModel_pid = drush_get_option(
+    'cModel_pid'
+    , 'cwrc'
+  );
+
+  $namespace = drush_get_option(
+    'namespace'
+    , 'cwrc'
+  );
+
+  // id of the content datastream (dsid)
+  $content_datastream_dsid = drush_get_option(
+    'content_datastream_dsid'
+    , 'X'
+  );
+
+  // label of the content datastream
+  $content_datastream_label = drush_get_option(
+    'content_datastream_label'
+    , 'X'
+  );
+
+  // path to the cwrc_entities to DC XSLT file
+  $entity_to_dc_xslt_path = drush_get_option(
+    'entity_to_dc_xslt_path'
+    , 'xslt/entity_to_dc_TEI_support.xsl'
+  );
   
+  $wf_category = drush_get_option('wf_category' , 'machine_processed');
+  $wf_stamp = drush_get_option('wf_stamp' , 'orlando:SUB');
+  $wf_status = drush_get_option('wf_status' , 'c');
+  $wf_note = drush_get_option('wf_note' , 'Apply XSLT: $xslt');
+
   drush_print("CWRC Entities Migration batch");
 
   // Include modules.
@@ -436,30 +482,20 @@ function drush_cwrc_migration_batch_ingest_entities(
   // Display the user.
   drush_print("User: " . $connection->connection->username);
 
-  // Content Model.  Create the content model.
   // Collection.  Create the collection object.
   rels_setup ( $connection, $cModel_pid, $collection_pid);
 
   // setup XSL 
   // Get the path to the content_to_dc.xsl file.
-  //$dc_xslt = "/transforms/entity_to_dc.xsl";
   // ../cwrc-entities/xslt/entity_to_dc.xml
   $dc_xslt
     = drupal_get_path('module', 'cwrc_entities') . '/' . $entity_to_dc_xslt_path;
   drush_print("XSLT DC: " . $dc_xslt);
   dc_xslt_setup($dc_xslt, $xslt_proc);
 
-  // setup the default workflow
-  // get the contents of the default workflow for an entity
-  $path_to_workflow_file
-      = drupal_get_path('module', 'cwrc_migration_batch') . $workflow_file
-      ;
-  drush_print("XSLT Workflow: " . $path_to_workflow_file);
-  $workflow_xml = file_get_contents($path_to_workflow_file);
-
-
   // Set source directory for the content to ingest
-  $cwrc_directory = $path_to_file;
+  drush_print("Source dir: " . $input_dir);
+  $cwrc_directory = $input_dir;
 
   // Open the source direcotry and iterate through every file in the 
   // directory - one file maps to one Fedora 
@@ -484,7 +520,7 @@ function drush_cwrc_migration_batch_ingest_entities(
     }
 
     // generate an id for the object
-    $pid = $connection->repository->getnextIdentifier("cwrc", TRUE);
+    $pid = $connection->repository->getnextIdentifier($namespace, TRUE);
 
     // load XML doc
     // Load cwrc xml from a file.
@@ -494,7 +530,6 @@ function drush_cwrc_migration_batch_ingest_entities(
     $cwrc_dom = new DOMDocument();
     $cwrc_dom->load($tmp);
 
-    
     // build the DC content
     // Convert entity to DC.
     // Transform to DC xml.
@@ -524,32 +559,37 @@ function drush_cwrc_migration_batch_ingest_entities(
         )
       );
 
-
     // create content datastream
     $cwrc_ds = $object->constructDatastream($content_datastream_dsid, 'M');
     $cwrc_ds->label = $content_datastream_label;
     $cwrc_ds->mimeType = 'text/xml';
     $cwrc_ds->setContentFromString($cwrc_xml);
     $object->ingestDatastream($cwrc_ds);
- 
-    
+
     // create DC datastream
     create_DS_DC($dc_xml, $object);
 
-    // Workflow Datastream.
-    // We want to get all of the responsibilitie tags.
-    // For each responsibility create a workflow element.
-    // Create the MODS datastream.
-    create_DS_workflow($workflow_xml, $object);
-
-    // Create the Policy datastream.
-//    if ( $policy != null && $policy!="NONE" ) 
-//    {
-//      create_DS_POLICY(
-//        $policy 
-//        , $object
-//      );
-//    }
+    // add a workflow stamp indicating that the object was ingested
+    if (!$object['WORKFLOW']) {
+      $workflow = CWRCWorkflowAPI::fromTemplate($object['WORKFLOW']);
+    }
+    else {
+      $workflow = CWRCWorkflowAPI::fromDatastream($object['WORKFLOW']);
+    }
+    $workflow->addWorkflowStep(
+      $object->id,
+      new WorkflowItem(WorkflowConst::WORKFLOW, array()),
+      new WorkflowItem(
+        WorkflowConst::ACTIVITY,
+        array(
+          "category" => $wf_category,
+          'stamp' => $wf_stamp,
+          'status' => $wf_status,
+          "note" => $wf_note,
+          )
+        )
+      );
+    CWRCWorkflowAPI::updateDatastream($workflow, $object);
 
     // Store the object.
     try {
@@ -567,7 +607,6 @@ function drush_cwrc_migration_batch_ingest_entities(
   drush_print('Migration Complete');
   drush_print('Number of files migrated: ' . $file_count);
   drush_print('Number of errors: ' . $file_error_count);
-
 }
 
 /** 
