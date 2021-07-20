@@ -7,7 +7,7 @@
   <xsl:output encoding="UTF-8" method="xml" indent="no"/>
   
   <!--copy everything as in source document unless otherwise instructed below in this xslt -->
-  <xsl:template match="@*|node()">
+  <xsl:template match="@*|*|comment()|processing-instruction()">
     <xsl:copy>
       <xsl:apply-templates select="@*|node()"/>
     </xsl:copy>
@@ -28,7 +28,7 @@
     </xsl:choose>   
   </xsl:template>
   
-  <xsl:template match="*/descendant::text()">
+  <xsl:template match="text()">
     <xsl:value-of select="replace(., '¥', '£')"/>
   </xsl:template>
   
