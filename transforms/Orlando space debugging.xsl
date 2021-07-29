@@ -22,7 +22,16 @@
       <xsl:apply-templates select="@*|node()"/>
     </xsl:copy>
     <xsl:choose>
-      <xsl:when test="following-sibling::node()[position()=1 and (not(self::text()) or ./descendant::*[text()])]">
+      <!--<xsl:when test="following-sibling::node()[position()=1 and ./descendant::*[text()]]">
+        <xsl:text>+</xsl:text>
+      </xsl:when>
+      <xsl:when test="following-sibling::node()[position()=1 and not(self::text())]">
+        <xsl:text>++</xsl:text>
+      </xsl:when>
+      <xsl:when test="following-sibling::node()[position()=1 and (not(self::text()) and not(./descendant::*[text()]) )]">
+        <xsl:text>+++</xsl:text>-->
+      <!--</xsl:when>-->
+      <xsl:when test="following-sibling::node()[position()=1][not(self::text()) and ./descendant-or-self::*[text()]]">
         <xsl:text> </xsl:text>
       </xsl:when>
     </xsl:choose>   
