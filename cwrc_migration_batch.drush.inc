@@ -299,7 +299,7 @@ function cwrc_migration_batch_drush_command() {
       'date' => 'destination directory',
     ),
     'examples' => array(
-      'drush -u 1 cwrc_migration_batch_export_by_date --pid_file=/tmp/z --ds_id=CWRC --dest_dir=/tmp/zz --date="2020-09-01',
+      'drush -u 1 cwrc_migration_batch_export_by_date --pid_file=/tmp/z --ds_id=CWRC --dest_dir=/tmp/zz --date="2020-09-01"',
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
@@ -4589,7 +4589,7 @@ function drush_cwrc_migration_batch_export_by_date()
           if ($datastream_version->createdDate < $date_before) {
             drush_print($datastream_version->createdDate);
             $ds_content = $datastream_version->content;
-            $fh = fopen($dest_dir.'/'.$datastream_version->createdDate.'_'.$pid.'_'.$ds_id, 'w+');
+            $fh = fopen($dest_dir.'/'.$pid.'_'.$ds_id.'_'.$datastream_version->createdDate, 'w+');
             fwrite($fh, $ds_content);
             fclose($fh);
           }
