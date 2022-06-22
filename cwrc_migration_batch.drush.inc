@@ -327,7 +327,7 @@ function cwrc_migration_batch_drush_command() {
       'collection_pid' => 'PID of the collection of retrieve members',
     ),
     'examples' => array(
-      'drush -u 1 cwrc_migration_batch_retrieve_item_summary',
+      'drush -u 1 cwrc_migration_batch_retrieve_members_of_collection',
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
@@ -337,7 +337,7 @@ function cwrc_migration_batch_drush_command() {
     'options' => array(
     ),
     'examples' => array(
-      'drush -u 1 cwrc_migration_batch_batch_retrieve_item_summary',
+      'drush -u 1 cwrc_migration_batch_retrieve_item_summary',
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
