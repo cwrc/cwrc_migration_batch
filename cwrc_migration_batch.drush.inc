@@ -304,9 +304,6 @@ function cwrc_migration_batch_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
-
-
-
   $items['cwrc_migration_batch_apply_xslt'] = array(
     'description' => 'Apply XSLT to each object in the list and add a workflowstamp',
     'options' => array(
@@ -330,11 +327,20 @@ function cwrc_migration_batch_drush_command() {
       'collection_pid' => 'PID of the collection of retrieve members',
     ),
     'examples' => array(
-      'drush -u 1 cwrc_migration_batch_batch_retrieve_members_of_collection',
+      'drush -u 1 cwrc_migration_batch_retrieve_item_summary',
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
+  $items['cwrc_migration_batch_retrieve_item_summary'] = array(
+    'description' => 'list of items and their associated membership',
+    'options' => array(
+    ),
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_batch_retrieve_item_summary',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
 
   $items['cwrc_migration_batch_delete'] = array(
     'description' => 'Delete a list of objects',
@@ -4794,6 +4800,66 @@ EOT;
   catch (Exception $e) {
      // print exception
      print $e->getMessage();
+     $error_count++;
+  }
+
+  drush_print('Number of objects: ' . $count);
+  drush_print('Number of errors: ' . $error_count);
+}
+
+/**
+ * CWRC migration batch - list PIDs of all items
+ *
+ */
+function drush_cwrc_migration_batch_retrieve_item_summary()
+{
+
+  $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
+
+  $query = <<<EOT
+    PREFIX fre: <info:fedora/fedora-system:def/relations-external#>
+    PREFIX fm: <info:fedora/fedora-system:def/model#>
+    SELECT ?obj ?sub ?model
+    FROM <#ri>
+    WHERE {
+      {
+        ?obj fre:isMemberOfCollection ?sub
+      }
+      UNION
+      {
+        ?obj fre:isMemberOf ?sub
+      }
+      ?obj fm:hasModel ?model .
+      ?obj fm:state fm:Active .
+      ?sub fm:state fm:Active
+      FILTER(! sameTerm(?model, <info:fedora/fedora-system:FedoraObject-3.0>))
+    }
+EOT;
+
+  drush_print($query);
+
+  // Counter for the number of files.
+  $count = 0;
+  $error_count = 0;
+
+  try
+  {
+    $connection = islandora_get_tuque_connection();
+    $results = $connection->repository->ri->sparqlQuery($query);
+    drush_print($result);
+    foreach ($results as $result)
+    {
+      $count++;
+      drush_print(
+        $result['obj']['value']
+        .",".$result['sub']['value']
+        .",".$result['model']['value']
+        );
+    }
+  }
+  catch (Exception $e) {
+     // print exception
+     drush_print($e->getMessage());
      $error_count++;
   }
 
