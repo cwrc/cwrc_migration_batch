@@ -4819,7 +4819,7 @@ function drush_cwrc_migration_batch_retrieve_item_summary()
   $query = <<<EOT
     PREFIX fre: <info:fedora/fedora-system:def/relations-external#>
     PREFIX fm: <info:fedora/fedora-system:def/model#>
-    SELECT ?obj ?sub ?model
+    SELECT ?obj ?sub ?model ?label
     FROM <#ri>
     WHERE {
       {
@@ -4830,6 +4830,7 @@ function drush_cwrc_migration_batch_retrieve_item_summary()
         ?obj fre:isMemberOf ?sub
       }
       ?obj fm:hasModel ?model .
+      ?obj fm:label ?label . 
       ?obj fm:state fm:Active .
       ?sub fm:state fm:Active
       FILTER(! sameTerm(?model, <info:fedora/fedora-system:FedoraObject-3.0>))
@@ -4854,6 +4855,7 @@ EOT;
         $result['obj']['value']
         .",".$result['sub']['value']
         .",".$result['model']['value']
+        .","."\"".str_replace('"', '""', $result['label']['value'])."\"" 
         );
     }
   }
