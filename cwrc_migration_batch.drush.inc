@@ -4819,21 +4819,18 @@ function drush_cwrc_migration_batch_retrieve_item_summary()
   $query = <<<EOT
     PREFIX fre: <info:fedora/fedora-system:def/relations-external#>
     PREFIX fm: <info:fedora/fedora-system:def/model#>
-    SELECT ?obj ?sub ?model ?label
+    SELECT ?obj ?collection ?member_of ?model ?label
     FROM <#ri>
     WHERE {
       {
-        ?obj fre:isMemberOfCollection ?sub
+        ?obj fre:isMemberOfCollection ?collection
       }
       UNION
       {
-        ?obj fre:isMemberOf ?sub
+        ?obj fre:isMemberOf ?member_of
       }
-      UNION
-      {
-        ?obj fm:hasModel ?model .
-        ?obj fm:label ?label 
-      }
+      ?obj fm:hasModel ?model .
+      ?obj fm:label ?label 
       FILTER(! sameTerm(?model, <info:fedora/fedora-system:FedoraObject-3.0>))
     }
 EOT;
