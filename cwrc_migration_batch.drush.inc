@@ -342,6 +342,16 @@ function cwrc_migration_batch_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
+  $items['cwrc_migration_batch_retrieve_orphan_summary'] = array(
+    'description' => 'list of orphaned items.',
+    'options' => array(
+    ),
+    'examples' => array(
+      'drush -u 1 cwrc_migration_batch_retrieve_orphan_summary',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
+  );
+
   $items['cwrc_migration_batch_delete'] = array(
     'description' => 'Delete a list of objects',
     'options' => array(
@@ -4851,7 +4861,8 @@ EOT;
       $count++;
       drush_print(
         $result['obj']['value']
-        .",".$result['sub']['value']
+        .",".$result['collection']['value']
+        .",".$result['member_of']['value']
         .",".$result['model']['value']
         .","."\"".str_replace('"', '""', $result['label']['value'])."\"" 
         );
@@ -4866,6 +4877,62 @@ EOT;
   drush_print('Number of objects: ' . $count);
   drush_print('Number of errors: ' . $error_count);
 }
+
+/**
+ * CWRC migration batch - list PIDs where the collection has been deleted
+ *
+ */
+function drush_cwrc_migration_batch_retrieve_orphan_summary()
+{
+
+  $ext_home = drupal_get_path('module', 'cwrc_migration_batch') . '/';
+
+  $query = <<<EOT
+    PREFIX fre: <info:fedora/fedora-system:def/relations-external#>
+    PREFIX fm: <info:fedora/fedora-system:def/model#>
+    SELECT ?obj ?collection ?label
+    FROM <#ri>
+    WHERE {
+      ?obj fre:isMemberOfCollection ?collection .
+      ?obj fm:label ?label .
+      OPTIONAL { ?collection fm:hasModel ?model . }
+      FILTER(!bound(?model))
+    }
+
+EOT;
+
+  drush_print($query);
+
+  // Counter for the number of files.
+  $count = 0;
+  $error_count = 0;
+
+  try
+  {
+    $connection = islandora_get_tuque_connection();
+    $results = $connection->repository->ri->sparqlQuery($query);
+    drush_print($result);
+    foreach ($results as $result)
+    {
+      $count++;
+      drush_print(
+        $result['obj']['value']
+        .",".$result['collection']['value']
+        .","."\"".str_replace('"', '""', $result['label']['value'])."\"" 
+        );
+    }
+  }
+  catch (Exception $e) {
+     // print exception
+     drush_print($e->getMessage());
+     $error_count++;
+  }
+
+  drush_print('Number of objects: ' . $count);
+  drush_print('Number of errors: ' . $error_count);
+}
+
+
 
 
 /** 
