@@ -4840,7 +4840,8 @@ function drush_cwrc_migration_batch_retrieve_item_summary()
         ?obj fre:isMemberOf ?member_of
       }
       ?obj fm:hasModel ?model .
-      ?obj fm:label ?label 
+      ?obj fm:label ?label .
+      ?obj fm:state fm:Active
       FILTER(! sameTerm(?model, <info:fedora/fedora-system:FedoraObject-3.0>))
     }
 EOT;
